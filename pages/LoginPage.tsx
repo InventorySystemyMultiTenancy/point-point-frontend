@@ -150,7 +150,7 @@ const CPFLogin: React.FC<CPFLoginProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="login-tech-bg flex min-h-screen items-center justify-center overflow-hidden p-4">
+    <div className="login-tech-bg flex min-h-screen items-center justify-center overflow-hidden">
       <PlushBackground />
 
       <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/70 bg-white/92 p-8 shadow-2xl backdrop-blur-xl">
