@@ -3,7 +3,7 @@ import "../assets/animated-gradient.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
-import { saveToken } from "../services/apiService";
+import { employeeLogin, saveToken } from "../services/apiService";
 import type { User } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -73,6 +73,9 @@ const LoginPage: React.FC = () => {
   const [documentInput, setDocumentInput] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [loginKind, setLoginKind] = useState<"customer" | "employee">(
+    "customer",
+  );
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
@@ -114,6 +117,18 @@ const LoginPage: React.FC = () => {
   const cleanDoc = documentInput.replace(/\D/g, "");
 
   const validateDocumentAndPassword = () => {
+    if (mode === "login" && loginKind === "employee") {
+      if (!documentInput.trim()) {
+        setError("Digite seu nome de usuario.");
+        return false;
+      }
+      if (!password.trim()) {
+        setError("Digite sua senha.");
+        return false;
+      }
+      return true;
+    }
+
     if (cleanDoc.length !== 11 && cleanDoc.length !== 14) {
       setError("Digite um CPF ou CNPJ valido.");
       return false;
@@ -132,6 +147,17 @@ const LoginPage: React.FC = () => {
 
     setIsLoading(true);
     try {
+      if (loginKind === "employee") {
+        const success = await employeeLogin(documentInput.trim(), password);
+        if (!success) {
+          setError("Usuario ou senha incorretos.");
+          return;
+        }
+        clearCart();
+        navigate("/employee", { replace: true });
+        return;
+      }
+
       const response = await fetch(`${API_URL}/api/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -154,6 +180,7 @@ const LoginPage: React.FC = () => {
     event.preventDefault();
     setError("");
     if (!validateDocumentAndPassword()) return;
+    setLoginKind("customer");
     if (!name.trim() || !email.trim()) {
       setError("Preencha nome e email para cadastrar.");
       return;
@@ -197,7 +224,11 @@ const LoginPage: React.FC = () => {
             Point&Point
           </p>
           <h1 className="text-3xl font-bold text-white">
-            {mode === "login" ? "Entrar na loja" : "Criar cadastro"}
+            {mode === "login"
+              ? loginKind === "employee"
+                ? "Entrar como funcionario"
+                : "Entrar na loja"
+              : "Criar cadastro"}
           </h1>
           <p className="mt-2 text-sm text-amber-100/90">
             Pelucias, presentes e fofura em poucos cliques.
@@ -208,18 +239,63 @@ const LoginPage: React.FC = () => {
           onSubmit={mode === "login" ? handleLogin : handleRegister}
           className="space-y-4"
         >
+          {mode === "login" && (
+            <div className="grid grid-cols-2 gap-2 rounded-xl bg-white/10 p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginKind("customer");
+                  setDocumentInput("");
+                  setError("");
+                }}
+                className={`rounded-lg px-3 py-2 text-sm font-bold transition-colors ${
+                  loginKind === "customer"
+                    ? "bg-purple-700 text-white"
+                    : "text-amber-100 hover:bg-white/10"
+                }`}
+              >
+                Cliente
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginKind("employee");
+                  setDocumentInput("");
+                  setError("");
+                }}
+                className={`rounded-lg px-3 py-2 text-sm font-bold transition-colors ${
+                  loginKind === "employee"
+                    ? "bg-purple-700 text-white"
+                    : "text-amber-100 hover:bg-white/10"
+                }`}
+              >
+                Funcionario
+              </button>
+            </div>
+          )}
+
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold text-amber-50">
-              CPF ou CNPJ
+              {mode === "login" && loginKind === "employee"
+                ? "Nome de usuario"
+                : "CPF ou CNPJ"}
             </span>
             <input
               type="text"
               value={documentInput}
               onChange={(event) => {
-                setDocumentInput(formatDocument(event.target.value));
+                setDocumentInput(
+                  mode === "login" && loginKind === "employee"
+                    ? event.target.value
+                    : formatDocument(event.target.value),
+                );
                 setError("");
               }}
-              placeholder="000.000.000-00"
+              placeholder={
+                mode === "login" && loginKind === "employee"
+                  ? "usuario"
+                  : "000.000.000-00"
+              }
               autoComplete="username"
               className="login-input w-full rounded-lg border-2 px-4 py-3 text-base transition-colors focus:outline-none"
             />
@@ -313,7 +389,12 @@ const LoginPage: React.FC = () => {
         <button
           type="button"
           onClick={() => {
-            setMode((current) => (current === "login" ? "register" : "login"));
+            setMode((current) => {
+              const next = current === "login" ? "register" : "login";
+              if (next === "register") setLoginKind("customer");
+              return next;
+            });
+            setDocumentInput("");
             setError("");
           }}
           className="mt-5 w-full text-sm font-semibold text-amber-100 hover:text-white"

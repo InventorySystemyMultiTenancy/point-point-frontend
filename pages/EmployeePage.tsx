@@ -6,7 +6,7 @@ import {
   employeeFetch,
   isEmployeeAuthenticated,
 } from "../services/apiService";
-import logo from "../assets/pointpoint-logo.png";
+import logo from "../assets/pointpointcorrect.jpg";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const API_URL = `${BASE_URL}/api`;

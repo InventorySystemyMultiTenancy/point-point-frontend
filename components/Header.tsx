@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import logo from "../assets/pointpoint-logo.png";
+import logo from "../assets/pointpointcorrect.jpg";
 
 const Header: React.FC = () => {
   const { currentUser, logout } = useAuth();
