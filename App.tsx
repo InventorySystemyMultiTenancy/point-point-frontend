@@ -27,6 +27,7 @@ import Header from "./components/Header";
 import Chatbot from "./components/Chatbot";
 // import InactivityGuard from "./components/InactivityGuard";
 import type { UserRole } from "./types";
+import { isAuthenticated as hasAdminToken } from "./services/apiService";
 
 import OrderDetailPage from "./pages/OrderDetailPage";
 import CustomerOrdersPage from "./pages/CustomerOrdersPage";
@@ -68,6 +69,10 @@ const RoleProtectedRoute: React.FC<{
   }
 
   const userRole = currentUser.role || "customer";
+  if (allowedRoles.includes("admin") && userRole === "admin" && !hasAdminToken()) {
+    return <Navigate to="/admin/login" replace />;
+  }
+
   if (!allowedRoles.includes(userRole)) {
     return <Navigate to={redirectTo} replace />;
   }

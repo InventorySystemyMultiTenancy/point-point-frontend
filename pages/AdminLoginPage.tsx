@@ -12,7 +12,7 @@ const AdminLoginPage: React.FC = () => {
 
   useEffect(() => {
     // Se já está logado como admin, redirecionar
-    if (currentUser?.role === "admin" || isAuthenticated()) {
+    if (currentUser?.role === "admin" && isAuthenticated()) {
       navigate("/admin");
     }
   }, [currentUser, navigate]);

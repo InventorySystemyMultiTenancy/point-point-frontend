@@ -26,6 +26,11 @@ export function addStockMovement(movement: StockMovement) {
   localStorage.setItem(STOCK_MOVEMENTS_KEY, JSON.stringify(list));
 }
 
+export function removeStockMovement(id: string) {
+  const list = getStockMovements().filter((movement) => movement.id !== id);
+  localStorage.setItem(STOCK_MOVEMENTS_KEY, JSON.stringify(list));
+}
+
 export function filterStockMovementsByDate(
   start: string,
   end: string,

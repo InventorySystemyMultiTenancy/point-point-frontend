@@ -85,7 +85,7 @@ const Header: React.FC = () => {
 
             {currentUser?.role === "admin" && !isAdminArea && (
               <NavLink
-                to="/admin"
+                to="/admin/login"
                 className="monster-header-link text-white hover:text-purple-200 transition-colors font-medium"
               >
                 Ir para Admin
@@ -267,7 +267,7 @@ const Header: React.FC = () => {
 
             {currentUser?.role === "admin" && !isAdminArea && (
               <NavLink
-                to="/admin"
+                to="/admin/login"
                 className="text-stone-100 hover:text-[#d2b48c] font-medium"
               >
                 Ir para Admin

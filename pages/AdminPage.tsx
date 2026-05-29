@@ -4,7 +4,13 @@
 // ComentÃ¡rios em portuguÃªs explicam cada parte do cÃ³digo.
 
 import React, { useState, useEffect } from "react";
-import { type StockMovement } from "../utils/stockMovements";
+import {
+  addStockMovement,
+  filterStockMovementsByDate,
+  getStockMovements,
+  removeStockMovement,
+  type StockMovement,
+} from "../utils/stockMovements";
 
 // Modal de movimentaÃ§Ã£o de estoque para mÃºltiplos produtos
 const StockMovementModal: React.FC<{
@@ -533,47 +539,9 @@ const AdminPage: React.FC = () => {
 
   // Busca histÃ³rico do backend
   const loadStockMovements = async (start?: string, end?: string) => {
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
-    try {
-      let url = `${API_URL}/api/admin/stock-movements`;
-      const params = new URLSearchParams();
-      if (start) params.set("start", start);
-      if (end) params.set("end", end);
-      if (params.toString()) url += `?${params.toString()}`;
-      const res = await authenticatedFetch(url);
-      if (res.status === 404) {
-        setStockMovements([]);
-        return;
-      }
-      if (res.ok) {
-        const data = await res.json();
-        // Normaliza para o formato StockMovement esperado pelo template
-        setStockMovements(
-          data.map(
-            (m: {
-              id: number;
-              productId: string;
-              productName: string;
-              quantity: number;
-              type: string;
-              orderId?: string;
-              created_at: string;
-            }) => ({
-              id: String(m.id),
-              productId: m.productId,
-              productName: m.productName,
-              quantity: m.quantity,
-              date: m.created_at,
-              type: m.type,
-              orderId: m.orderId,
-            }),
-          ),
-        );
-      }
-    } catch (e) {
-      console.warn("Historico de movimentacoes indisponivel:", e);
-      setStockMovements([]);
-    }
+    setStockMovements(
+      start && end ? filterStockMovementsByDate(start, end) : getStockMovements(),
+    );
   };
 
   // Atualiza histÃ³rico ao abrir pÃ¡gina ou movimentar
@@ -597,6 +565,13 @@ const AdminPage: React.FC = () => {
           body: JSON.stringify({
             stock: (product.stock || 0) + move.quantity,
           }),
+        });
+        addStockMovement({
+          id: `${move.productId}-${Date.now()}-${Math.random()}`,
+          productId: move.productId,
+          productName: product.name,
+          quantity: move.quantity,
+          date: new Date().toISOString(),
         });
       }
       await loadProducts();
@@ -814,6 +789,7 @@ const AdminPage: React.FC = () => {
       },
     );
     if (response.ok) {
+      removeStockMovement(movement.id);
       await loadProducts();
       await loadStockMovements();
     } else {
