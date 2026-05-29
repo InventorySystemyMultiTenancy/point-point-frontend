@@ -1,12 +1,12 @@
-// Página: /pages/AdminPage.tsx
-// Esta página fornece uma interface administrativa simples para listar,
-// adicionar, editar e remover produtos do "cardápio".
-// Comentários em português explicam cada parte do código.
+﻿// PÃ¡gina: /pages/AdminPage.tsx
+// Esta pÃ¡gina fornece uma interface administrativa simples para listar,
+// adicionar, editar e remover produtos do "cardÃ¡pio".
+// ComentÃ¡rios em portuguÃªs explicam cada parte do cÃ³digo.
 
 import React, { useState, useEffect } from "react";
 import { type StockMovement } from "../utils/stockMovements";
 
-// Modal de movimentação de estoque para múltiplos produtos
+// Modal de movimentaÃ§Ã£o de estoque para mÃºltiplos produtos
 const StockMovementModal: React.FC<{
   products: Product[];
   onClose: () => void;
@@ -44,7 +44,7 @@ const StockMovementModal: React.FC<{
     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
         <h2 className="text-xl font-bold mb-4 text-blue-800">
-          Movimentação de Estoque
+          MovimentaÃ§Ã£o de Estoque
         </h2>
         <form
           onSubmit={(e) => {
@@ -91,7 +91,7 @@ const StockMovementModal: React.FC<{
                   onClick={() => removeRow(idx)}
                   disabled={rows.length === 1}
                 >
-                  ✕
+                  âœ•
                 </button>
               </div>
             ))}
@@ -132,10 +132,10 @@ import {
   type OutsourcedAlert,
 } from "../services/outsourcedServices";
 
-// --- Componente de formulário de produto (Modal) ---
-// Props esperadas pelo formulário:
+// --- Componente de formulÃ¡rio de produto (Modal) ---
+// Props esperadas pelo formulÃ¡rio:
 interface ProductFormProps {
-  product: Product | null; // produto que será editado (null para novo)
+  product: Product | null; // produto que serÃ¡ editado (null para novo)
   onSave: (product: Product) => void; // callback ao salvar
   onCancel: () => void; // callback ao cancelar/fechar
 }
@@ -145,7 +145,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   onSave,
   onCancel,
 }) => {
-  // Estado local do formulário. Usamos Omit para não incluir 'id' e 'imageUrl'
+  // Estado local do formulÃ¡rio. Usamos Omit para nÃ£o incluir 'id' e 'imageUrl'
   // no tipo inicial, mas permitimos opcionalmente 'id' enquanto editamos.
   const [formData, setFormData] = useState<
     Omit<Product, "id"> & { id?: string }
@@ -153,7 +153,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     name: "",
     price: 0,
     priceRaw: 0,
-    category: "Pelúcia",
+    category: "PelÃºcia",
     imageUrl: "",
     stock: 0,
     minStock: 0,
@@ -161,10 +161,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
   });
   const [imageUrls, setImageUrls] = useState<string[]>([""]);
 
-  // 🆕 Estado para categorias dinâmicas
+  // ðŸ†• Estado para categorias dinÃ¢micas
   const [categories, setCategories] = useState<Array<{ name: string }>>([]);
 
-  // 🆕 Carrega categorias ao montar componente
+  // ðŸ†• Carrega categorias ao montar componente
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -173,9 +173,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
         if (data.length > 0) {
           setCategories(data);
         } else {
-          // Fallback caso não haja categorias
+          // Fallback caso nÃ£o haja categorias
           setCategories([
-            { name: "Pelúcia" },
+            { name: "PelÃºcia" },
             { name: "Bebida" },
             { name: "Doce" },
           ]);
@@ -184,19 +184,19 @@ const ProductForm: React.FC<ProductFormProps> = ({
         console.error("Erro ao carregar categorias:", error);
         // Fallback em caso de erro
         setCategories([
-          { name: "Pelúcia" },
+          { name: "PelÃºcia" },
           { name: "Bebida" },
           { name: "Doce" },
         ]);
         setCategories([
-          { name: "Pelúcia Ursinho" },
-          { name: "Pelúcia Coelho" },
-          { name: "Pelúcia Unicórnio" },
-          { name: "Acessórios" },
-          { name: "Colecionáveis" },
+          { name: "PelÃºcia Ursinho" },
+          { name: "PelÃºcia Coelho" },
+          { name: "PelÃºcia UnicÃ³rnio" },
+          { name: "AcessÃ³rios" },
+          { name: "ColecionÃ¡veis" },
         ]);
         setCategories([
-          { name: "Pelúcia" },
+          { name: "PelÃºcia" },
           { name: "Bebida" },
           { name: "Doce" },
         ]);
@@ -205,7 +205,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     loadCategories();
   }, []);
 
-  // Quando o prop `product` muda (por ex. abrir para editar), preenche o formulário.
+  // Quando o prop `product` muda (por ex. abrir para editar), preenche o formulÃ¡rio.
   useEffect(() => {
     if (product) {
       const existingImages =
@@ -225,7 +225,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         name: "",
         price: 0,
         priceRaw: 0,
-        category: categories.length > 0 ? categories[0].name : "Pelúcia",
+        category: categories.length > 0 ? categories[0].name : "PelÃºcia",
         imageUrl: "",
         stock: 0,
         minStock: 0,
@@ -235,14 +235,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
     }
   }, [product, categories]);
 
-  // Atualiza campos do formulário. Convertendo price para número quando necessário.
+  // Atualiza campos do formulÃ¡rio. Convertendo price para nÃºmero quando necessÃ¡rio.
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >,
   ) => {
     const { name, value } = e.target;
-    // Se for o campo 'price' ou 'stock', converte para número; caso contrário mantém string.
+    // Se for o campo 'price' ou 'stock', converte para nÃºmero; caso contrÃ¡rio mantÃ©m string.
     setFormData((prev) => ({
       ...prev,
       [name]:
@@ -295,7 +295,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     // Modal em tela cheia com fundo escuro semitransparente
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start sm:items-center z-50 overflow-y-auto p-2 sm:p-4">
       <div className="bg-white p-4 sm:p-8 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        {/* Título muda conforme edição ou criação */}
+        {/* TÃ­tulo muda conforme ediÃ§Ã£o ou criaÃ§Ã£o */}
         <h2 className="text-2xl font-bold mb-6 text-blue-800">
           {product ? "Editar Produto" : "Adicionar Produto"}
         </h2>
@@ -323,7 +323,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 htmlFor="price"
                 className="block text-sm font-medium text-stone-700"
               >
-                Preço de Venda
+                PreÃ§o de Venda
               </label>
               <input
                 type="number"
@@ -341,7 +341,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 htmlFor="priceRaw"
                 className="block text-sm font-medium text-stone-700"
               >
-                Preço Bruto
+                PreÃ§o Bruto
               </label>
               <input
                 type="number"
@@ -378,11 +378,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   ))
                 ) : (
                   <>
-                    <option>Pelúcia Ursinho</option>
-                    <option>Pelúcia Coelho</option>
-                    <option>Pelúcia Unicórnio</option>
-                    <option>Acessórios</option>
-                    <option>Colecionáveis</option>
+                    <option>PelÃºcia Ursinho</option>
+                    <option>PelÃºcia Coelho</option>
+                    <option>PelÃºcia UnicÃ³rnio</option>
+                    <option>AcessÃ³rios</option>
+                    <option>ColecionÃ¡veis</option>
                   </>
                 )}
               </select>
@@ -392,7 +392,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 htmlFor="minStock"
                 className="block text-sm font-medium text-stone-700"
               >
-                Estoque Mínimo
+                Estoque MÃ­nimo
               </label>
               <input
                 type="number"
@@ -447,7 +447,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               + Adicionar outra imagem
             </button>
             <p className="mt-1 text-xs text-stone-500">
-              A primeira URL será a imagem principal do produto.
+              A primeira URL serÃ¡ a imagem principal do produto.
             </p>
           </div>
           <div>
@@ -468,7 +468,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-amber-500 focus:ring-amber-500"
             />
             <p className="mt-1 text-xs text-stone-500">
-              Quantidade disponível em estoque
+              Quantidade disponÃ­vel em estoque
             </p>
           </div>
           <div>
@@ -489,12 +489,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
               className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
             />
             <p className="mt-1 text-xs text-stone-500">
-              Exemplo: venda de 30 em 30, 15 em 15, etc. O cliente só pode
-              comprar múltiplos dessa quantidade.
+              Exemplo: venda de 30 em 30, 15 em 15, etc. O cliente sÃ³ pode
+              comprar mÃºltiplos dessa quantidade.
             </p>
           </div>
           <div className="flex justify-end gap-4 pt-4">
-            {/* Botão cancelar fecha o modal sem salvar */}
+            {/* BotÃ£o cancelar fecha o modal sem salvar */}
             <button
               type="button"
               onClick={onCancel}
@@ -502,7 +502,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
             >
               Cancelar
             </button>
-            {/* Botão salvar submete o formulário */}
+            {/* BotÃ£o salvar submete o formulÃ¡rio */}
             <button
               type="submit"
               className="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700"
@@ -516,22 +516,22 @@ const ProductForm: React.FC<ProductFormProps> = ({
   );
 };
 
-// --- Componente principal da página administrativa ---
+// --- Componente principal da pÃ¡gina administrativa ---
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
 
-  // Estado que contém a lista de produtos exibida na tabela
+  // Estado que contÃ©m a lista de produtos exibida na tabela
   const [menu, setMenu] = useState<Product[]>([]);
-  // Modal de movimentação de estoque
+  // Modal de movimentaÃ§Ã£o de estoque
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
-  // Histórico de movimentações (backend)
+  // HistÃ³rico de movimentaÃ§Ãµes (backend)
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
-  // Filtro de datas para histórico
+  // Filtro de datas para histÃ³rico
   const [filterStart, setFilterStart] = useState("");
   const [filterEnd, setFilterEnd] = useState("");
 
-  // Busca histórico do backend
+  // Busca histÃ³rico do backend
   const loadStockMovements = async (start?: string, end?: string) => {
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
     try {
@@ -541,6 +541,10 @@ const AdminPage: React.FC = () => {
       if (end) params.set("end", end);
       if (params.toString()) url += `?${params.toString()}`;
       const res = await authenticatedFetch(url);
+      if (res.status === 404) {
+        setStockMovements([]);
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         // Normaliza para o formato StockMovement esperado pelo template
@@ -567,16 +571,17 @@ const AdminPage: React.FC = () => {
         );
       }
     } catch (e) {
-      console.error("Erro ao carregar movimentações de estoque:", e);
+      console.warn("Historico de movimentacoes indisponivel:", e);
+      setStockMovements([]);
     }
   };
 
-  // Atualiza histórico ao abrir página ou movimentar
+  // Atualiza histÃ³rico ao abrir pÃ¡gina ou movimentar
   useEffect(() => {
     loadStockMovements();
   }, [isStockModalOpen]);
 
-  // Lida com movimentação de estoque
+  // Lida com movimentaÃ§Ã£o de estoque
   const handleStockMovement = async (
     movements: { productId: string; quantity: number }[],
   ) => {
@@ -598,18 +603,18 @@ const AdminPage: React.FC = () => {
       await loadStockMovements();
       setIsStockModalOpen(false);
     } catch (err) {
-      alert("Erro ao processar movimentações");
+      alert("Erro ao processar movimentaÃ§Ãµes");
     }
   };
-  // Controla se o modal de formulário está aberto
+  // Controla se o modal de formulÃ¡rio estÃ¡ aberto
   const [isFormOpen, setIsFormOpen] = useState(false);
   // Produto atual sendo editado (ou null para criar novo)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  // Estados para análise de IA
+  // Estados para anÃ¡lise de IA
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
-  // Estados para estatísticas
+  // Estados para estatÃ­sticas
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalOrders: 0,
@@ -628,7 +633,7 @@ const AdminPage: React.FC = () => {
     loadOutsourcedAlerts();
   }, []);
 
-  // Busca o total de pedidos dos últimos 30 dias
+  // Busca o total de pedidos dos Ãºltimos 30 dias
   const loadOutsourcedAlerts = async () => {
     try {
       const data = await getOutsourcedServiceAlerts();
@@ -661,21 +666,21 @@ const AdminPage: React.FC = () => {
       const data = await res.json();
       setMenu(data);
 
-      // Calcula estatísticas
+      // Calcula estatÃ­sticas
       setStats({
         totalProducts: data.length,
-        totalOrders: 0, // Será atualizado pela análise de IA
+        totalOrders: 0, // SerÃ¡ atualizado pela anÃ¡lise de IA
         lowStock: data.filter(
           (p: Product) => p.stock !== null && p.stock > 0 && p.stock <= 5,
         ).length,
         outOfStock: data.filter((p: Product) => p.stock === 0).length,
       });
     } catch (err) {
-      console.error("Erro ao carregar cardápio:", err);
+      console.error("Erro ao carregar cardÃ¡pio:", err);
     }
   };
 
-  // Gerar análise de IA
+  // Gerar anÃ¡lise de IA
   const handleGenerateAnalysis = async () => {
     setIsLoadingAnalysis(true);
     setShowAnalysis(true);
@@ -687,7 +692,7 @@ const AdminPage: React.FC = () => {
 
       if (data.success) {
         setAiAnalysis(data.analysis);
-        // Atualiza estatísticas com dados do backend
+        // Atualiza estatÃ­sticas com dados do backend
         if (data.summary) {
           setStats((prev) => ({
             ...prev,
@@ -696,26 +701,26 @@ const AdminPage: React.FC = () => {
         }
       } else {
         setAiAnalysis(
-          "❌ Erro ao gerar análise: " + (data.error || "Erro desconhecido"),
+          "âŒ Erro ao gerar anÃ¡lise: " + (data.error || "Erro desconhecido"),
         );
       }
     } catch (error) {
-      console.error("Erro ao gerar análise:", error);
+      console.error("Erro ao gerar anÃ¡lise:", error);
       setAiAnalysis(
-        "❌ Erro ao comunicar com o servidor. Verifique se a API está disponível.",
+        "âŒ Erro ao comunicar com o servidor. Verifique se a API estÃ¡ disponÃ­vel.",
       );
     } finally {
       setIsLoadingAnalysis(false);
     }
   };
 
-  // Trata salvar (tanto criação quanto edição)
+  // Trata salvar (tanto criaÃ§Ã£o quanto ediÃ§Ã£o)
   const handleSaveProduct = async (product: Product) => {
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
     try {
       if (editingProduct) {
-        // PUT para edição
+        // PUT para ediÃ§Ã£o
         const response = await authenticatedFetch(
           `${API_URL}/api/products/${product.id}`,
           {
@@ -732,7 +737,7 @@ const AdminPage: React.FC = () => {
           return;
         }
       } else {
-        // POST para criação
+        // POST para criaÃ§Ã£o
         const response = await authenticatedFetch(`${API_URL}/api/products`, {
           method: "POST",
           body: JSON.stringify(product),
@@ -747,7 +752,7 @@ const AdminPage: React.FC = () => {
         }
       }
 
-      // Fecha o modal e reseta o estado de edição
+      // Fecha o modal e reseta o estado de ediÃ§Ã£o
       setIsFormOpen(false);
       setEditingProduct(null);
     } catch (error) {
@@ -758,7 +763,7 @@ const AdminPage: React.FC = () => {
 
   // Remove um produto pela id via API
   const handleDeleteProduct = async (productId: string) => {
-    // Confirmação simples antes de remover
+    // ConfirmaÃ§Ã£o simples antes de remover
     if (window.confirm("Tem certeza que deseja remover este produto?")) {
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -783,21 +788,21 @@ const AdminPage: React.FC = () => {
     }
   };
 
-  // Deleta movimentação e reverte estoque (apenas ajustes manuais)
+  // Deleta movimentaÃ§Ã£o e reverte estoque (apenas ajustes manuais)
   const handleDeleteMovement = async (movement: StockMovement) => {
     const movType = (movement as StockMovement & { type?: string }).type;
     if (movType === "sale") {
       alert(
-        "Não é possível excluir movimentações de venda. Cancele o pedido correspondente.",
+        "NÃ£o Ã© possÃ­vel excluir movimentaÃ§Ãµes de venda. Cancele o pedido correspondente.",
       );
       return;
     }
     if (
-      !window.confirm("Deseja remover esta movimentação e reverter o estoque?")
+      !window.confirm("Deseja remover esta movimentaÃ§Ã£o e reverter o estoque?")
     )
       return;
     const product = menu.find((p) => p.id === movement.productId);
-    if (!product) return alert("Produto não encontrado.");
+    if (!product) return alert("Produto nÃ£o encontrado.");
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
     const response = await authenticatedFetch(
       `${API_URL}/api/products/${movement.productId}`,
@@ -818,7 +823,7 @@ const AdminPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-2 sm:p-4 md:p-6">
-      {/* Cabeçalho */}
+      {/* CabeÃ§alho */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-4xl font-bold text-blue-800">
           Painel Administrativo
@@ -828,9 +833,9 @@ const AdminPage: React.FC = () => {
             onClick={() => setIsStockModalOpen(true)}
             className="bg-amber-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-amber-600 transition-colors shadow-md"
           >
-            Movimentação Estoque
+            MovimentaÃ§Ã£o Estoque
           </button>
-          {/* Modal de movimentação de estoque */}
+          {/* Modal de movimentaÃ§Ã£o de estoque */}
           {isStockModalOpen && (
             <StockMovementModal
               products={menu}
@@ -838,32 +843,32 @@ const AdminPage: React.FC = () => {
               onMovement={handleStockMovement}
             />
           )}
-          {/* Histórico de movimentações de estoque */}
+          {/* HistÃ³rico de movimentaÃ§Ãµes de estoque */}
           <div className="mt-12"></div>
           <button
             onClick={() => navigate("/admin/categories")}
             className="bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-colors shadow-md"
           >
-            📂 Categorias
+            ðŸ“‚ Categorias
           </button>
           <button
             onClick={() => navigate("/admin/outsourced-services")}
             className="bg-stone-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-stone-800 transition-colors shadow-md"
           >
-            Serviços Terceirizados
+            ServiÃ§os Terceirizados
           </button>
           <button
             onClick={() => navigate("/historico")}
             className="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-colors shadow-md"
           >
-            📋 Histórico de Pedidos
+            ðŸ“‹ HistÃ³rico de Pedidos
           </button>
           <button
             onClick={handleGenerateAnalysis}
             disabled={isLoadingAnalysis}
             className="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors shadow-md disabled:bg-indigo-300 flex items-center gap-2"
           >
-            {isLoadingAnalysis ? "⏳ Analisando..." : "🤖 Análise com IA"}
+            {isLoadingAnalysis ? "â³ Analisando..." : "ðŸ¤– AnÃ¡lise com IA"}
           </button>
           <button
             onClick={() => {
@@ -883,18 +888,18 @@ const AdminPage: React.FC = () => {
             }}
             className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md"
           >
-            🚪 Sair
+            ðŸšª Sair
           </button>
         </div>
       </div>
 
-      {/* Cards de Estatísticas */}
+      {/* Cards de EstatÃ­sticas */}
       {outsourcedAlerts.length > 0 && (
         <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-5 shadow">
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-bold text-red-800">
-                Serviços terceirizados atrasados
+                ServiÃ§os terceirizados atrasados
               </h2>
               <p className="text-sm text-red-700">
                 Existem entregas fora do prazo aguardando retorno.
@@ -904,7 +909,7 @@ const AdminPage: React.FC = () => {
               onClick={() => navigate("/admin/outsourced-services")}
               className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700"
             >
-              Ver serviços
+              Ver serviÃ§os
             </button>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
@@ -917,7 +922,7 @@ const AdminPage: React.FC = () => {
                   {alert.company_name}
                 </div>
                 <div className="text-sm text-stone-600">
-                  {alert.service_type_label || alert.service_type || "Serviço"}
+                  {alert.service_type_label || alert.service_type || "ServiÃ§o"}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-3 text-sm">
                   <span className="font-semibold text-red-700">
@@ -961,18 +966,18 @@ const AdminPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Área de Análise da IA */}
+      {/* Ãrea de AnÃ¡lise da IA */}
       {showAnalysis && (
         <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-xl shadow-lg mb-6 border border-purple-200">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-purple-800 flex items-center gap-2">
-              🤖 Análise Inteligente de Estoque
+              ðŸ¤– AnÃ¡lise Inteligente de Estoque
             </h2>
             <button
               onClick={() => setShowAnalysis(false)}
               className="text-stone-500 hover:text-stone-700"
             >
-              ✕
+              âœ•
             </button>
           </div>
           {isLoadingAnalysis ? (
@@ -989,7 +994,7 @@ const AdminPage: React.FC = () => {
         </div>
       )}
 
-      {/* Renderiza o formulário/modal condicionalmente */}
+      {/* Renderiza o formulÃ¡rio/modal condicionalmente */}
       {isFormOpen && (
         <ProductForm
           product={editingProduct}
@@ -1001,9 +1006,9 @@ const AdminPage: React.FC = () => {
         />
       )}
 
-      {/* Seção de Gerenciamento de Produtos */}
+      {/* SeÃ§Ã£o de Gerenciamento de Produtos */}
       <h2 className="text-2xl font-bold text-stone-800 mb-4">
-        📦 Gerenciar Produtos
+        ðŸ“¦ Gerenciar Produtos
       </h2>
 
       {/* Tabela que lista os produtos */}
@@ -1027,7 +1032,7 @@ const AdminPage: React.FC = () => {
                 scope="col"
                 className="px-2 sm:px-4 py-2 text-left font-medium text-stone-500 uppercase tracking-wider"
               >
-                Preço
+                PreÃ§o
               </th>
               <th
                 scope="col"
@@ -1036,7 +1041,7 @@ const AdminPage: React.FC = () => {
                 Estoque
               </th>
               <th scope="col" className="relative px-2 sm:px-4 py-2">
-                <span className="sr-only">Ações</span>
+                <span className="sr-only">AÃ§Ãµes</span>
               </th>
             </tr>
           </thead>
@@ -1149,7 +1154,7 @@ const AdminPage: React.FC = () => {
       </div>
       <div className="mt-16 bg-white rounded-2xl shadow-lg px-6 py-8 mb-8">
         <h2 className="text-2xl font-bold text-stone-800 mb-6">
-          Histórico de Movimentações de Estoque
+          HistÃ³rico de MovimentaÃ§Ãµes de Estoque
         </h2>
         <div className="flex flex-wrap gap-4 mb-6 items-end">
           <div>
@@ -1162,7 +1167,7 @@ const AdminPage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium mb-1">Até</label>
+            <label className="block text-xs font-medium mb-1">AtÃ©</label>
             <input
               type="date"
               value={filterEnd}
@@ -1210,7 +1215,7 @@ const AdminPage: React.FC = () => {
                     colSpan={5}
                     className="p-6 text-center text-stone-500 text-base"
                   >
-                    Nenhuma movimentação registrada.
+                    Nenhuma movimentaÃ§Ã£o registrada.
                   </td>
                 </tr>
               ) : (
@@ -1224,7 +1229,7 @@ const AdminPage: React.FC = () => {
                       : movType === "cancel"
                         ? "Cancelamento"
                         : movType === "return"
-                          ? "Devolução"
+                          ? "DevoluÃ§Ã£o"
                           : "Ajuste manual";
                   return (
                     <tr key={m.id}>
@@ -1263,3 +1268,4 @@ const AdminPage: React.FC = () => {
 };
 
 export default AdminPage;
+

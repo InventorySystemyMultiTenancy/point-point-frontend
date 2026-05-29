@@ -3,6 +3,7 @@ import "../assets/animated-gradient.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
+import { saveToken } from "../services/apiService";
 import type { User } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -84,7 +85,27 @@ const LoginPage: React.FC = () => {
     if (currentUser) navigate("/menu");
   }, [currentUser, navigate]);
 
-  const handleLoginSuccess = (user: User) => {
+  const ensureAdminToken = async (user: User, apiToken?: string) => {
+    if (apiToken) {
+      saveToken(apiToken);
+      return;
+    }
+
+    if (user.role !== "admin") return;
+
+    const response = await fetch(`${API_URL}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role: "admin", password: password.trim() }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (response.ok && data.token) {
+      saveToken(data.token);
+    }
+  };
+
+  const handleLoginSuccess = async (user: User, apiToken?: string) => {
+    await ensureAdminToken(user, apiToken);
     clearCart();
     login(user);
     navigate("/menu");
@@ -118,7 +139,7 @@ const LoginPage: React.FC = () => {
       });
       const data = await response.json().catch(() => ({}));
       if (response.ok && data.user) {
-        handleLoginSuccess(data.user);
+        await handleLoginSuccess(data.user, data.token);
         return;
       }
       setError(data.error || data.message || "CPF/CNPJ ou senha incorretos.");
@@ -156,7 +177,7 @@ const LoginPage: React.FC = () => {
       });
       const data = await response.json().catch(() => ({}));
       if (response.ok && data.user) {
-        handleLoginSuccess(data.user);
+        await handleLoginSuccess(data.user, data.token);
         return;
       }
       setError(data.error || data.message || "Erro ao cadastrar.");

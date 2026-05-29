@@ -23,7 +23,7 @@ export function getToken(): string | null {
 /**
  * Salva o token JWT no localStorage.
  */
-function saveToken(token: string): void {
+export function saveToken(token: string): void {
   localStorage.setItem("jwt_token", token);
 }
 
@@ -116,6 +116,13 @@ export async function login(
     }
 
     const data = await response.json();
+    const products = Array.isArray(data)
+      ? data
+      : Array.isArray(data.products)
+        ? data.products
+        : Array.isArray(data.data)
+          ? data.data
+          : [];
     if (data.success && data.token) {
       // Salva o token no localStorage
       saveToken(data.token);
@@ -165,10 +172,11 @@ export async function authenticatedFetch(
     console.error("Acesso negado. Token inválido ou expirado.");
     logout();
     // Redireciona para a página de login (se necessário)
-    if (window.location.pathname.includes("/admin")) {
-      window.location.href = "/admin/login";
-    } else if (window.location.pathname.includes("/kitchen")) {
-      window.location.href = "/kitchen/login";
+    const route = `${window.location.pathname}${window.location.hash}`;
+    if (route.includes("/admin")) {
+      window.location.hash = "#/admin/login";
+    } else if (route.includes("/kitchen") || route.includes("/cozinha")) {
+      window.location.hash = "#/kitchen/login";
     }
     throw new Error("Acesso não autorizado");
   }
@@ -199,7 +207,7 @@ export async function publicFetch(
 // Produtos (Admin)
 export async function getProducts() {
   try {
-    const response = await publicFetch(`${API_URL}/menu`);
+    const response = await publicFetch(`${API_URL}/products`);
 
     // ✅ Verifica se a resposta foi bem-sucedida
     if (!response.ok) {
@@ -214,12 +222,12 @@ export async function getProducts() {
     const data = await response.json();
 
     // ✅ Valida se é array
-    if (!Array.isArray(data)) {
+    if (!Array.isArray(products)) {
       console.error("❌ Backend retornou dados inválidos (não é array):", data);
       return [];
     }
 
-    return data;
+    return products;
   } catch (error) {
     console.error("❌ Erro ao buscar produtos:", error);
     return []; // ✅ Retorna array vazio em caso de erro
