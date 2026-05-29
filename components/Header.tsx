@@ -30,10 +30,12 @@ const Header: React.FC = () => {
 
   const adminLinks = (
     <>
-      <NavLink to="/admin" className={linkClass}>Produtos</NavLink>
-      <NavLink to="/admin/management-report" className={linkClass}>Relatório Gestão</NavLink>
-      <NavLink to="/admin/outsourced-services" className={linkClass}>SERVIÇOS TERCEIRIZADOS</NavLink>
-      <NavLink to="/admin/reports" className={linkClass}>Relatórios IA</NavLink>
+      <NavLink to="/admin" className={linkClass}>
+        Painel Administrativo
+      </NavLink>
+      <NavLink to="/admin/management-report" className={linkClass}>
+        Relatório Gestão
+      </NavLink>
       <NavLink
         to="/superadmin/login"
         className="monster-header-action bg-purple-700 text-white font-bold py-1 px-4 rounded-lg ml-2 hover:bg-purple-800 transition-colors shadow-md superadmin-btn"
@@ -46,11 +48,15 @@ const Header: React.FC = () => {
 
   const mobileAdminLinks = (
     <>
-      <NavLink to="/admin" className={mobileLinkClass}>Produtos</NavLink>
-      <NavLink to="/admin/management-report" className={mobileLinkClass}>Relatório Gestão</NavLink>
-      <NavLink to="/admin/outsourced-services" className={mobileLinkClass}>SERVIÇOS TERCEIRIZADOS</NavLink>
-      <NavLink to="/admin/reports" className={mobileLinkClass}>Relatórios IA</NavLink>
-      <NavLink to="/superadmin/login" className={mobileLinkClass}>SuperAdmin</NavLink>
+      <NavLink to="/admin" className={mobileLinkClass}>
+        Painel Administrativo
+      </NavLink>
+      <NavLink to="/admin/management-report" className={mobileLinkClass}>
+        Relatório Gestão
+      </NavLink>
+      <NavLink to="/superadmin/login" className={mobileLinkClass}>
+        SuperAdmin
+      </NavLink>
     </>
   );
 
