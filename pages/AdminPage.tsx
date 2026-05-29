@@ -525,7 +525,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
 // --- Componente principal da página administrativa ---
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { adminLogout } = useAuth();
 
   // Estado que contém a lista de produtos exibida na tabela
   const [menu, setMenu] = useState<Product[]>([]);
@@ -850,7 +850,7 @@ const AdminPage: React.FC = () => {
           <button
             onClick={async () => {
               if (window.confirm("Deseja realmente sair?")) {
-                await logout();
+                await adminLogout();
                 navigate("/admin/login");
               }
             }}

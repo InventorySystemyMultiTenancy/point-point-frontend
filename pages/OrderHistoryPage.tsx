@@ -14,7 +14,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 const OrderHistoryPage: React.FC = () => {
   const navigate = useNavigate();
-  const { logout, currentUser } = useAuth();
+  const { logout, adminLogout, currentUser, currentAdmin } = useAuth();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +23,7 @@ const OrderHistoryPage: React.FC = () => {
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
 
   const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = currentAdmin?.role === "admin";
 
   const getErrorMessageByStatus = (status?: number) => {
     if (status === 401 || status === 403) {
@@ -121,7 +121,8 @@ const OrderHistoryPage: React.FC = () => {
         <button
           onClick={async () => {
             if (window.confirm("Deseja realmente sair?")) {
-              await logout();
+              if (isAdmin) await adminLogout();
+              else await logout();
               navigate("/admin/login");
             }
           }}

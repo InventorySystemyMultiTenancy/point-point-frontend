@@ -6,18 +6,23 @@ import Chatbot from "./Chatbot";
 import logo from "../assets/pointpoint-logo.png";
 
 const Header: React.FC = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, currentAdmin, logout, adminLogout } = useAuth();
   const { store } = useStore(); // 🏪 Obtém configurações da loja
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isAdminArea = location.pathname.startsWith("/admin");
 
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location.pathname]);
 
   const handleLogout = () => {
-    logout();
+    if (isAdminArea && currentAdmin) {
+      adminLogout();
+    } else {
+      logout();
+    }
     setIsMenuOpen(false);
     navigate("/");
   };
@@ -34,7 +39,7 @@ const Header: React.FC = () => {
           {/* Logo e Chatbot lado a lado no mobile */}
           <div className="flex items-center gap-2 relative">
             <NavLink
-              to={currentUser ? "/menu" : "/"}
+              to="/"
               className="flex items-center gap-2 group"
             >
               <img
@@ -85,7 +90,7 @@ const Header: React.FC = () => {
               </NavLink>
             )}
 
-            {currentUser?.role === "admin" && (
+            {isAdminArea && currentAdmin?.role === "admin" && (
               <>
                 <NavLink
                   to="/admin"
@@ -156,7 +161,7 @@ const Header: React.FC = () => {
 
             {/* Área do Usuário (Direita) */}
             <div className="flex items-center gap-4 max-[1100px]:hidden">
-              {currentUser ? (
+              {currentUser || (isAdminArea && currentAdmin) ? (
                 <>
                   {/* Chatbot só desktop aqui */}
                   <span className="hidden md:block">
@@ -170,7 +175,7 @@ const Header: React.FC = () => {
                         className="text-sm font-bold max-w-[100px] truncate"
                         style={{ color: "orange" }}
                       >
-                        {currentUser.name}
+                        {(isAdminArea ? currentAdmin : null || currentUser)?.name}
                       </p>
                     </div>
                     <button
@@ -269,7 +274,7 @@ const Header: React.FC = () => {
               </NavLink>
             )}
 
-            {currentUser?.role === "admin" && (
+            {isAdminArea && currentAdmin?.role === "admin" && (
               <>
                 <NavLink
                   to="/admin"
@@ -304,13 +309,13 @@ const Header: React.FC = () => {
               </>
             )}
 
-            {currentUser ? (
+            {currentUser || (isAdminArea && currentAdmin) ? (
               <>
                 <div className="h-px bg-stone-200 my-1" />
                 <p className="text-sm text-stone-500">
                   Olá,{" "}
                   <span className="font-bold text-stone-700">
-                    {currentUser.name}
+                    {(isAdminArea ? currentAdmin : null || currentUser)?.name}
                   </span>
                 </p>
                 <button

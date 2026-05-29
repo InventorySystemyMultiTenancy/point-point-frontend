@@ -27,6 +27,7 @@ import Header from "./components/Header";
 import Chatbot from "./components/Chatbot";
 // import InactivityGuard from "./components/InactivityGuard";
 import type { UserRole } from "./types";
+import { isAuthenticated as hasAdminToken } from "./services/apiService";
 
 import OrderDetailPage from "./pages/OrderDetailPage";
 import CustomerOrdersPage from "./pages/CustomerOrdersPage";
@@ -52,9 +53,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   if (currentUser.role === "kitchen") {
     return <Navigate to="/cozinha" replace />;
   }
-  if (currentUser.role === "admin") {
-    return <Navigate to="/admin" replace />;
-  }
   return <>{children}</>;
 };
 
@@ -64,13 +62,26 @@ const RoleProtectedRoute: React.FC<{
   allowedRoles: UserRole[];
   redirectTo?: string;
 }> = ({ children, allowedRoles, redirectTo = "/login" }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, currentAdmin } = useAuth();
+
+  const userRole = currentUser?.role || "customer";
+  if (currentUser && userRole !== "admin" && allowedRoles.includes(userRole)) {
+    return <>{children}</>;
+  }
+
+  if (allowedRoles.includes("admin")) {
+    if (!hasAdminToken()) {
+      return <Navigate to={redirectTo} replace />;
+    }
+    if (currentAdmin?.role === "admin" || hasAdminToken()) {
+      return <>{children}</>;
+    }
+  }
 
   if (!currentUser) {
     return <Navigate to={redirectTo} replace />;
   }
 
-  const userRole = currentUser.role || "customer";
   if (!allowedRoles.includes(userRole)) {
     return <Navigate to={redirectTo} replace />;
   }
@@ -103,7 +114,6 @@ const App: React.FC = () => {
 const RouterBody: React.FC = () => {
   const location = useLocation();
   const isLoginRoute =
-    location.pathname === "/" ||
     location.pathname === "/login" ||
     location.pathname === "/admin/login";
   const { store, loading, error } = useStore(); // 🏪 MULTI-TENANT
@@ -147,18 +157,14 @@ const RouterBody: React.FC = () => {
               </RoleProtectedRoute>
             }
           />
-          <Route path="/" element={<LoginPage />} />
+          <Route path="/" element={<MenuPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
           {/* Rota protegida para clientes */}
           <Route
             path="/menu"
-            element={
-              <ProtectedRoute>
-                <MenuPage />
-              </ProtectedRoute>
-            }
+            element={<MenuPage />}
           />
 
           {/* Rota protegida para pagamento */}

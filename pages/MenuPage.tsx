@@ -670,7 +670,11 @@ const MenuPage: React.FC = () => {
   }, [cartItems, menu, currentUser]);
 
   const handleCheckout = () => {
-    if (!currentUser || cartItems.length === 0) return;
+    if (cartItems.length === 0) return;
+    if (!currentUser) {
+      navigate("/login");
+      return;
+    }
     navigate("/payment");
   };
 
