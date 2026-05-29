@@ -23,11 +23,16 @@ import AdminReportsPage from "./pages/AdminReportsPage";
 import AdminManagementReportPage from "./pages/AdminManagementReportPage";
 import AdminOutsourcedServicesPage from "./pages/AdminOutsourcedServicesPage";
 import AdminCategoriesPage from "./pages/AdminCategoriesPage"; // 🆕
+import EmployeeLoginPage from "./pages/EmployeeLoginPage";
+import EmployeePage from "./pages/EmployeePage";
 import Header from "./components/Header";
 import Chatbot from "./components/Chatbot";
 // import InactivityGuard from "./components/InactivityGuard";
 import type { UserRole } from "./types";
-import { isAuthenticated as hasAdminToken } from "./services/apiService";
+import {
+  isAuthenticated as hasAdminToken,
+  isEmployeeAuthenticated,
+} from "./services/apiService";
 
 import OrderDetailPage from "./pages/OrderDetailPage";
 import CustomerOrdersPage from "./pages/CustomerOrdersPage";
@@ -108,11 +113,14 @@ const RouterBody: React.FC = () => {
   const isLoginRoute =
     location.pathname === "/" ||
     location.pathname === "/login" ||
-    location.pathname === "/register";
+    location.pathname === "/register" ||
+    location.pathname === "/employee/login";
+  const isEmployeeRoute = location.pathname.startsWith("/employee");
   const isFullBleedRoute = isLoginRoute || location.pathname === "/menu";
   const isAdminThemeRoute =
     location.pathname.startsWith("/admin") ||
-    location.pathname.startsWith("/superadmin");
+    location.pathname.startsWith("/superadmin") ||
+    isEmployeeRoute;
   const isCheckoutThemeRoute = location.pathname === "/payment";
   const mainClassName = isFullBleedRoute
     ? "bg-[#3b2418]"
@@ -142,7 +150,7 @@ const RouterBody: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-100 text-stone-800">
       {/* <InactivityGuard /> */}
-      {!isLoginRoute && <Header />}
+      {!isLoginRoute && !isEmployeeRoute && <Header />}
       <main
         className={mainClassName}
         style={
@@ -168,6 +176,17 @@ const RouterBody: React.FC = () => {
           <Route path="/" element={<LoginPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/employee/login" element={<EmployeeLoginPage />} />
+          <Route
+            path="/employee"
+            element={
+              isEmployeeAuthenticated() ? (
+                <EmployeePage />
+              ) : (
+                <Navigate to="/employee/login" replace />
+              )
+            }
+          />
 
           {/* Rota protegida para clientes */}
           <Route

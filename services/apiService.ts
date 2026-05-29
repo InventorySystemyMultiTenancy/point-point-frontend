@@ -27,6 +27,30 @@ export function saveToken(token: string): void {
   localStorage.setItem("jwt_token", token);
 }
 
+export function getSuperAdminToken(): string | null {
+  return localStorage.getItem("superAdminToken");
+}
+
+export function saveSuperAdminToken(token: string): void {
+  localStorage.setItem("superAdminToken", token);
+}
+
+export function clearSuperAdminToken(): void {
+  localStorage.removeItem("superAdminToken");
+}
+
+export function getEmployeeToken(): string | null {
+  return localStorage.getItem("employeeToken");
+}
+
+export function saveEmployeeToken(token: string): void {
+  localStorage.setItem("employeeToken", token);
+}
+
+export function clearEmployeeToken(): void {
+  localStorage.removeItem("employeeToken");
+}
+
 /**
  * Remove o token JWT do localStorage.
  */
@@ -116,16 +140,12 @@ export async function login(
     }
 
     const data = await response.json();
-    const products = Array.isArray(data)
-      ? data
-      : Array.isArray(data.products)
-        ? data.products
-        : Array.isArray(data.data)
-          ? data.data
-          : [];
     if (data.success && data.token) {
-      // Salva o token no localStorage
-      saveToken(data.token);
+      if (role === "superadmin") {
+        saveSuperAdminToken(data.token);
+      } else {
+        saveToken(data.token);
+      }
       console.log(`âœ… Login bem-sucedido! Role: ${role}`);
       return true;
     }
@@ -141,6 +161,40 @@ export async function login(
  */
 export function isAuthenticated(): boolean {
   return getToken() !== null;
+}
+
+export function isEmployeeAuthenticated(): boolean {
+  return getEmployeeToken() !== null;
+}
+
+export async function employeeLogin(
+  username: string,
+  password: string,
+): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ role: "employee", username, password }),
+    });
+
+    if (!response.ok) {
+      console.error("Falha no login do funcionario:", await response.text());
+      return false;
+    }
+
+    const data = await response.json();
+    if (data.success && data.token) {
+      saveEmployeeToken(data.token);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error("Erro de rede ao tentar login do funcionario:", error);
+    return false;
+  }
 }
 
 /**
@@ -179,6 +233,36 @@ export async function authenticatedFetch(
       window.location.hash = "#/kitchen/login";
     }
     throw new Error("Acesso nÃ£o autorizado");
+  }
+
+  return response;
+}
+
+export async function employeeFetch(
+  url: string,
+  options: RequestInit = {},
+): Promise<Response> {
+  const token = getEmployeeToken();
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string> | undefined),
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, { ...options, headers });
+
+  if (response.status === 401 || response.status === 403) {
+    clearEmployeeToken();
+    sessionStorage.setItem(
+      "employeeAuthMessage",
+      "Sessao expirada ou acesso nao autorizado.",
+    );
+    window.location.hash = "#/employee/login";
+    throw new Error("Sessao expirada ou acesso nao autorizado");
   }
 
   return response;

@@ -1,7 +1,15 @@
-import { authenticatedFetch } from "./apiService";
+import { authenticatedFetch, employeeFetch } from "./apiService";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const API_URL = `${BASE_URL}/api`;
+
+const isEmployeeArea = () => {
+  const route = `${window.location.pathname}${window.location.hash}`;
+  return route.includes("/employee");
+};
+
+const outsourcedFetch = (url: string, options: RequestInit = {}) =>
+  isEmployeeArea() ? employeeFetch(url, options) : authenticatedFetch(url, options);
 
 export interface OutsourcedCompany {
   id: string;
@@ -135,7 +143,7 @@ const unwrapObject = <T>(data: unknown, keys: string[]): T => {
 };
 
 export async function getOutsourcedServiceTypes() {
-  const response = await authenticatedFetch(
+  const response = await outsourcedFetch(
     `${API_URL}/admin/outsourced-services/types`,
   );
   const data = await readJson<unknown>(response);
@@ -143,7 +151,7 @@ export async function getOutsourcedServiceTypes() {
 }
 
 export async function getOutsourcedCompanies() {
-  const response = await authenticatedFetch(
+  const response = await outsourcedFetch(
     `${API_URL}/admin/outsourced-companies`,
   );
   const data = await readJson<unknown>(response);
@@ -153,7 +161,7 @@ export async function getOutsourcedCompanies() {
 export async function createOutsourcedCompany(
   payload: OutsourcedCompanyPayload,
 ) {
-  const response = await authenticatedFetch(
+  const response = await outsourcedFetch(
     `${API_URL}/admin/outsourced-companies`,
     {
       method: "POST",
@@ -170,7 +178,7 @@ export async function updateOutsourcedCompany(
   id: string,
   payload: OutsourcedCompanyPayload,
 ) {
-  const response = await authenticatedFetch(
+  const response = await outsourcedFetch(
     `${API_URL}/admin/outsourced-companies/${id}`,
     {
       method: "PUT",
@@ -191,7 +199,7 @@ export async function getOutsourcedServices(filters?: {
   if (filters?.status) params.set("status", filters.status);
   if (filters?.overdue) params.set("overdue", "true");
   const query = params.toString() ? `?${params.toString()}` : "";
-  const response = await authenticatedFetch(
+  const response = await outsourcedFetch(
     `${API_URL}/admin/outsourced-services${query}`,
   );
   const data = await readJson<unknown>(response);
@@ -199,7 +207,7 @@ export async function getOutsourcedServices(filters?: {
 }
 
 export async function getOutsourcedServiceAlerts() {
-  const response = await authenticatedFetch(
+  const response = await outsourcedFetch(
     `${API_URL}/admin/outsourced-services/alerts`,
   );
   const data = await readJson<unknown>(response);
@@ -216,7 +224,7 @@ export async function getOutsourcedServiceAlerts() {
 }
 
 export async function getOutsourcedService(id: string) {
-  const response = await authenticatedFetch(
+  const response = await outsourcedFetch(
     `${API_URL}/admin/outsourced-services/${id}`,
   );
   return unwrapObject<OutsourcedService>(
@@ -228,7 +236,7 @@ export async function getOutsourcedService(id: string) {
 export async function createOutsourcedService(
   payload: OutsourcedServicePayload,
 ) {
-  const response = await authenticatedFetch(
+  const response = await outsourcedFetch(
     `${API_URL}/admin/outsourced-services`,
     {
       method: "POST",
@@ -245,7 +253,7 @@ export async function addOutsourcedServiceDelivery(
   id: string,
   payload: OutsourcedDeliveryPayload,
 ) {
-  const response = await authenticatedFetch(
+  const response = await outsourcedFetch(
     `${API_URL}/admin/outsourced-services/${id}/deliveries`,
     {
       method: "POST",
@@ -256,7 +264,7 @@ export async function addOutsourcedServiceDelivery(
 }
 
 export async function finalizeOutsourcedService(id: string) {
-  const response = await authenticatedFetch(
+  const response = await outsourcedFetch(
     `${API_URL}/admin/outsourced-services/${id}/finalize`,
     {
       method: "PUT",
