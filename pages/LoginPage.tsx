@@ -15,13 +15,13 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const PlushBackground: React.FC = () => (
   <>
     <div className="plush-lane plush-lane-one" aria-hidden="true">
-      🧸 🐻 🐰 🦊 🧸 🐼 🐻 🐰
+      🧸 🐻 🐰 🦊 🧸 🐼 🐻 🐰 🧸 🐻 🐰 🦊 🧸 🐼 🐻 🐰 🧸 🐻 🐰 🦊 🧸 🐼 🐻 🐰
     </div>
     <div className="plush-lane plush-lane-two" aria-hidden="true">
-      🐼 🧸 🐰 🐻 🦄 🧸 🦊 🐻
+      🐼 🧸 🐰 🐻 🦄 🧸 🦊 🐻 🐼 🧸 🐰 🐻 🦄 🧸 🦊 🐻 🐼 🧸 🐰 🐻 🦄 🧸 🦊 🐻
     </div>
     <div className="plush-lane plush-lane-three" aria-hidden="true">
-      🦄 🐻 🧸 🐼 🐰 🦊 🧸 🐻
+      🦄 🐻 🧸 🐼 🐰 🦊 🧸 🐻 🦄 🐻 🧸 🐼 🐰 🦊 🧸 🐻 🦄 🐻 🧸 🐼 🐰 🦊 🧸 🐻
     </div>
     <div className="tech-grid" aria-hidden="true" />
   </>

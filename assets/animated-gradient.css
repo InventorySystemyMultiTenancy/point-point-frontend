@@ -59,34 +59,35 @@
 .plush-lane {
   position: absolute;
   z-index: 1;
-  left: 0;
+  left: -50vw;
   width: max-content;
-  min-width: 220vw;
+  min-width: 300vw;
   white-space: nowrap;
   color: rgba(255, 255, 255, 0.72);
   filter: drop-shadow(0 8px 18px rgba(35, 16, 54, 0.32));
   pointer-events: none;
   user-select: none;
+  will-change: transform;
 }
 
 .plush-lane-one {
   top: 13%;
   font-size: clamp(2.4rem, 6vw, 5.5rem);
-  animation: plushFloatRight 28s linear infinite;
+  animation: plushMarqueeRight 24s linear infinite;
 }
 
 .plush-lane-two {
   top: 46%;
   font-size: clamp(2rem, 5vw, 4.5rem);
   opacity: 0.64;
-  animation: plushFloatLeft 32s linear infinite;
+  animation: plushMarqueeLeft 28s linear infinite;
 }
 
 .plush-lane-three {
   bottom: 10%;
   font-size: clamp(2.2rem, 5.4vw, 5rem);
   opacity: 0.5;
-  animation: plushFloatRight 36s linear infinite reverse;
+  animation: plushMarqueeRight 32s linear infinite;
 }
 
 @keyframes techGridDrift {
@@ -104,14 +105,12 @@
   50% { opacity: 0.82; transform: scale(1.02); }
 }
 
-@keyframes plushFloatRight {
-  from { transform: translateX(-52%) translateY(0); }
-  50% { transform: translateX(-20%) translateY(-10px); }
-  to { transform: translateX(0) translateY(0); }
+@keyframes plushMarqueeRight {
+  from { transform: translate3d(-33.333%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
 }
 
-@keyframes plushFloatLeft {
-  from { transform: translateX(0) translateY(0); }
-  50% { transform: translateX(-24%) translateY(12px); }
-  to { transform: translateX(-52%) translateY(0); }
+@keyframes plushMarqueeLeft {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-33.333%, 0, 0); }
 }
