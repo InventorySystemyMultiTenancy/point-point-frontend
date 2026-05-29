@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../services/apiBase";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   LineChart,
@@ -51,7 +52,7 @@ const AdminReportsPage: React.FC = () => {
   const fetchOrders = async () => {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/user-orders`,
+        `${API_BASE_URL}/api/user-orders`,
       );
       if (!res.ok) throw new Error("Erro ao buscar pedidos");
       const data = await res.json();
@@ -105,7 +106,7 @@ Seja direto e focado em ações práticas. Use emojis para deixar mais visual.`;
 
       const res = await authenticatedFetch(
         `${
-          import.meta.env.VITE_API_URL || "http://localhost:3001"
+          API_BASE_URL
         }/api/ai/suggestion`,
         {
           method: "POST",

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "./apiBase";
 // Atualiza os dados do usuário (self-service)
 export async function updateUser(userId: string, userData: any) {
   const response = await authenticatedFetch(`${API_URL}/users/${userId}`, {
@@ -10,7 +11,7 @@ export async function updateUser(userId: string, userData: any) {
 
 import api from "./api";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const BASE_URL = API_BASE_URL;
 const API_URL = `${BASE_URL}/api`;
 
 /**

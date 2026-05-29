@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../services/apiBase";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -94,7 +95,7 @@ const RegisterPage: React.FC = () => {
       } else {
         // Cadastro normal
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/users/register`,
+          `${API_BASE_URL}/api/users/register`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

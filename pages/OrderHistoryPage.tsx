@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../services/apiBase";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Order } from "../types";
@@ -22,7 +23,7 @@ const OrderHistoryPage: React.FC = () => {
   const [endDate, setEndDate] = useState("");
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
 
-  const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+  const BACKEND_URL = API_BASE_URL;
   const isAdmin = currentAdmin?.role === "admin";
 
   const getErrorMessageByStatus = (status?: number) => {

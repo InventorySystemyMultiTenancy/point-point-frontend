@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../services/apiBase";
 /**
  * 🏪 STORE CONTEXT - Contexto Global da Loja (Multi-tenant)
  *
@@ -61,7 +62,7 @@ export const StoreProvider: React.FC<StoreProviderProps> = ({ children }) => {
       console.log(`🏪 Carregando configuração da loja (single-tenant)`);
 
       const BACKEND_URL =
-        import.meta.env.VITE_API_URL || "http://localhost:3001";
+        API_BASE_URL;
 
       // Single-tenant: Usa configuração fixa
       const config: StoreConfig = {

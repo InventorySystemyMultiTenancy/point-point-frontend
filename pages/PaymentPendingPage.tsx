@@ -1,7 +1,8 @@
+import { API_BASE_URL } from "../services/apiBase";
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const BACKEND_URL = API_BASE_URL;
 
 export default function PaymentPendingPage() {
   const navigate = useNavigate();

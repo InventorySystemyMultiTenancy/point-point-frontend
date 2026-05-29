@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../services/apiBase";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -11,7 +12,7 @@ import { getProducts } from "../services/apiService";
 import type { Product, CartItem } from "../types";
 
 // URL da API
-const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const BACKEND_URL = API_BASE_URL;
 
 // ==========================================
 // 1. COMPONENTE: PRODUCT CARD (Produtos maiores)

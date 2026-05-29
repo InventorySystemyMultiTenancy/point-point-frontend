@@ -1,6 +1,7 @@
+import { API_BASE_URL } from "./apiBase";
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const BASE_URL = API_BASE_URL;
 
 // Instância customizada do Axios para single-tenant
 const api: AxiosInstance = axios.create({

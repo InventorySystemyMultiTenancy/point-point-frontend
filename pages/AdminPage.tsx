@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../services/apiBase";
 // Página: /pages/AdminPage.tsx
 // Esta página fornece uma interface administrativa simples para listar,
 // adicionar, editar e remover produtos do "cardápio".
@@ -545,7 +546,7 @@ const AdminPage: React.FC = () => {
   const handleStockMovement = async (
     movements: { productId: string; quantity: number }[],
   ) => {
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+    const API_URL = API_BASE_URL;
 
     try {
       // Para simplificar, vamos fazer um loop das requests.
@@ -620,7 +621,7 @@ const AdminPage: React.FC = () => {
   // Busca o total de pedidos dos últimos 30 dias
   const loadOrdersCount = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+      const API_URL = API_BASE_URL;
       const res = await fetch(`${API_URL}/api/orders/last30days-count`);
       if (!res.ok) throw new Error("Erro ao buscar total de pedidos");
       const data = await res.json();
@@ -632,7 +633,7 @@ const AdminPage: React.FC = () => {
 
   const loadProducts = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+      const API_URL = API_BASE_URL;
       const res = await authenticatedFetch(`${API_URL}/api/products`);
       if (!res.ok) {
         throw new Error(`Erro ao carregar produtos: ${res.status}`);
@@ -658,7 +659,7 @@ const AdminPage: React.FC = () => {
   const handleGenerateAnalysis = async () => {
     setIsLoadingAnalysis(true);
     setShowAnalysis(true);
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+    const API_URL = API_BASE_URL;
 
     try {
       const response = await fetch(`${API_URL}/api/ai/inventory-analysis`);
@@ -690,7 +691,7 @@ const AdminPage: React.FC = () => {
 
   // Trata salvar (tanto criação quanto edição)
   const handleSaveProduct = async (product: Product) => {
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+    const API_URL = API_BASE_URL;
 
     try {
       if (editingProduct) {
@@ -739,7 +740,7 @@ const AdminPage: React.FC = () => {
   const handleDeleteProduct = async (productId: string) => {
     // Confirmação simples antes de remover
     if (window.confirm("Tem certeza que deseja remover este produto?")) {
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+      const API_URL = API_BASE_URL;
 
       try {
         const response = await authenticatedFetch(
@@ -767,7 +768,7 @@ const AdminPage: React.FC = () => {
     if (!window.confirm("Deseja remover esta movimentação?")) return;
     const product = menu.find((p) => p.id === movement.productId);
     if (!product) return alert("Produto não encontrado.");
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+    const API_URL = API_BASE_URL;
     // Atualiza estoque no backend (subtrai a quantidade da movimentação)
     const response = await authenticatedFetch(
       `${API_URL}/api/products/${movement.productId}`,
@@ -1092,7 +1093,7 @@ const AdminPage: React.FC = () => {
                   <button
                     onClick={async () => {
                       const API_URL =
-                        import.meta.env.VITE_API_URL || "http://localhost:3001";
+                        API_BASE_URL;
                       const resp = await authenticatedFetch(
                         `${API_URL}/api/products/${product.id}`,
                         {

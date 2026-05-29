@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../services/apiBase";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -14,7 +15,7 @@ import {
 import type { Order, CartItem } from "../types";
 import PaymentOnline from "../components/PaymentOnline";
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const BACKEND_URL = API_BASE_URL;
 
 // Helper para requisições padrão (single-tenant)
 const fetchStandard = async (url: string, options: RequestInit = {}) => {

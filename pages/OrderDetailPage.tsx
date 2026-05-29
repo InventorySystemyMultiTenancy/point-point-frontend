@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../services/apiBase";
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { Order } from "../types";
@@ -36,7 +37,7 @@ const OrderDetailPage: React.FC = () => {
           className="mb-4 bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 transition-colors shadow-md"
           onClick={() => {
             const backendUrl =
-              import.meta.env.VITE_API_URL || "http://localhost:3001";
+              API_BASE_URL;
             window.open(
               `${backendUrl}/api/orders/${order.id}/receipt-pdf`,
               "_blank",

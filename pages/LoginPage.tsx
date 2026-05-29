@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../services/apiBase";
 import React, { useEffect, useState } from "react";
 import "../assets/animated-gradient.css";
 import { useNavigate } from "react-router-dom";
@@ -10,7 +11,7 @@ interface CPFLoginProps {
   onLoginSuccess: (user: User) => void;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_URL = API_BASE_URL;
 
 const PlushBackground: React.FC = () => (
   <>
@@ -187,6 +188,7 @@ const CPFLogin: React.FC<CPFLoginProps> = ({ onLoginSuccess }) => {
               </label>
               <input
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(event) => {
                   setPassword(event.target.value);
@@ -257,6 +259,7 @@ const CPFLogin: React.FC<CPFLoginProps> = ({ onLoginSuccess }) => {
             />
             <input
               type="password"
+              autoComplete="new-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Crie uma senha"

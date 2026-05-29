@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../services/apiBase";
 import React, { useState, useEffect } from "react";
 import SuperAdminReceivablesDetails from "../components/SuperAdminReceivablesDetails";
 
@@ -59,7 +60,7 @@ const SuperAdminPage: React.FC = () => {
     setError("");
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/super-admin/receivables`,
+        `${API_BASE_URL}/api/super-admin/receivables`,
         {
           headers: {
             "x-super-admin-password": password,
@@ -82,7 +83,7 @@ const SuperAdminPage: React.FC = () => {
     try {
       // Testa senha fazendo uma requisição
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/super-admin/receivables`,
+        `${API_BASE_URL}/api/super-admin/receivables`,
         {
           headers: {
             "x-super-admin-password": password,
@@ -164,13 +165,13 @@ const SuperAdminPage: React.FC = () => {
       console.log(
         "[FRONTEND] Enviando POST para /api/super-admin/receivables/mark-received-by-ids",
         {
-          url: `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/super-admin/receivables/mark-received-by-ids`,
+          url: `${API_BASE_URL}/api/super-admin/receivables/mark-received-by-ids`,
           password,
           orderIds: pendingOrderIds,
         },
       );
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/super-admin/receivables/mark-received-by-ids`,
+        `${API_BASE_URL}/api/super-admin/receivables/mark-received-by-ids`,
         {
           method: "POST",
           headers: {

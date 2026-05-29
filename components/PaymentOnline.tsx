@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../services/apiBase";
 import { get as apiGet } from "../services/api";
 import { useCart } from "../contexts/CartContext";
 import React, { useState, useEffect, useCallback } from "react";
@@ -69,7 +70,7 @@ export default function PaymentOnline(props: PaymentOnlineProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+  const API_URL = API_BASE_URL;
 
   // Polling do status do pedido pelo orderId
   const startOrderStatusPolling = useCallback((orderId: string) => {

@@ -1,10 +1,11 @@
+import { API_BASE_URL } from "./apiBase";
 import { authenticatedFetch, getToken } from "./apiService";
 
 // Busca stats e histórico para o Super Admin
 
 export async function getSuperAdminStats(password: string) {
   const response = await authenticatedFetch(
-    `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/super-admin/receivables`,
+    `${API_BASE_URL}/api/super-admin/receivables`,
     {
       headers: {
         "x-super-admin-password": password,
@@ -19,7 +20,7 @@ export async function getSuperAdminStats(password: string) {
 
 export async function markSuperAdminReceived(password: string) {
   const response = await authenticatedFetch(
-    `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/super-admin/receivables/mark-received`,
+    `${API_BASE_URL}/api/super-admin/receivables/mark-received`,
     {
       method: "POST",
       headers: {

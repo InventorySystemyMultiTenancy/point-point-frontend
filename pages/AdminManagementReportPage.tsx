@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../services/apiBase";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -272,7 +273,7 @@ const AdminManagementReportPage: React.FC = () => {
       }
 
       const url = new URL(
-        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/admin/management-report`,
+        `${API_BASE_URL}/api/admin/management-report`,
       );
 
       if (filter.mode === "custom") {
