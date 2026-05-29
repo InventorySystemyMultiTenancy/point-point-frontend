@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/assets/pointpoint-logo.png" />
+    <link
+      rel="alternate icon"
+      type="image/png"
+      href="/assets/pointpoint-logo.png"
+    />
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+
+    <link rel="manifest" href="/manifest.json" />
+
+    <title>Point&Point - Loja de Pelúcias</title>
+    <meta
+      name="description"
+      content="Point&Point - Loja de pelúcias fofas e exclusivas. Compre pelúcias de alta qualidade, pague online e receba em casa!"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* 🎨 CORES POINT&POINT PERSONALIZADAS */
+      :root {
+        --color-primary: #6d28d9; /* roxo escuro */
+        --color-secondary: #d6b48c; /* marrom claro */
+        --color-accent: #7c3aed; /* roxo vibrante */
+        --color-primary-hover: #4c1d95; /* roxo escuro */
+        --color-primary-active: #7c3aed; /* roxo vibrante */
+        --color-primary-light: #f2f2f2; /* cinza claro */
+        --color-primary-lighter: #f2f2f2; /* cinza claro */
+      }
+
+      body {
+        font-family: "Poppins", sans-serif;
+        /* IMPEDE O "PULL-TO-REFRESH" (PUXAR PRA CIMA) QUE ESTRAGA O KIOSK */
+        overscroll-behavior-y: contain;
+        /* Desabilita seleção de texto para parecer app */
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      /* Animações existentes */
+      @keyframes fade-in-down {
+        0% {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-fade-in-down {
+        animation: fade-in-down 0.5s ease-out forwards;
+      }
+    </style>
+  </head>
+  <body class="bg-stone-50">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
