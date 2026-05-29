@@ -33,7 +33,7 @@ const Footer = () => {
           <a href="mailto:orcamento@girakids.com">orcamento@girakids.com</a>
         </span>
         <span>Av. Cachoeira Paulista, 17</span>
-        <span>Prime Plush x Gira Kids 2026</span>
+        <span>Point&Point x Gira Kids 2026</span>
         <span>Todos os direitos reservados</span>
       </div>
     </div>

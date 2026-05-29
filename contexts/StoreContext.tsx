@@ -36,11 +36,11 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 // Configuração padrão (fallback) - Tema Pastel Kiosk
 const DEFAULT_STORE_CONFIG: Omit<StoreConfig, "id"> = {
-  name: "Pastel Kiosk",
+  name: "Point&Point",
   logo: null,
-  primaryColor: "#2563eb", // azul escuro
-  secondaryColor: "#1f2937", // gray-800 - preto profundo
-  accentColor: "#60a5fa", // azul claro
+  primaryColor: "#7e22ce",
+  secondaryColor: "#5c4033",
+  accentColor: "#d2b48c",
 };
 
 interface StoreProviderProps {

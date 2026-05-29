@@ -1,12 +1,12 @@
-:root {
-  --prime-void: #050604;
-  --prime-panel: #0d100b;
-  --prime-panel-2: #151a11;
-  --prime-acid: #2563eb;
-  --prime-acid-2: #0477bf;
-  --prime-amber: #60a5fa;
-  --prime-ink: #f5f7ef;
-  --prime-muted: #a9b09f;
+﻿:root {
+  --prime-void: #3b2418;
+  --prime-panel: #4a2f22;
+  --prime-panel-2: #5c4033;
+  --prime-acid: #7e22ce;
+  --prime-acid-2: #6d28d9;
+  --prime-amber: #d2b48c;
+  --prime-ink: #fff6e5;
+  --prime-muted: #d8c3a5;
 }
 
 body {
@@ -15,9 +15,9 @@ body {
 
 .monster-shell {
   background:
-    radial-gradient(circle at 16% 8%, rgba(37, 99, 235, 0.28), transparent 24rem),
-    radial-gradient(circle at 75% 18%, rgba(96, 165, 250, 0.16), transparent 22rem),
-    linear-gradient(135deg, #050604 0%, #0d100b 48%, #050604 100%);
+    radial-gradient(circle at 16% 8%, rgba(126, 34, 206, 0.28), transparent 24rem),
+    radial-gradient(circle at 75% 18%, rgba(210, 180, 140, 0.2), transparent 22rem),
+    linear-gradient(135deg, #3b2418 0%, #5c4033 48%, #3b2418 100%);
   color: var(--prime-ink);
   isolation: isolate;
 }
@@ -52,7 +52,7 @@ body {
 
 .login-plush-header::before,
 .login-plush-header::after {
-  content: "🧸 🐻 🐰 🐼 🦊 🧸 🐻 🐰 🐼 🦊";
+  content: "ðŸ§¸ ðŸ» ðŸ° ðŸ¼ ðŸ¦Š ðŸ§¸ ðŸ» ðŸ° ðŸ¼ ðŸ¦Š";
   position: absolute;
   left: 0;
   right: auto;
@@ -133,7 +133,7 @@ body {
 }
 
 .monster-category {
-  background: #050604 !important;
+  background: #3b2418 !important;
   border-right: 1px solid rgba(96, 165, 250, 0.3) !important;
   box-shadow: 16px 0 46px rgba(0, 0, 0, 0.5);
 }
@@ -192,7 +192,7 @@ body {
   min-height: 42px;
   padding: 0 1.3rem;
   border: 1px solid rgba(96, 165, 250, 0.5);
-  background: linear-gradient(135deg, #022859, #2563eb);
+  background: linear-gradient(135deg, #5c4033, #7e22ce);
   color: #fff;
   font-weight: 900;
   text-transform: uppercase;
@@ -245,7 +245,7 @@ body {
 
 .catalog-subnav-item:hover,
 .catalog-subnav-item.is-active {
-  background: #2563eb;
+  background: #7e22ce;
   border-color: #93c5fd;
   color: #fff;
   transform: translateY(-2px);
@@ -295,7 +295,7 @@ body {
   display: inline-flex;
   padding: 0.4rem 0.75rem;
   margin-bottom: 1rem;
-  background: #2563eb;
+  background: #7e22ce;
   color: #fff;
   font-size: 0.8rem;
   font-weight: 950;
@@ -332,7 +332,7 @@ body {
   margin-top: 1.25rem;
   padding: 0.85rem 1.2rem;
   background: #fff;
-  color: #022859;
+  color: #5c4033;
   font-weight: 950;
   text-transform: uppercase;
   box-shadow: 5px 5px 0 #000;
@@ -377,7 +377,7 @@ body {
 }
 
 .latest-banner-dots button.is-active {
-  background: #60a5fa;
+  background: #d2b48c;
   transform: scaleX(1.2);
 }
 
@@ -416,7 +416,7 @@ body {
 .monster-product-media {
   background:
     radial-gradient(circle at center, rgba(37, 99, 235, 0.34), transparent 58%),
-    linear-gradient(145deg, #11170d, #050604) !important;
+    linear-gradient(145deg, #11170d, #3b2418) !important;
   height: 260px !important;
   overflow: visible !important;
 }
@@ -436,7 +436,7 @@ body {
 
 .monster-product-body {
   color: var(--prime-ink);
-  background: linear-gradient(180deg, rgba(5, 6, 4, 0), #050604 22%);
+  background: linear-gradient(180deg, rgba(5, 6, 4, 0), #3b2418 22%);
 }
 
 .monster-product-title {
@@ -464,7 +464,7 @@ body {
 }
 
 .monster-buy-button:hover {
-  background: #0477bf !important;
+  background: #6d28d9 !important;
   transform: translate(-2px, -2px);
   box-shadow: 7px 7px 0 #000;
 }
@@ -476,7 +476,7 @@ body {
 }
 
 .monster-cart {
-  background: #050604 !important;
+  background: #3b2418 !important;
   color: var(--prime-ink);
   border-left: 1px solid rgba(96, 165, 250, 0.34) !important;
 }
@@ -488,7 +488,7 @@ body {
 }
 
 .monster-cart-scroll {
-  background: linear-gradient(180deg, #090c07, #050604) !important;
+  background: linear-gradient(180deg, #090c07, #3b2418) !important;
 }
 
 .monster-cart-item {
@@ -499,7 +499,7 @@ body {
 }
 
 .monster-qty {
-  background: #050604 !important;
+  background: #3b2418 !important;
   border-color: rgba(96, 165, 250, 0.32) !important;
   border-radius: 0 !important;
   color: var(--prime-ink);
@@ -519,7 +519,7 @@ body {
 }
 
 .monster-mobile-cart {
-  background: #050604 !important;
+  background: #3b2418 !important;
   color: var(--prime-ink) !important;
   border-top: 1px solid rgba(96, 165, 250, 0.48);
 }
@@ -533,7 +533,7 @@ body {
   width: 84px;
   height: 84px;
   border-radius: 999px;
-  background: radial-gradient(circle at 35% 25%, #60a5fa, #2563eb 55%, #022859);
+  background: radial-gradient(circle at 35% 25%, #d2b48c, #7e22ce 55%, #5c4033);
   color: #fff;
   border: 1px solid rgba(191, 219, 254, 0.62);
   box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42), 0 0 30px rgba(37, 99, 235, 0.4);
@@ -562,7 +562,7 @@ body {
   padding: 0 0.35rem;
   border-radius: 999px;
   background: #fff;
-  color: #022859;
+  color: #5c4033;
   font-size: 0.78rem;
   display: inline-flex;
   align-items: center;
@@ -645,7 +645,7 @@ body {
   background:
     radial-gradient(circle at 18% 18%, rgba(96, 165, 250, 0.32), transparent 24rem),
     radial-gradient(circle at 82% 8%, rgba(37, 99, 235, 0.28), transparent 25rem),
-    linear-gradient(135deg, #02132f, #022859 48%, #050604) !important;
+    linear-gradient(135deg, #3b2418, #5c4033 48%, #3b2418) !important;
   color: #eaf2ff;
   min-height: calc(100vh - 68px);
   position: relative;
@@ -654,7 +654,7 @@ body {
 
 .admin-modern-theme::before,
 .checkout-modern-theme::before {
-  content: "🧸 🐻 🐰 🐼 🧸 🐻 🐰 🐼";
+  content: "ðŸ§¸ ðŸ» ðŸ° ðŸ¼ ðŸ§¸ ðŸ» ðŸ° ðŸ¼";
   position: fixed;
   left: 0;
   right: 0;
@@ -846,7 +846,7 @@ body {
 
 .admin-modern-theme option,
 .checkout-modern-theme option {
-  background: #02132f;
+  background: #3b2418;
   color: #f8fbff;
 }
 
@@ -932,6 +932,108 @@ body {
   background: rgba(2, 19, 47, 0.78) !important;
   color: #fff !important;
   border-color: rgba(96, 165, 250, 0.38) !important;
+}
+
+/* Point&Point palette override: light brown + purple across legacy blue classes. */
+.text-blue-50,
+.text-blue-100,
+.text-blue-200,
+.text-blue-300 {
+  color: #fff6e5 !important;
+}
+
+.text-blue-500,
+.text-blue-600,
+.text-blue-700,
+.text-blue-800,
+.text-blue-900 {
+  color: #7e22ce !important;
+}
+
+.bg-blue-50 {
+  background-color: #fff6e5 !important;
+}
+
+.bg-blue-100,
+.bg-blue-200 {
+  background-color: #ead7bd !important;
+}
+
+.bg-blue-500,
+.bg-blue-600,
+.bg-blue-700,
+.bg-blue-800,
+.bg-blue-900 {
+  background-color: #7e22ce !important;
+}
+
+.hover\:bg-blue-100:hover,
+.hover\:bg-blue-200:hover {
+  background-color: #d2b48c !important;
+}
+
+.hover\:bg-blue-600:hover,
+.hover\:bg-blue-700:hover,
+.hover\:bg-blue-800:hover,
+.hover\:bg-blue-900:hover {
+  background-color: #6d28d9 !important;
+}
+
+.hover\:text-blue-300:hover,
+.hover\:text-blue-600:hover,
+.hover\:text-blue-700:hover,
+.hover\:text-blue-800:hover,
+.hover\:text-blue-900:hover {
+  color: #d2b48c !important;
+}
+
+.border-blue-200,
+.border-blue-300,
+.border-blue-400,
+.border-blue-500,
+.border-blue-600 {
+  border-color: #d2b48c !important;
+}
+
+.focus\:border-blue-400:focus,
+.focus\:border-blue-500:focus,
+.focus\:border-blue-600:focus {
+  border-color: #7e22ce !important;
+}
+
+.focus\:ring-blue-200:focus,
+.focus\:ring-blue-300:focus,
+.focus\:ring-blue-500:focus {
+  --tw-ring-color: rgba(126, 34, 206, 0.25) !important;
+}
+
+.admin-modern-theme .text-blue-600,
+.admin-modern-theme .text-blue-700,
+.admin-modern-theme .text-blue-800,
+.admin-modern-theme .text-blue-900,
+.checkout-modern-theme .text-blue-600,
+.checkout-modern-theme .text-blue-700,
+.checkout-modern-theme .text-blue-800,
+.checkout-modern-theme .text-blue-900 {
+  color: #d2b48c !important;
+}
+
+.admin-modern-theme .bg-blue-50,
+.admin-modern-theme .bg-blue-100,
+.checkout-modern-theme .bg-blue-50,
+.checkout-modern-theme .bg-blue-100 {
+  background: rgba(210, 180, 140, 0.18) !important;
+  color: #fff6e5 !important;
+}
+
+.admin-modern-theme table thead,
+.checkout-modern-theme table thead {
+  background: rgba(126, 34, 206, 0.24) !important;
+}
+
+.admin-modern-theme table tbody tr:hover,
+.checkout-modern-theme table tbody tr:hover {
+  background: rgba(126, 34, 206, 0.18) !important;
 }
 
 @keyframes product-rise {
@@ -1076,3 +1178,4 @@ body {
     font-size: 0.95rem !important;
   }
 }
+

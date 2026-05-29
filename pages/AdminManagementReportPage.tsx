@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -140,11 +140,11 @@ const percentFormatter = new Intl.NumberFormat("pt-BR", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
-const CHART_COLORS = ["#10b981", "#2563eb", "#f59e0b", "#ef4444"];
+const CHART_COLORS = ["#10b981", "#7e22ce", "#f59e0b", "#ef4444"];
 const ABC_CLASS_COLORS = {
   A: "#ef4444",
   B: "#f59e0b",
-  C: "#2563eb",
+  C: "#7e22ce",
 };
 
 const formatCurrency = (value: number) =>
@@ -244,7 +244,7 @@ const AdminManagementReportPage: React.FC = () => {
   const [appliedFilter, setAppliedFilter] =
     useState<AppliedFilter>(createGeneralFilter);
 
-  // Proteção por senha extra
+  // ProteÃ§Ã£o por senha extra
   const [senhaExtra, setSenhaExtra] = useState("");
   const [senhaCorreta, setSenhaCorreta] = useState(false);
   const [senhaErro, setSenhaErro] = useState("");
@@ -367,7 +367,7 @@ const AdminManagementReportPage: React.FC = () => {
     fetchReport(appliedFilter);
   };
 
-  // Formulário de senha extra
+  // FormulÃ¡rio de senha extra
   if (!senhaCorreta) {
     return (
       <div className="max-w-md mx-auto mt-16 p-6 bg-white rounded-xl shadow flex flex-col items-center">
@@ -375,7 +375,7 @@ const AdminManagementReportPage: React.FC = () => {
           Acesso Restrito
         </h2>
         <p className="mb-4 text-slate-700 text-center">
-          Digite a senha especial para acessar o Relatório de Gestão.
+          Digite a senha especial para acessar o RelatÃ³rio de GestÃ£o.
         </p>
         <input
           type="password"
@@ -424,12 +424,12 @@ const AdminManagementReportPage: React.FC = () => {
               type="button"
               className="bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-emerald-800"
               onClick={() => {
-                // Gera um PDF/tabela estilizada para impressão
+                // Gera um PDF/tabela estilizada para impressÃ£o
                 const produtos = report?.products || [];
                 const html = `
                   <html>
                   <head>
-                    <title>Estoque e Sugestão de Compra</title>
+                    <title>Estoque e SugestÃ£o de Compra</title>
                     <style>
                       body { font-family: 'Segoe UI', Arial, sans-serif; background: #f8fafc; margin: 0; padding: 24px; }
                       h2 { color: #10b981; margin-bottom: 24px; }
@@ -440,11 +440,11 @@ const AdminManagementReportPage: React.FC = () => {
                       tr:nth-child(odd) { background: #fff; }
                       td { font-size: 15px; color: #334155; }
                       .estoque-baixo { color: #ef4444; font-weight: bold; }
-                      .sugestao { color: #2563eb; font-weight: bold; }
+                      .sugestao { color: #7e22ce; font-weight: bold; }
                     </style>
                   </head>
                   <body>
-                    <h2>Estoque e Sugestão de Compra</h2>
+                    <h2>Estoque e SugestÃ£o de Compra</h2>
                     <table>
                       <thead>
                         <tr>
@@ -476,7 +476,7 @@ const AdminManagementReportPage: React.FC = () => {
                 printWindow?.print();
               }}
             >
-              Imprimir Estoque/Sugestão
+              Imprimir Estoque/SugestÃ£o
             </button>
           </div>
           <p className="text-slate-600 mt-2">
@@ -779,12 +779,12 @@ const AdminManagementReportPage: React.FC = () => {
                       >
                         <stop
                           offset="5%"
-                          stopColor="#2563eb"
+                          stopColor="#7e22ce"
                           stopOpacity={0.35}
                         />
                         <stop
                           offset="95%"
-                          stopColor="#2563eb"
+                          stopColor="#7e22ce"
                           stopOpacity={0.02}
                         />
                       </linearGradient>
@@ -815,10 +815,10 @@ const AdminManagementReportPage: React.FC = () => {
                     <Area
                       type="monotone"
                       dataKey="revenue"
-                      stroke="#2563eb"
+                      stroke="#7e22ce"
                       strokeWidth={3}
                       fill="url(#revenueFill)"
-                      dot={{ r: 3, fill: "#2563eb" }}
+                      dot={{ r: 3, fill: "#7e22ce" }}
                       activeDot={{ r: 5 }}
                     />
                   </AreaChart>
@@ -868,7 +868,7 @@ const AdminManagementReportPage: React.FC = () => {
                           item: any,
                         ) => [
                           `${formatInteger(value)} pedidos`,
-                          `${item?.payload?.name} · ${formatCurrency(
+                          `${item?.payload?.name} Â· ${formatCurrency(
                             item?.payload?.revenue || 0,
                           )}`,
                         ]}
@@ -958,7 +958,7 @@ const AdminManagementReportPage: React.FC = () => {
                         payload: any,
                       ) => [
                         `${formatInteger(value)} unidades`,
-                        `${payload?.payload?.name} · ${formatCurrency(
+                        `${payload?.payload?.name} Â· ${formatCurrency(
                           payload?.payload?.revenue || 0,
                         )}`,
                       ]}
@@ -969,7 +969,7 @@ const AdminManagementReportPage: React.FC = () => {
                     />
                     <Bar
                       dataKey="quantitySold"
-                      fill="#2563eb"
+                      fill="#7e22ce"
                       radius={[0, 8, 8, 0]}
                     />
                   </BarChart>
@@ -1019,7 +1019,7 @@ const AdminManagementReportPage: React.FC = () => {
                           item: any,
                         ) => [
                           formatCurrency(value),
-                          `${item?.payload?.category} · ${formatPercent(
+                          `${item?.payload?.category} Â· ${formatPercent(
                             item?.payload?.revenueShare || 0,
                           )}`,
                         ]}
@@ -1138,7 +1138,7 @@ const AdminManagementReportPage: React.FC = () => {
                     <Bar
                       yAxisId="left"
                       dataKey="revenue"
-                      fill="#2563eb"
+                      fill="#7e22ce"
                       radius={[6, 6, 0, 0]}
                     />
                     <Line
@@ -1393,3 +1393,4 @@ const AdminManagementReportPage: React.FC = () => {
 };
 
 export default AdminManagementReportPage;
+

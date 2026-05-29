@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useAuth } from "../contexts/AuthContext";
@@ -18,7 +18,7 @@ const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const isEdit = !!currentUser;
 
-  // Preencher campos se for edição
+  // Preencher campos se for ediÃ§Ã£o
   useEffect(() => {
     if (isEdit && currentUser) {
       setCpf(currentUser.cpf || "");
@@ -38,7 +38,7 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cpf || cpf.replace(/\D/g, "").length !== 11) {
-      setError("CPF inválido. Digite 11 dígitos.");
+      setError("CPF invÃ¡lido. Digite 11 dÃ­gitos.");
       return;
     }
     if (!name.trim() || name.trim().length < 3) {
@@ -46,30 +46,30 @@ const RegisterPage: React.FC = () => {
       return;
     }
     if (!email.trim() || !email.includes("@")) {
-      setError("Email inválido");
+      setError("Email invÃ¡lido");
       return;
     }
     if (!cep.trim() || cep.replace(/\D/g, "").length !== 8) {
-      setError("CEP inválido. Digite 8 dígitos.");
+      setError("CEP invÃ¡lido. Digite 8 dÃ­gitos.");
       return;
     }
     if (!address.trim() || address.trim().length < 5) {
-      setError("Endereço completo obrigatório");
+      setError("EndereÃ§o completo obrigatÃ³rio");
       return;
     }
     if (!phone.trim() || phone.replace(/\D/g, "").length < 9) {
-      setError("Telefone obrigatório e válido");
+      setError("Telefone obrigatÃ³rio e vÃ¡lido");
       return;
     }
     if (!password || password.length < 6) {
-      setError("Senha obrigatória (mínimo 6 caracteres)");
+      setError("Senha obrigatÃ³ria (mÃ­nimo 6 caracteres)");
       return;
     }
     setIsLoading(true);
     setError("");
     try {
       if (isEdit && currentUser) {
-        // Atualizar dados do usuário
+        // Atualizar dados do usuÃ¡rio
         const data = await updateUser(currentUser.id, {
           cpf,
           name,
@@ -83,9 +83,9 @@ const RegisterPage: React.FC = () => {
           login({ ...currentUser, ...data.user });
           await Swal.fire({
             title: "Dados atualizados!",
-            text: "Suas informações foram salvas.",
+            text: "Suas informaÃ§Ãµes foram salvas.",
             icon: "success",
-            confirmButtonColor: "#2563eb",
+            confirmButtonColor: "#7e22ce",
           });
           navigate("/menu");
         } else {
@@ -118,7 +118,7 @@ const RegisterPage: React.FC = () => {
             title: "Cadastro realizado!",
             text: "Sua conta foi criada com sucesso.",
             icon: "success",
-            confirmButtonColor: "#2563eb",
+            confirmButtonColor: "#7e22ce",
           });
           navigate("/login");
         }
@@ -214,14 +214,14 @@ const RegisterPage: React.FC = () => {
               htmlFor="address"
               className="block text-sm font-semibold text-stone-700 mb-2"
             >
-              Endereço Completo
+              EndereÃ§o Completo
             </label>
             <input
               id="address"
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Rua, número, bairro, cidade"
+              placeholder="Rua, nÃºmero, bairro, cidade"
               className="w-full px-4 py-3 border-2 border-stone-200 rounded-lg"
               disabled={isLoading}
             />
@@ -271,7 +271,7 @@ const RegisterPage: React.FC = () => {
                 ? "Salvando..."
                 : "Cadastrando..."
               : isEdit
-                ? "Salvar alterações"
+                ? "Salvar alteraÃ§Ãµes"
                 : "Cadastrar"}
           </button>
         </form>
@@ -281,3 +281,4 @@ const RegisterPage: React.FC = () => {
 };
 
 export default RegisterPage;
+

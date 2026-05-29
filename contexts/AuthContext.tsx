@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       //   const data = await response.json();
       //   console.log(`✅ ${data.cleared || 0} pagamento(s) limpo(s)`);
       // }
-      console.warn("⚠️ Erro ao limpar pagamentos (continua logout):", error);
+      console.warn("Logout iniciado. Limpando sessao local.");
     } finally {
       // Limpar token JWT
       apiLogout();

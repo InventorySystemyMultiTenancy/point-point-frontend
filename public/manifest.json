@@ -1,6 +1,6 @@
 {
-  "short_name": "KioskPro",
-  "name": "Pastelaria Kiosk Pro",
+  "short_name": "Point&Point",
+  "name": "Point&Point",
   "icons": [
     {
       "src": "favicon.ico",
@@ -10,7 +10,7 @@
   ],
   "start_url": ".",
   "display": "fullscreen",
-  "theme_color": "#f59e0b",
-  "background_color": "#fffaf0",
+  "theme_color": "#7e22ce",
+  "background_color": "#fff6e5",
   "orientation": "landscape"
 }

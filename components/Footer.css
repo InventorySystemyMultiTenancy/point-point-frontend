@@ -145,7 +145,7 @@
   right: 18px;
   bottom: 60px; /* above footer */
   z-index: 120;
-  background: #2563eb;
+  background: #7e22ce;
   color: #fff;
   border: none;
   border-radius: 50%;
@@ -158,7 +158,7 @@
   font-size: 1.7em;
 }
 .floating-cart-btn:active {
-  background: #1741a6;
+  background: #6d28d9;
   transform: scale(0.96);
 }
 @media (max-width: 700px) {

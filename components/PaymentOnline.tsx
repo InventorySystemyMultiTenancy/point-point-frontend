@@ -53,7 +53,7 @@ export default function PaymentOnline(props: PaymentOnlineProps) {
     orderId,
     total,
     items,
-    userEmail = "cliente@primeplush.com",
+    userEmail = "cliente@pointpoint.com",
     userName = "Cliente",
     onSuccess,
     onError,

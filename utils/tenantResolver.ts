@@ -1,20 +1,20 @@
-/**
- * 🏪 TENANT RESOLVER - Identificação da Loja (Multi-tenant)
+﻿/**
+ * ðŸª TENANT RESOLVER - IdentificaÃ§Ã£o da Loja (Multi-tenant)
  *
- * Identifica qual loja está sendo acessada baseada no subdomínio da URL.
- * Exemplo: primeplush-joao.kioskpro.com.br -> storeId: "primeplush-joao"
+ * Identifica qual loja estÃ¡ sendo acessada baseada no subdomÃ­nio da URL.
+ * Exemplo: pointpoint-joao.kioskpro.com.br -> storeId: "pointpoint-joao"
  *
  * PRIORIDADE:
- * 1. Variável de ambiente (VITE_DEFAULT_STORE_ID) - MÁXIMA PRIORIDADE
- * 2. Subdomínio (exceto 'www')
- * 3. Fallback padrão (primeplush_01)
+ * 1. VariÃ¡vel de ambiente (VITE_DEFAULT_STORE_ID) - MÃXIMA PRIORIDADE
+ * 2. SubdomÃ­nio (exceto 'www')
+ * 3. Fallback padrÃ£o (pointpoint_01)
  */
 
-// SINGLE-TENANT: Defina o ID da loja única aqui ou via .env
+// SINGLE-TENANT: Defina o ID da loja Ãºnica aqui ou via .env
 const DEFAULT_STORE_ID = import.meta.env.VITE_DEFAULT_STORE_ID || "loja_unica";
 
 /**
- * Extrai o storeId do subdomínio da URL atual
+ * Extrai o storeId do subdomÃ­nio da URL atual
  * @returns storeId ou null se estiver em localhost/ambiente de desenvolvimento
  */
 // Sempre retorna o mesmo storeId para single-tenant
@@ -23,7 +23,7 @@ export function getStoreIdFromDomain(): string {
 }
 
 /**
- * Obtém o storeId atual (com fallback para loja padrão)
+ * ObtÃ©m o storeId atual (com fallback para loja padrÃ£o)
  * @returns storeId (nunca retorna null)
  */
 export function getCurrentStoreId(): string {
@@ -32,7 +32,7 @@ export function getCurrentStoreId(): string {
 }
 
 /**
- * Verifica se está rodando em ambiente de desenvolvimento
+ * Verifica se estÃ¡ rodando em ambiente de desenvolvimento
  */
 export function isLocalEnvironment(): boolean {
   const hostname = window.location.hostname;
@@ -42,3 +42,4 @@ export function isLocalEnvironment(): boolean {
     hostname.startsWith("192.168.")
   );
 }
+

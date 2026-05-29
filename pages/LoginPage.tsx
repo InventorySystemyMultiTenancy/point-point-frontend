@@ -1,272 +1,84 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "../assets/animated-gradient.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
-
 import type { User } from "../types";
 
-// --- Componente WelcomeScreen (Mantido conforme original) ---
-interface WelcomeScreenProps {
-  onNameSubmit: (name: string) => void;
-  isLoading?: boolean;
-}
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
-const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNameSubmit, isLoading = false }) => {
-  const [name, setName] = useState("");
-  const [error, setError] = useState("");
+const formatDocument = (value: string) => {
+  const cleaned = value.replace(/\D/g, "");
+  if (cleaned.length <= 11) {
+    return cleaned
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      setError("Por favor, digite seu nome");
-      return;
-    }
-    onNameSubmit(trimmedName);
-  };
+  return cleaned
+    .slice(0, 14)
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+};
+
+const PlushBackground: React.FC = () => {
+  const plushies = useMemo(
+    () => [
+      "🧸",
+      "🐻",
+      "🐰",
+      "🦄",
+      "🐼",
+      "🧸",
+      "🐻‍❄️",
+      "🐨",
+      "🦊",
+      "🐻",
+      "🧸",
+      "🐰",
+    ],
+    [],
+  );
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen animated-gradient p-4">
-      <div className="login-glass-card w-full max-w-md rounded-2xl shadow-2xl p-10">
-        <div className="text-center mb-8">
-          <img src="/selfMachine.jpg" alt="Self Machine" className="w-48 h-auto mx-auto mb-6 rounded-xl" />
-          <h1 className="text-4xl font-bold text-white mb-2">Pastel Kiosk</h1>
-          <p className="text-blue-100">Bem-vindo a nossa deliciosa experiencia!</p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="name" className="block text-sm font-semibold text-blue-100 mb-2">Como voce se chama?</label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => { setName(e.target.value); setError(""); }}
-              placeholder="Digite seu nome"
-              className="login-input w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors"
-              autoFocus
-              disabled={isLoading}
-            />
-            {error && <p className="text-blue-200 text-sm mt-2">{error}</p>}
-          </div>
-          <button type="submit" disabled={isLoading} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors text-lg disabled:bg-blue-300 shadow-lg shadow-blue-950/40">
-            {isLoading ? "Carregando..." : "Começar Pedido"}
-          </button>
-        </form>
-      </div>
+    <div className="plush-orbit" aria-hidden="true">
+      {plushies.map((emoji, index) => (
+        <span
+          key={`${emoji}-${index}`}
+          className={`plush-emoji ${index % 2 === 0 ? "move-right" : "move-left"}`}
+          style={
+            {
+              "--top": `${8 + ((index * 11) % 82)}%`,
+              "--delay": `${index * -1.7}s`,
+              "--size": `${2.1 + (index % 4) * 0.42}rem`,
+              "--duration": `${16 + (index % 5) * 3}s`,
+            } as React.CSSProperties
+          }
+        >
+          {emoji}
+        </span>
+      ))}
     </div>
   );
 };
 
-// --- Componente Login por Documento (CPF/CNPJ) ---
-interface CPFLoginProps {
-  onBack: () => void;
-  onLoginSuccess: (user: User) => void;
-}
-
-const CPFLogin: React.FC<CPFLoginProps> = ({ onBack, onLoginSuccess }) => {
-  const navigate = useNavigate();
-  
-  // Estados do Formulário
-  const [documentInput, setDocumentInput] = useState("");
-  const [cleanedDoc, setCleanedDoc] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [requiresRegistration, setRequiresRegistration] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  // Estados dos Campos de Cadastro
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [address, setAddress] = useState("");
-  const [cep, setCep] = useState("");
-  const [phone, setPhone] = useState("");
-  const [userFound, setUserFound] = useState<User | null>(null);
-
-  const formatDocument = (value: string) => {
-    const cleaned = value.replace(/\D/g, "");
-    if (cleaned.length <= 11) {
-      return cleaned
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-    } else {
-      return cleaned
-        .slice(0, 14)
-        .replace(/^(\d{2})(\d)/, "$1.$2")
-        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-        .replace(/\.(\d{3})(\d)/, ".$1/$2")
-        .replace(/(\d{4})(\d)/, "$1-$2");
-    }
-  };
-
-  const handleDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDocumentInput(formatDocument(e.target.value));
-    setError("");
-    setRequiresRegistration(false);
-  };
-
-  const checkDocument = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const clean = documentInput.replace(/\D/g, "");
-    if (clean.length !== 11 && clean.length !== 14) {
-      setError("Documento inválido. Digite 11 dígitos (CPF) ou 14 (CNPJ).");
-      return;
-    }
-    setIsLoading(true);
-    setError("");
-    setCleanedDoc(clean);
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/users/check-cpf`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cpf: clean }),
-      });
-      if (!response.ok) throw new Error("Erro ao verificar documento");
-      const data = await response.json();
-
-      if (data.exists && data.user) {
-        setUserFound(data.user);
-        setShowPassword(true);
-      } else {
-        setRequiresRegistration(true);
-      }
-    } catch (err) {
-      setError("Erro ao verificar documento. Tente novamente.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const registerUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      setError("Preencha os campos obrigatórios.");
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/users/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cpf: cleanedDoc,
-          name: name.trim(),
-          email: email.trim(),
-          address: address.trim(),
-          cep: cep.trim(),
-          phone: phone.trim(),
-          password: password.trim(),
-          role: "customer"
-        }),
-      });
-      const data = await response.json();
-      if (response.ok && data.user) onLoginSuccess(data.user);
-      else setError(data.error || "Erro ao cadastrar");
-    } catch (err) {
-      setError("Erro de rede ao cadastrar.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLoginWithPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/users/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cpf: cleanedDoc, password }),
-      });
-      const data = await response.json();
-      if (response.ok && data.user) onLoginSuccess(data.user);
-      else setError(data.error || "Senha incorreta.");
-    } catch (err) {
-      setError("Erro ao autenticar.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen animated-gradient p-4">
-      <div className="login-glass-card w-full max-w-md rounded-2xl shadow-2xl p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            {requiresRegistration ? "Cadastrar Conta" : showPassword ? "Digite sua senha" : "Fazer Login"}
-          </h1>
-          <p className="text-blue-100">
-            {requiresRegistration ? "Complete seu cadastro" : showPassword ? `Olá, ${userFound?.name}!` : "CPF ou CNPJ para começar"}
-          </p>
-        </div>
-
-        {/* FLUXO INICIAL (DOCUMENTO) */}
-        {!requiresRegistration && !showPassword && (
-          <form onSubmit={checkDocument} className="space-y-6">
-            <div>
-              <label className="block text-sm font-semibold text-blue-100 mb-2">CPF ou CNPJ</label>
-              <input
-                type="text"
-                value={documentInput}
-                onChange={handleDocChange}
-                placeholder="000.000.000-00 ou 00.000.000/0000-00"
-                className="login-input w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors text-lg"
-              />
-              {error && <p className="text-blue-200 text-sm mt-2">{error}</p>}
-            </div>
-            <button type="submit" disabled={isLoading} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-950/40">
-              {isLoading ? "Verificando..." : "Continuar"}
-            </button>
-          </form>
-        )}
-
-        {/* FLUXO SENHA */}
-        {showPassword && (
-          <form onSubmit={handleLoginWithPassword} className="space-y-6">
-            <div>
-              <label className="block text-sm font-semibold text-blue-100 mb-2">Senha</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Sua senha"
-                className="login-input w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors"
-                autoFocus
-              />
-              {error && <p className="text-blue-200 text-sm mt-2">{error}</p>}
-            </div>
-            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-950/40">Entrar</button>
-            <button type="button" onClick={() => setShowPassword(false)} className="w-full text-sm text-blue-100 hover:text-white">Voltar</button>
-          </form>
-        )}
-
-        {/* FLUXO CADASTRO */}
-        {requiresRegistration && (
-          <form onSubmit={registerUser} className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
-            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Nome Completo" className="login-input w-full px-4 py-2 border rounded-lg" />
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="E-mail" className="login-input w-full px-4 py-2 border rounded-lg" />
-            <input type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder="Endereco" className="login-input w-full px-4 py-2 border rounded-lg" />
-            <input type="text" value={cep} onChange={e => setCep(e.target.value)} placeholder="CEP" className="login-input w-full px-4 py-2 border rounded-lg" />
-            <input type="text" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Telefone" className="login-input w-full px-4 py-2 border rounded-lg" />
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Crie uma senha" className="login-input w-full px-4 py-2 border rounded-lg" />
-            {error && <p className="text-blue-200 text-sm">{error}</p>}
-            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-950/40">Cadastrar</button>
-            <button type="button" onClick={() => setRequiresRegistration(false)} className="w-full text-sm text-blue-100 hover:text-white">Voltar</button>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// --- Componente LoginPage Principal ---
 const LoginPage: React.FC = () => {
   const { login, currentUser } = useAuth();
   const { clearCart } = useCart();
   const navigate = useNavigate();
+  const [documentInput, setDocumentInput] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [address, setAddress] = useState("");
+  const [cep, setCep] = useState("");
+  const [phone, setPhone] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (currentUser) navigate("/menu");
@@ -278,7 +90,220 @@ const LoginPage: React.FC = () => {
     navigate("/menu");
   };
 
-  return <CPFLogin onBack={() => {}} onLoginSuccess={handleLoginSuccess} />;
+  const cleanDoc = documentInput.replace(/\D/g, "");
+
+  const validateDocumentAndPassword = () => {
+    if (cleanDoc.length !== 11 && cleanDoc.length !== 14) {
+      setError("Digite um CPF ou CNPJ valido.");
+      return false;
+    }
+    if (!password.trim()) {
+      setError("Digite sua senha.");
+      return false;
+    }
+    return true;
+  };
+
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError("");
+    if (!validateDocumentAndPassword()) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/users/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cpf: cleanDoc, password: password.trim() }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.user) {
+        handleLoginSuccess(data.user);
+        return;
+      }
+      setError(data.error || data.message || "CPF/CNPJ ou senha incorretos.");
+    } catch {
+      setError("Erro ao conectar com o servidor.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError("");
+    if (!validateDocumentAndPassword()) return;
+    if (!name.trim() || !email.trim()) {
+      setError("Preencha nome e email para cadastrar.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/users/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cpf: cleanDoc,
+          name: name.trim(),
+          email: email.trim(),
+          address: address.trim(),
+          cep: cep.trim(),
+          phone: phone.trim(),
+          password: password.trim(),
+          role: "customer",
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.user) {
+        handleLoginSuccess(data.user);
+        return;
+      }
+      setError(data.error || data.message || "Erro ao cadastrar.");
+    } catch {
+      setError("Erro de rede ao cadastrar.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <main className="login-screen animated-gradient">
+      <PlushBackground />
+      <section className="login-glass-card w-full max-w-md rounded-2xl p-7 shadow-2xl sm:p-9">
+        <div className="mb-7 text-center">
+          <p className="mb-2 text-sm font-bold uppercase tracking-[0.22em] text-amber-100">
+            Point&Point
+          </p>
+          <h1 className="text-3xl font-bold text-white">
+            {mode === "login" ? "Entrar na loja" : "Criar cadastro"}
+          </h1>
+          <p className="mt-2 text-sm text-amber-100/90">
+            Pelucias, presentes e fofura em poucos cliques.
+          </p>
+        </div>
+
+        <form
+          onSubmit={mode === "login" ? handleLogin : handleRegister}
+          className="space-y-4"
+        >
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold text-amber-50">
+              CPF ou CNPJ
+            </span>
+            <input
+              type="text"
+              value={documentInput}
+              onChange={(event) => {
+                setDocumentInput(formatDocument(event.target.value));
+                setError("");
+              }}
+              placeholder="000.000.000-00"
+              autoComplete="username"
+              className="login-input w-full rounded-lg border-2 px-4 py-3 text-base transition-colors focus:outline-none"
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold text-amber-50">
+              Senha
+            </span>
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                setError("");
+              }}
+              placeholder="Sua senha"
+              autoComplete={
+                mode === "login" ? "current-password" : "new-password"
+              }
+              className="login-input w-full rounded-lg border-2 px-4 py-3 text-base transition-colors focus:outline-none"
+            />
+          </label>
+
+          {mode === "register" && (
+            <div className="grid gap-3">
+              <input
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Nome completo"
+                autoComplete="name"
+                className="login-input w-full rounded-lg border px-4 py-2.5"
+              />
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="Email"
+                autoComplete="email"
+                className="login-input w-full rounded-lg border px-4 py-2.5"
+              />
+              <input
+                type="text"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                placeholder="Telefone"
+                autoComplete="tel"
+                className="login-input w-full rounded-lg border px-4 py-2.5"
+              />
+              <div className="grid gap-3 sm:grid-cols-[1fr_0.6fr]">
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(event) => setAddress(event.target.value)}
+                  placeholder="Endereco"
+                  autoComplete="street-address"
+                  className="login-input w-full rounded-lg border px-4 py-2.5"
+                />
+                <input
+                  type="text"
+                  value={cep}
+                  onChange={(event) => setCep(event.target.value)}
+                  placeholder="CEP"
+                  autoComplete="postal-code"
+                  className="login-input w-full rounded-lg border px-4 py-2.5"
+                />
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <p className="rounded-lg border border-red-300/40 bg-red-950/35 px-3 py-2 text-sm font-semibold text-red-100">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full rounded-lg bg-purple-700 py-3 font-bold text-white shadow-lg shadow-purple-950/40 transition-colors hover:bg-purple-800 disabled:bg-purple-300"
+          >
+            {isLoading
+              ? "Carregando..."
+              : mode === "login"
+                ? "Entrar"
+                : "Cadastrar"}
+          </button>
+        </form>
+
+        <button
+          type="button"
+          onClick={() => {
+            setMode((current) => (current === "login" ? "register" : "login"));
+            setError("");
+          }}
+          className="mt-5 w-full text-sm font-semibold text-amber-100 hover:text-white"
+        >
+          {mode === "login"
+            ? "Ainda nao tenho cadastro"
+            : "Ja tenho cadastro"}
+        </button>
+      </section>
+    </main>
+  );
 };
 
 export default LoginPage;

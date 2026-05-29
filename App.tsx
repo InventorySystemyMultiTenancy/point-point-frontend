@@ -52,9 +52,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   if (currentUser.role === "kitchen") {
     return <Navigate to="/cozinha" replace />;
   }
-  if (currentUser.role === "admin") {
-    return <Navigate to="/admin" replace />;
-  }
   return <>{children}</>;
 };
 
@@ -113,7 +110,7 @@ const RouterBody: React.FC = () => {
     location.pathname.startsWith("/superadmin");
   const isCheckoutThemeRoute = location.pathname === "/payment";
   const mainClassName = isFullBleedRoute
-    ? "bg-[#02132f]"
+    ? "bg-[#3b2418]"
     : isAdminThemeRoute
       ? "admin-modern-theme p-4 md:p-8"
       : isCheckoutThemeRoute

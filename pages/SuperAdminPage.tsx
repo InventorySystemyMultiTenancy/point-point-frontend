@@ -35,7 +35,7 @@ interface StatsData {
   orders: OrderDetail[];
 }
 
-import logo from "../assets/primeplush-logo.png";
+import logo from "../assets/pointpoint-logo.png";
 
 const SuperAdminPage: React.FC = () => {
   const [data, setData] = useState<StatsData | null>(null);
@@ -115,10 +115,10 @@ const SuperAdminPage: React.FC = () => {
           className="superadmin-login-card bg-white shadow-2xl rounded-2xl p-10 w-full max-w-md flex flex-col gap-6 border-2 border-purple-200"
         >
           <div className="flex flex-col items-center gap-3">
-            <img src={logo} alt="PrimePlush Logo" className="w-24 h-24 mb-2" />
+            <img src={logo} alt="Point&Point Logo" className="w-24 h-24 mb-2" />
             <h2 className="text-3xl font-bold text-purple-600">Super Admin</h2>
             <p className="text-gray-600 text-sm text-center">
-              Controle Financeiro PrimePlush
+              Controle Financeiro Point&Point
             </p>
           </div>
           <input
