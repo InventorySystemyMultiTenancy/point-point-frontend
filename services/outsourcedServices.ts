@@ -32,6 +32,7 @@ export interface OutsourcedService {
   input_quantity: number;
   input_unit: string;
   fabric_paid_amount?: number | null;
+  service_cost_amount?: number | null;
   expected_return_quantity: number;
   expected_return_unit: string;
   total_delivered_quantity: number;
@@ -77,6 +78,7 @@ export interface OutsourcedServicePayload {
   service_type: string;
   input_quantity: number;
   fabric_paid_amount?: number;
+  service_cost_amount?: number;
   expected_return_quantity: number;
   due_date: string;
   started_at?: string;

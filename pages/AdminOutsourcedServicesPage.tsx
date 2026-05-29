@@ -60,6 +60,7 @@ const emptyService = {
   service_type: "fabric_cutting",
   input_quantity: "",
   fabric_paid_amount: "",
+  service_cost_amount: "",
   expected_return_quantity: "",
   due_date: "",
   started_at: "",
@@ -304,6 +305,9 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     if (serviceForm.fabric_paid_amount !== "") {
       payload.fabric_paid_amount = Number(serviceForm.fabric_paid_amount);
     }
+    if (serviceForm.service_cost_amount !== "") {
+      payload.service_cost_amount = Number(serviceForm.service_cost_amount);
+    }
 
     setSaving(true);
     try {
@@ -520,6 +524,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                     "Entregue",
                     "Faltante",
                     "Valor tecido",
+                    "Custo servico",
                     "Progresso",
                     "Observacoes",
                   ].map((header) => (
@@ -536,7 +541,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                 {visibleServices.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={11}
+                      colSpan={12}
                       className="px-4 py-8 text-center text-stone-500"
                     >
                       Nenhum servico encontrado.
@@ -586,6 +591,9 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                       </td>
                       <td className="px-4 py-3">
                         {money(service.fabric_paid_amount)}
+                      </td>
+                      <td className="px-4 py-3">
+                        {money(service.service_cost_amount)}
                       </td>
                       <td className="px-4 py-3">
                         <ProgressBar service={service} />
@@ -834,6 +842,19 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                 }
               />
               <FormInput
+                label="Valor cobrado pelo terceirizado pelo servico"
+                type="number"
+                min="0"
+                step="0.01"
+                value={serviceForm.service_cost_amount}
+                onChange={(value) =>
+                  setServiceForm((prev) => ({
+                    ...prev,
+                    service_cost_amount: value,
+                  }))
+                }
+              />
+              <FormInput
                 label="Quantidade prevista de retorno"
                 type="number"
                 min="0.01"
@@ -951,6 +972,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   <Info label="Ja entregue" value={String(selectedService.total_delivered_quantity)} />
                   <Info label="Faltante" value={String(selectedService.remaining_quantity)} />
                   <Info label="Valor tecido" value={money(selectedService.fabric_paid_amount)} />
+                  <Info label="Custo servico" value={money(selectedService.service_cost_amount)} />
                   <Info label="Inicio" value={formatDate(selectedService.started_at)} />
                   <Info label="Observacoes" value={selectedService.notes || "-"} />
                 </div>

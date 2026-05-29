@@ -30,10 +30,10 @@ const Footer = () => {
           <a href="https://wa.me/5511942058445" target="_blank" rel="noopener noreferrer">WhatsApp: 11 94205-8445</a>
         </span>
         <span>
-          <a href="mailto:orcamento@girakids.com">orcamento@girakids.com</a>
+          <a href="mailto:contato@pointpoint.com">contato@pointpoint.com</a>
         </span>
         <span>Av. Cachoeira Paulista, 17</span>
-        <span>Point&Point x Gira Kids 2026</span>
+        <span>Point&Point 2026</span>
         <span>Todos os direitos reservados</span>
       </div>
     </div>

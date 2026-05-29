@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import SuperAdminReceivablesDetails from "../components/SuperAdminReceivablesDetails";
+import { login as apiLogin } from "../services/apiService";
 
 interface ItemDetail {
   name: string;
@@ -66,7 +67,14 @@ const SuperAdminPage: React.FC = () => {
           },
         },
       );
-      if (!response.ok) throw new Error("Erro ao buscar dados");
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          response.status === 500
+            ? "Login realizado, mas o backend falhou ao carregar recebiveis."
+            : errorText || "Erro ao buscar dados",
+        );
+      }
       const result = await response.json();
       setData(result);
     } catch (e: any) {
@@ -80,19 +88,10 @@ const SuperAdminPage: React.FC = () => {
     setLoading(true);
     setError("");
     try {
-      // Testa senha fazendo uma requisição
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/super-admin/receivables`,
-        {
-          headers: {
-            "x-super-admin-password": password,
-          },
-        },
-      );
-      if (!response.ok) throw new Error("Senha incorreta ou não autorizado");
-      const result = await response.json();
-      setData(result);
+      const success = await apiLogin("superadmin", password);
+      if (!success) throw new Error("Senha incorreta ou nao autorizado");
       setLoggedIn(true);
+      await fetchData();
     } catch (e: any) {
       setError(e.message || "Erro ao autenticar");
     }
@@ -128,6 +127,7 @@ const SuperAdminPage: React.FC = () => {
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
             className="border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+            autoComplete="current-password"
             autoFocus
           />
           <button
@@ -160,7 +160,7 @@ const SuperAdminPage: React.FC = () => {
     setLoading(true);
     setError("");
     try {
-      // Log para depuração
+      // Log para depuraÃ§Ã£o
       console.log(
         "[FRONTEND] Enviando POST para /api/super-admin/receivables/mark-received-by-ids",
         {
@@ -243,11 +243,11 @@ const SuperAdminPage: React.FC = () => {
                 onToggleOrder={handleToggleOrder}
               />
             </div>
-            {/* Histórico de repasses */}
+            {/* Historico de recebimentos */}
             {data.history && data.history.length > 0 && (
               <div className="bg-white shadow-xl rounded-2xl p-2 sm:p-4 md:p-6 border-2 border-green-200 mt-4 sm:mt-8 overflow-x-auto">
                 <h2 className="text-lg sm:text-xl font-bold text-green-800 mb-2 sm:mb-4">
-                  Histórico de Repasses ao SuperAdmin
+                  Historico de Recebimentos do SuperAdmin
                 </h2>
                 <div className="w-full overflow-x-auto">
                   <table className="w-full text-xs mb-2 min-w-[600px]">
@@ -257,13 +257,17 @@ const SuperAdminPage: React.FC = () => {
                         <th className="py-1 px-2 text-left">Cliente</th>
                         <th className="py-1 px-2 text-left">Valor Total</th>
                         <th className="py-1 px-2 text-left">Data do Pedido</th>
-                        <th className="py-1 px-2 text-left">Data do Repasse</th>
+                        <th className="py-1 px-2 text-left">Data do Recebimento</th>
                       </tr>
                     </thead>
                     <tbody>
                       {data.history.map((h, idx) => (
                         <tr
-                          key={h.repasseId + "-" + h.pedidoId + "-" + idx}
+                          key={
+                            ((h as any).recebimentoId || h.id || idx) +
+                            "-" +
+                            ((h as any).pedidoId || idx)
+                          }
                           className="border-b"
                         >
                           <td className="py-1 px-2">{h.pedidoId}</td>
@@ -277,8 +281,10 @@ const SuperAdminPage: React.FC = () => {
                               : "-"}
                           </td>
                           <td className="py-1 px-2">
-                            {h.dataRepasse
-                              ? new Date(h.dataRepasse).toLocaleString()
+                            {(h as any).dataRecebimento
+                              ? new Date(
+                                  (h as any).dataRecebimento,
+                                ).toLocaleString()
                               : "-"}
                           </td>
                         </tr>
@@ -286,7 +292,7 @@ const SuperAdminPage: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
-                {/* Exibe valorRecebidoDetalhado se disponível */}
+                {/* Exibe valorRecebidoDetalhado se disponÃ­vel */}
                 {data.valorRecebidoDetalhado && (
                   <div className="mt-4 text-xs text-gray-600">
                     <b>Valores Recebidos Detalhados:</b>
@@ -312,3 +318,5 @@ const SuperAdminPage: React.FC = () => {
 };
 
 export default SuperAdminPage;
+
+

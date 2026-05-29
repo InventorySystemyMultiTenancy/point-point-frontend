@@ -1,4 +1,4 @@
-// Atualiza os dados do usuário (self-service)
+﻿// Atualiza os dados do usuÃ¡rio (self-service)
 export async function updateUser(userId: string, userData: any) {
   const response = await authenticatedFetch(`${API_URL}/users/${userId}`, {
     method: "PUT",
@@ -6,7 +6,7 @@ export async function updateUser(userId: string, userData: any) {
   });
   return response.json();
 }
-// Serviço de API com autenticação JWT e Multi-tenant
+// ServiÃ§o de API com autenticaÃ§Ã£o JWT e Multi-tenant
 
 import api from "./api";
 
@@ -32,7 +32,7 @@ export function saveToken(token: string): void {
  */
 export function logout(): void {
   localStorage.removeItem("jwt_token");
-  console.log("Usuário deslogado.");
+  console.log("UsuÃ¡rio deslogado.");
 }
 
 export interface DeleteOrderFromHistoryResponse {
@@ -46,7 +46,7 @@ interface ApiHttpError extends Error {
 }
 
 /**
- * Remove (soft delete) um pedido do histórico via rota administrativa.
+ * Remove (soft delete) um pedido do histÃ³rico via rota administrativa.
  * Exige JWT de admin no header Authorization.
  */
 export async function deleteOrderFromHistory(
@@ -54,7 +54,7 @@ export async function deleteOrderFromHistory(
   token: string,
 ): Promise<DeleteOrderFromHistoryResponse> {
   if (!token) {
-    const error: ApiHttpError = new Error("Sessão expirada");
+    const error: ApiHttpError = new Error("SessÃ£o expirada");
     error.status = 401;
     throw error;
   }
@@ -84,7 +84,7 @@ export async function deleteOrderFromHistory(
 
   return {
     ok: data.ok ?? true,
-    message: data.message || "Pedido removido do histórico com sucesso",
+    message: data.message || "Pedido removido do histÃ³rico com sucesso",
     orderId: data.orderId || orderId,
   };
 }
@@ -93,7 +93,7 @@ export async function deleteOrderFromHistory(
  * Tenta fazer login e salva o token se for bem-sucedido.
  * @param role - 'admin', 'kitchen' ou 'superadmin'
  * @param password - A senha correspondente
- * @returns True se o login foi bem-sucedido, false caso contrário.
+ * @returns True se o login foi bem-sucedido, false caso contrÃ¡rio.
  */
 export async function login(
   role: "admin" | "kitchen" | "superadmin",
@@ -126,7 +126,7 @@ export async function login(
     if (data.success && data.token) {
       // Salva o token no localStorage
       saveToken(data.token);
-      console.log(`✅ Login bem-sucedido! Role: ${role}`);
+      console.log(`âœ… Login bem-sucedido! Role: ${role}`);
       return true;
     }
     return false;
@@ -137,16 +137,16 @@ export async function login(
 }
 
 /**
- * Verifica se o usuário está autenticado (possui token válido).
+ * Verifica se o usuÃ¡rio estÃ¡ autenticado (possui token vÃ¡lido).
  */
 export function isAuthenticated(): boolean {
   return getToken() !== null;
 }
 
 /**
- * Um wrapper para o fetch que adiciona o token de autenticação automaticamente.
+ * Um wrapper para o fetch que adiciona o token de autenticaÃ§Ã£o automaticamente.
  * @param url - A URL da API para chamar.
- * @param options - As opções do fetch (method, body, etc.).
+ * @param options - As opÃ§Ãµes do fetch (method, body, etc.).
  */
 export async function authenticatedFetch(
   url: string,
@@ -160,32 +160,32 @@ export async function authenticatedFetch(
   };
 
   if (token) {
-    // Adiciona o cabeçalho de autorização com o token
+    // Adiciona o cabeÃ§alho de autorizaÃ§Ã£o com o token
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  // console.log removido: storeId não é mais usado
+  // console.log removido: storeId nÃ£o Ã© mais usado
   const response = await fetch(url, { ...options, headers });
 
-  // Se o token for inválido/expirado (401 ou 403), limpa o token e desconecta
+  // Se o token for invÃ¡lido/expirado (401 ou 403), limpa o token e desconecta
   if (response.status === 401 || response.status === 403) {
-    console.error("Acesso negado. Token inválido ou expirado.");
+    console.error("Acesso negado. Token invÃ¡lido ou expirado.");
     logout();
-    // Redireciona para a página de login (se necessário)
+    // Redireciona para a pÃ¡gina de login (se necessÃ¡rio)
     const route = `${window.location.pathname}${window.location.hash}`;
     if (route.includes("/admin")) {
       window.location.hash = "#/admin/login";
     } else if (route.includes("/kitchen") || route.includes("/cozinha")) {
       window.location.hash = "#/kitchen/login";
     }
-    throw new Error("Acesso não autorizado");
+    throw new Error("Acesso nÃ£o autorizado");
   }
 
   return response;
 }
 
 /**
- * Fetch público para rotas como /api/menu
+ * Fetch pÃºblico para rotas como /api/menu
  */
 export async function publicFetch(
   url: string,
@@ -196,12 +196,12 @@ export async function publicFetch(
     ...(options.headers || {}),
   };
 
-  // console.log removido: storeId não é mais usado
+  // console.log removido: storeId nÃ£o Ã© mais usado
   return fetch(url, { ...options, headers });
 }
 
 /**
- * Funções auxiliares para operações comuns da API com autenticação
+ * FunÃ§Ãµes auxiliares para operaÃ§Ãµes comuns da API com autenticaÃ§Ã£o
  */
 
 // Produtos (Admin)
@@ -209,28 +209,35 @@ export async function getProducts() {
   try {
     const response = await publicFetch(`${API_URL}/products`);
 
-    // ✅ Verifica se a resposta foi bem-sucedida
+    // âœ… Verifica se a resposta foi bem-sucedida
     if (!response.ok) {
       const errorText = await response.text();
       console.error(
-        `❌ Erro ao buscar produtos (${response.status}):`,
+        `âŒ Erro ao buscar produtos (${response.status}):`,
         errorText,
       );
       throw new Error(`Backend error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    const products = Array.isArray(data)
+      ? data
+      : Array.isArray(data.products)
+        ? data.products
+        : Array.isArray(data.data)
+          ? data.data
+          : [];
 
-    // ✅ Valida se é array
+    // Valida se e array
     if (!Array.isArray(products)) {
-      console.error("❌ Backend retornou dados inválidos (não é array):", data);
+      console.error("âŒ Backend retornou dados invÃ¡lidos (nÃ£o Ã© array):", data);
       return [];
     }
 
     return products;
   } catch (error) {
-    console.error("❌ Erro ao buscar produtos:", error);
-    return []; // ✅ Retorna array vazio em caso de erro
+    console.error("âŒ Erro ao buscar produtos:", error);
+    return []; // âœ… Retorna array vazio em caso de erro
   }
 }
 
@@ -276,8 +283,9 @@ export async function deleteOrder(orderId: string) {
   return response.json();
 }
 
-// Usuários (Admin)
+// UsuÃ¡rios (Admin)
 export async function getUsers() {
   const response = await authenticatedFetch(`${API_URL}/users`);
   return response.json();
 }
+

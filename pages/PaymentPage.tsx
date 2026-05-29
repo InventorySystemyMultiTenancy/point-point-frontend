@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useQuery } from "@tanstack/react-query";
@@ -16,7 +16,7 @@ import PaymentOnline from "../components/PaymentOnline";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
-// Helper para requisições padrão (single-tenant)
+// Helper para requisiÃ§Ãµes padrÃ£o (single-tenant)
 const fetchStandard = async (url: string, options: RequestInit = {}) => {
   const headers = {
     "Content-Type": "application/json",
@@ -52,7 +52,7 @@ const PaymentPage: React.FC = () => {
     "online" | "presencial" | null
   >(null);
 
-  // --- CORREÇÃO: ADICIONADO O ESTADO QUE FALTAVA ---
+  // --- CORREÃ‡ÃƒO: ADICIONADO O ESTADO QUE FALTAVA ---
   const [presencialStep, setPresencialStep] = useState<
     "select-method" | "select-installments" | "finalize" | null
   >(null);
@@ -69,7 +69,7 @@ const PaymentPage: React.FC = () => {
 
   // Estados para taxa e parcelas (usados em ambos os fluxos)
   const [selectedInstallments, setSelectedInstallments] = useState<number>(1);
-  const [taxaSelecionada, setTaxaSelecionada] = useState<number>(0); // Corrigido valor inicial para 0 se não tiver taxa padrão
+  const [taxaSelecionada, setTaxaSelecionada] = useState<number>(0); // Corrigido valor inicial para 0 se nÃ£o tiver taxa padrÃ£o
 
   useEffect(() => {
     if (paymentType === "presencial" && paymentMethod === "credit") {
@@ -93,7 +93,7 @@ const PaymentPage: React.FC = () => {
   const [onlineOrderId, setOnlineOrderId] = useState<string | null>(null);
   const [creatingOnlineOrder, setCreatingOnlineOrder] = useState(false);
 
-  // Ref para limpeza (cleanup) ao desmontar a página
+  // Ref para limpeza (cleanup) ao desmontar a pÃ¡gina
   const paymentIdRef = useRef<string | null>(null);
 
   // --- REACT QUERY: POLLING INTELIGENTE ---
@@ -125,7 +125,7 @@ const PaymentPage: React.FC = () => {
   useEffect(() => {
     if (paymentStatusData?.status === "approved" && activePayment) {
       console.log(
-        "✅ Pagamento detectado pelo React Query:",
+        "âœ… Pagamento detectado pelo React Query:",
         paymentStatusData,
       );
       finalizeOrder(
@@ -140,12 +140,12 @@ const PaymentPage: React.FC = () => {
         paymentStatusData?.status === "rejected") &&
       activePayment
     ) {
-      console.log("❌ Pagamento cancelado/rejeitado:", paymentStatusData);
+      console.log("âŒ Pagamento cancelado/rejeitado:", paymentStatusData);
       handlePaymentFailure(paymentStatusData);
     }
   }, [paymentStatusData, activePayment]);
 
-  // --- EFEITO: Cleanup de Segurança ---
+  // --- EFEITO: Cleanup de SeguranÃ§a ---
   useEffect(() => {
     paymentIdRef.current = activePayment?.id || null;
   }, [activePayment]);
@@ -154,7 +154,7 @@ const PaymentPage: React.FC = () => {
     return () => {
       if (paymentIdRef.current) {
         console.log(
-          `🧹 Cleanup: Cancelando pagamento ${paymentIdRef.current} no backend...`,
+          `ðŸ§¹ Cleanup: Cancelando pagamento ${paymentIdRef.current} no backend...`,
         );
         fetchStandard(
           `${BACKEND_URL}/api/payment/cancel/${paymentIdRef.current}`,
@@ -172,7 +172,7 @@ const PaymentPage: React.FC = () => {
     setStatus("error");
 
     const reasonMessages: Record<string, string> = {
-      canceled_by_user: "Pagamento cancelado na maquininha pelo usuário",
+      canceled_by_user: "Pagamento cancelado na maquininha pelo usuÃ¡rio",
       payment_error: "Erro ao processar pagamento na maquininha",
       canceled_by_system: "Pagamento cancelado pelo sistema",
       rejected_by_terminal: "Pagamento rejeitado pela maquininha",
@@ -181,7 +181,7 @@ const PaymentPage: React.FC = () => {
     const errorMsg =
       data.message ||
       (data.reason ? reasonMessages[data.reason] : null) ||
-      "Pagamento não aprovado. Tente novamente.";
+      "Pagamento nÃ£o aprovado. Tente novamente.";
 
     setErrorMessage(errorMsg);
     setQrCodeBase64(null);
@@ -242,7 +242,7 @@ const PaymentPage: React.FC = () => {
       clearCart();
       setQrCodeBase64(null);
 
-      // Baixa o PDF automaticamente após sucesso
+      // Baixa o PDF automaticamente apÃ³s sucesso
       const pdfUrl = `${BACKEND_URL}/api/orders/${orderId}/receipt-pdf`;
       fetch(pdfUrl)
         .then((res) => res.blob())
@@ -258,15 +258,15 @@ const PaymentPage: React.FC = () => {
         });
 
       // Gera link do WhatsApp com o PDF
-      const whatsappNumber = 11989009259; // ajuste conforme seu modelo de usuário
+      const whatsappNumber = 11989009259; // ajuste conforme seu modelo de usuÃ¡rio
       const whatsappMsg = encodeURIComponent(
-        `Olá! Segue o comprovante do seu pedido: ${pdfUrl}`,
+        `OlÃ¡! Segue o comprovante do seu pedido: ${pdfUrl}`,
       );
       const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMsg}`;
-      // Abre WhatsApp em nova aba (opcional: pode exibir botão/link na tela de sucesso)
+      // Abre WhatsApp em nova aba (opcional: pode exibir botÃ£o/link na tela de sucesso)
       window.open(whatsappLink, "_blank");
 
-      // Redireciona para a página inicial após 5 segundos
+      // Redireciona para a pÃ¡gina inicial apÃ³s 5 segundos
       setTimeout(async () => {
         await logout();
         navigate("/", { replace: true });
@@ -350,10 +350,10 @@ const PaymentPage: React.FC = () => {
     }
   };
 
-  // Função usada para integração com maquininha (se for usar o fluxo automático)
+  // FunÃ§Ã£o usada para integraÃ§Ã£o com maquininha (se for usar o fluxo automÃ¡tico)
   const handleCardPayment = async () => {
     setStatus("processing");
-    setPaymentStatusMessage("Conectando à maquininha...");
+    setPaymentStatusMessage("Conectando Ã  maquininha...");
 
     try {
       const orderId = await createOrder();
@@ -405,7 +405,7 @@ const PaymentPage: React.FC = () => {
             className="w-32 h-auto mx-auto mb-4 rounded-lg"
           />
           <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-4xl">✅</span>
+            <span className="text-4xl">âœ…</span>
           </div>
           <h2 className="text-3xl font-bold text-green-800 mb-2">
             Pagamento Aprovado!
@@ -431,7 +431,7 @@ const PaymentPage: React.FC = () => {
           className="text-blue-600 hover:bg-blue-100 p-2 rounded-full transition-all duration-300 ease-in-out transform hover:scale-110 shadow-lg"
           disabled={status === "processing"}
         >
-          ←
+          â†
         </button>
         Finalizar Pagamento
       </h1>
@@ -472,24 +472,24 @@ const PaymentPage: React.FC = () => {
           )}
         </div>
 
-        {/* COLUNA DIREITA - AÇÕES */}
+        {/* COLUNA DIREITA - AÃ‡Ã•ES */}
         <div className="flex flex-col gap-4">
           {!paymentType && (
             <>
               <h2 className="text-xl font-bold text-stone-800 mb-2">
-                Como você quer pagar?
+                Como vocÃª quer pagar?
               </h2>
               <button
                 className="p-4 rounded-xl border-2 border-green-500 bg-green-50 text-green-900 font-bold text-lg hover:bg-green-100 transition-all"
                 onClick={() => setPaymentType("online")}
               >
-                💻 Pagamento Online (Mercado Pago)
+                ðŸ’» Pagamento Online (Mercado Pago)
               </button>
               <button
                 className="p-4 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-900 font-bold text-lg hover:bg-blue-100 transition-all"
                 onClick={() => setPaymentType("presencial")}
               >
-                🏪 Pagar na Loja Girakids
+                ðŸª Pagar na Loja Point&Point
               </button>
             </>
           )}
@@ -588,10 +588,10 @@ const PaymentPage: React.FC = () => {
           {paymentType === "presencial" && (
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded text-center text-blue-800 font-semibold">
               <span className="block text-2xl mb-2">
-                🏪 Pagamento na Loja Girakids
+                ðŸª Pagamento na Loja Point&Point
               </span>
 
-              {/* Step 1: Seleção do método */}
+              {/* Step 1: SeleÃ§Ã£o do mÃ©todo */}
               {presencialStep === null || presencialStep === "select-method" ? (
                 <div className="flex flex-col gap-4 items-center justify-center">
                   <span className="mb-2">Escolha a forma de pagamento:</span>
@@ -607,7 +607,7 @@ const PaymentPage: React.FC = () => {
                       setPresencialStep("select-installments");
                     }}
                   >
-                    Crédito
+                    CrÃ©dito
                   </button>
                   <button
                     className={`px-6 py-3 rounded font-bold text-lg transition-all ${
@@ -620,7 +620,7 @@ const PaymentPage: React.FC = () => {
                       setPresencialStep("finalize");
                     }}
                   >
-                    Débito
+                    DÃ©bito
                   </button>
                   <button
                     className={`px-6 py-3 rounded font-bold text-lg transition-all ${
@@ -635,7 +635,7 @@ const PaymentPage: React.FC = () => {
                   >
                     PIX
                   </button>
-                  {/* Opções extras para admin */}
+                  {/* OpÃ§Ãµes extras para admin */}
                   {currentUser?.role === "admincustomer" && (
                     <>
                       <button
@@ -669,12 +669,12 @@ const PaymentPage: React.FC = () => {
                 </div>
               ) : null}
 
-              {/* Step 2: Seleção de parcelas para crédito */}
+              {/* Step 2: SeleÃ§Ã£o de parcelas para crÃ©dito */}
               {presencialStep === "select-installments" &&
                 paymentMethod === "credit" && (
                   <div className="mb-2">
                     <span className="font-semibold text-blue-700">
-                      Parcelamento disponível:
+                      Parcelamento disponÃ­vel:
                     </span>
                     <ul className="text-sm text-blue-800 mt-1 flex flex-wrap gap-2">
                       {[1, 2, 3, 4, 5, 6].map((parcelas) => (
@@ -751,7 +751,7 @@ const PaymentPage: React.FC = () => {
                         window.open(pdfUrl, "_blank");
                       }
 
-                      // Redirecionar para o catálogo após um pequeno delay
+                      // Redirecionar para o catÃ¡logo apÃ³s um pequeno delay
                       setTimeout(() => {
                         navigate("/");
                       }, 500);
@@ -786,3 +786,4 @@ const PaymentPage: React.FC = () => {
 };
 
 export default PaymentPage;
+
