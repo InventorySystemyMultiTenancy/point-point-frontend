@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { employeeLogin, isEmployeeAuthenticated } from "../services/apiService";
-import logo from "../assets/pointpointcorrect.jpg";
+import logo from "../assets/pointpointcorrect-transparent.png";
 
 const EmployeeLoginPage: React.FC = () => {
   const navigate = useNavigate();

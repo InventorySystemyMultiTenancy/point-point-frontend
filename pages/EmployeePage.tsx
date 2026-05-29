@@ -6,7 +6,7 @@ import {
   employeeFetch,
   isEmployeeAuthenticated,
 } from "../services/apiService";
-import logo from "../assets/pointpointcorrect.jpg";
+import logo from "../assets/pointpointcorrect-transparent.png";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const API_URL = `${BASE_URL}/api`;
@@ -110,7 +110,7 @@ const EmployeePage: React.FC = () => {
 
   const logout = () => {
     clearEmployeeToken();
-    navigate("/employee/login", { replace: true });
+    navigate("/", { replace: true });
   };
 
   return (
