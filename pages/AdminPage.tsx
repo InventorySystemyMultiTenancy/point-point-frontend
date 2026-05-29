@@ -1,7 +1,7 @@
-﻿// PÃ¡gina: /pages/AdminPage.tsx
-// Esta pÃ¡gina fornece uma interface administrativa simples para listar,
-// adicionar, editar e remover produtos do "cardÃ¡pio".
-// ComentÃ¡rios em portuguÃªs explicam cada parte do cÃ³digo.
+﻿// P?gina: /pages/AdminPage.tsx
+// Esta p?gina fornece uma interface administrativa simples para listar,
+// adicionar, editar e remover produtos do "catalogo".
+// Coment?rios em portugu?s explicam cada parte do c?digo.
 
 import React, { useState, useEffect } from "react";
 import {
@@ -12,7 +12,7 @@ import {
   type StockMovement,
 } from "../utils/stockMovements";
 
-// Modal de movimentaÃ§Ã£o de estoque para mÃºltiplos produtos
+// Modal de movimentacao de estoque para multiplos produtos
 const StockMovementModal: React.FC<{
   products: Product[];
   onClose: () => void;
@@ -50,7 +50,7 @@ const StockMovementModal: React.FC<{
     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
         <h2 className="text-xl font-bold mb-4 text-blue-800">
-          MovimentaÃ§Ã£o de Estoque
+          Movimentacao de Estoque
         </h2>
         <form
           onSubmit={(e) => {
@@ -97,7 +97,7 @@ const StockMovementModal: React.FC<{
                   onClick={() => removeRow(idx)}
                   disabled={rows.length === 1}
                 >
-                  âœ•
+                  X
                 </button>
               </div>
             ))}
@@ -138,10 +138,10 @@ import {
   type OutsourcedAlert,
 } from "../services/outsourcedServices";
 
-// --- Componente de formulÃ¡rio de produto (Modal) ---
-// Props esperadas pelo formulÃ¡rio:
+// --- Componente de formulario de produto (Modal) ---
+// Props esperadas pelo formulario:
 interface ProductFormProps {
-  product: Product | null; // produto que serÃ¡ editado (null para novo)
+  product: Product | null; // produto que ser? editado (null para novo)
   onSave: (product: Product) => void; // callback ao salvar
   onCancel: () => void; // callback ao cancelar/fechar
 }
@@ -151,7 +151,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   onSave,
   onCancel,
 }) => {
-  // Estado local do formulÃ¡rio. Usamos Omit para nÃ£o incluir 'id' e 'imageUrl'
+  // Estado local do formulario. Usamos Omit para nao incluir 'id' e 'imageUrl'
   // no tipo inicial, mas permitimos opcionalmente 'id' enquanto editamos.
   const [formData, setFormData] = useState<
     Omit<Product, "id"> & { id?: string }
@@ -159,7 +159,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     name: "",
     price: 0,
     priceRaw: 0,
-    category: "PelÃºcia",
+    category: "Pelucia",
     imageUrl: "",
     stock: 0,
     minStock: 0,
@@ -179,9 +179,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
         if (data.length > 0) {
           setCategories(data);
         } else {
-          // Fallback caso nÃ£o haja categorias
+          // Fallback caso nao haja categorias
           setCategories([
-            { name: "PelÃºcia" },
+            { name: "Pelucia" },
             { name: "Bebida" },
             { name: "Doce" },
           ]);
@@ -190,19 +190,19 @@ const ProductForm: React.FC<ProductFormProps> = ({
         console.error("Erro ao carregar categorias:", error);
         // Fallback em caso de erro
         setCategories([
-          { name: "PelÃºcia" },
+          { name: "Pelucia" },
           { name: "Bebida" },
           { name: "Doce" },
         ]);
         setCategories([
-          { name: "PelÃºcia Ursinho" },
-          { name: "PelÃºcia Coelho" },
-          { name: "PelÃºcia UnicÃ³rnio" },
-          { name: "AcessÃ³rios" },
-          { name: "ColecionÃ¡veis" },
+          { name: "Pelucia Ursinho" },
+          { name: "Pelucia Coelho" },
+          { name: "Pelucia Unicornio" },
+          { name: "Acessorios" },
+          { name: "Colecionaveis" },
         ]);
         setCategories([
-          { name: "PelÃºcia" },
+          { name: "Pelucia" },
           { name: "Bebida" },
           { name: "Doce" },
         ]);
@@ -211,7 +211,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     loadCategories();
   }, []);
 
-  // Quando o prop `product` muda (por ex. abrir para editar), preenche o formulÃ¡rio.
+  // Quando o prop `product` muda (por ex. abrir para editar), preenche o formulario.
   useEffect(() => {
     if (product) {
       const existingImages =
@@ -231,7 +231,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         name: "",
         price: 0,
         priceRaw: 0,
-        category: categories.length > 0 ? categories[0].name : "PelÃºcia",
+        category: categories.length > 0 ? categories[0].name : "Pelucia",
         imageUrl: "",
         stock: 0,
         minStock: 0,
@@ -241,14 +241,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
     }
   }, [product, categories]);
 
-  // Atualiza campos do formulÃ¡rio. Convertendo price para nÃºmero quando necessÃ¡rio.
+  // Atualiza campos do formulario. Convertendo price para n?mero quando necess?rio.
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >,
   ) => {
     const { name, value } = e.target;
-    // Se for o campo 'price' ou 'stock', converte para nÃºmero; caso contrÃ¡rio mantÃ©m string.
+    // Se for o campo 'price' ou 'stock', converte para n?mero; caso contr?rio mant?m string.
     setFormData((prev) => ({
       ...prev,
       [name]:
@@ -301,7 +301,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     // Modal em tela cheia com fundo escuro semitransparente
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start sm:items-center z-50 overflow-y-auto p-2 sm:p-4">
       <div className="bg-white p-4 sm:p-8 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        {/* TÃ­tulo muda conforme ediÃ§Ã£o ou criaÃ§Ã£o */}
+        {/* Titulo muda conforme edicao ou criacao */}
         <h2 className="text-2xl font-bold mb-6 text-blue-800">
           {product ? "Editar Produto" : "Adicionar Produto"}
         </h2>
@@ -329,7 +329,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 htmlFor="price"
                 className="block text-sm font-medium text-stone-700"
               >
-                PreÃ§o de Venda
+                Preco de Venda
               </label>
               <input
                 type="number"
@@ -347,7 +347,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 htmlFor="priceRaw"
                 className="block text-sm font-medium text-stone-700"
               >
-                PreÃ§o Bruto
+                Preco Bruto
               </label>
               <input
                 type="number"
@@ -384,11 +384,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   ))
                 ) : (
                   <>
-                    <option>PelÃºcia Ursinho</option>
-                    <option>PelÃºcia Coelho</option>
-                    <option>PelÃºcia UnicÃ³rnio</option>
-                    <option>AcessÃ³rios</option>
-                    <option>ColecionÃ¡veis</option>
+                    <option>Pelucia Ursinho</option>
+                    <option>Pelucia Coelho</option>
+                    <option>Pelucia Unicornio</option>
+                    <option>Acessorios</option>
+                    <option>Colecionaveis</option>
                   </>
                 )}
               </select>
@@ -398,7 +398,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 htmlFor="minStock"
                 className="block text-sm font-medium text-stone-700"
               >
-                Estoque MÃ­nimo
+                Estoque Minimo
               </label>
               <input
                 type="number"
@@ -453,7 +453,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               + Adicionar outra imagem
             </button>
             <p className="mt-1 text-xs text-stone-500">
-              A primeira URL serÃ¡ a imagem principal do produto.
+              A primeira URL sera a imagem principal do produto.
             </p>
           </div>
           <div>
@@ -474,7 +474,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-amber-500 focus:ring-amber-500"
             />
             <p className="mt-1 text-xs text-stone-500">
-              Quantidade disponÃ­vel em estoque
+              Quantidade disponivel em estoque
             </p>
           </div>
           <div>
@@ -495,12 +495,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
               className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
             />
             <p className="mt-1 text-xs text-stone-500">
-              Exemplo: venda de 30 em 30, 15 em 15, etc. O cliente sÃ³ pode
-              comprar mÃºltiplos dessa quantidade.
+              Exemplo: venda de 30 em 30, 15 em 15, etc. O cliente so pode
+              comprar multiplos dessa quantidade.
             </p>
           </div>
           <div className="flex justify-end gap-4 pt-4">
-            {/* BotÃ£o cancelar fecha o modal sem salvar */}
+            {/* Botao cancelar fecha o modal sem salvar */}
             <button
               type="button"
               onClick={onCancel}
@@ -508,7 +508,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
             >
               Cancelar
             </button>
-            {/* BotÃ£o salvar submete o formulÃ¡rio */}
+            {/* Botao salvar submete o formulario */}
             <button
               type="submit"
               className="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700"
@@ -522,34 +522,34 @@ const ProductForm: React.FC<ProductFormProps> = ({
   );
 };
 
-// --- Componente principal da pÃ¡gina administrativa ---
+// --- Componente principal da p?gina administrativa ---
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
 
-  // Estado que contÃ©m a lista de produtos exibida na tabela
+  // Estado que cont?m a lista de produtos exibida na tabela
   const [menu, setMenu] = useState<Product[]>([]);
-  // Modal de movimentaÃ§Ã£o de estoque
+  // Modal de movimentacao de estoque
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
-  // HistÃ³rico de movimentaÃ§Ãµes (backend)
+  // Historico de movimentacoes (backend)
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
-  // Filtro de datas para histÃ³rico
+  // Filtro de datas para hist?rico
   const [filterStart, setFilterStart] = useState("");
   const [filterEnd, setFilterEnd] = useState("");
 
-  // Busca histÃ³rico do backend
+  // Busca hist?rico do backend
   const loadStockMovements = async (start?: string, end?: string) => {
     setStockMovements(
       start && end ? filterStockMovementsByDate(start, end) : getStockMovements(),
     );
   };
 
-  // Atualiza histÃ³rico ao abrir pÃ¡gina ou movimentar
+  // Atualiza hist?rico ao abrir p?gina ou movimentar
   useEffect(() => {
     loadStockMovements();
   }, [isStockModalOpen]);
 
-  // Lida com movimentaÃ§Ã£o de estoque
+  // Lida com movimentacao de estoque
   const handleStockMovement = async (
     movements: { productId: string; quantity: number }[],
   ) => {
@@ -578,18 +578,18 @@ const AdminPage: React.FC = () => {
       await loadStockMovements();
       setIsStockModalOpen(false);
     } catch (err) {
-      alert("Erro ao processar movimentaÃ§Ãµes");
+      alert("Erro ao processar movimentacoes");
     }
   };
-  // Controla se o modal de formulÃ¡rio estÃ¡ aberto
+  // Controla se o modal de formulario est? aberto
   const [isFormOpen, setIsFormOpen] = useState(false);
   // Produto atual sendo editado (ou null para criar novo)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  // Estados para anÃ¡lise de IA
+  // Estados para analise de IA
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
-  // Estados para estatÃ­sticas
+  // Estados para estatisticas
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalOrders: 0,
@@ -608,7 +608,7 @@ const AdminPage: React.FC = () => {
     loadOutsourcedAlerts();
   }, []);
 
-  // Busca o total de pedidos dos Ãºltimos 30 dias
+  // Busca o total de pedidos dos ultimos 30 dias
   const loadOutsourcedAlerts = async () => {
     try {
       const data = await getOutsourcedServiceAlerts();
@@ -641,21 +641,21 @@ const AdminPage: React.FC = () => {
       const data = await res.json();
       setMenu(data);
 
-      // Calcula estatÃ­sticas
+      // Calcula estatisticas
       setStats({
         totalProducts: data.length,
-        totalOrders: 0, // SerÃ¡ atualizado pela anÃ¡lise de IA
+        totalOrders: 0, // Sera atualizado pela analise de IA
         lowStock: data.filter(
           (p: Product) => p.stock !== null && p.stock > 0 && p.stock <= 5,
         ).length,
         outOfStock: data.filter((p: Product) => p.stock === 0).length,
       });
     } catch (err) {
-      console.error("Erro ao carregar cardÃ¡pio:", err);
+      console.error("Erro ao carregar catalogo:", err);
     }
   };
 
-  // Gerar anÃ¡lise de IA
+  // Gerar analise de IA
   const handleGenerateAnalysis = async () => {
     setIsLoadingAnalysis(true);
     setShowAnalysis(true);
@@ -667,7 +667,7 @@ const AdminPage: React.FC = () => {
 
       if (data.success) {
         setAiAnalysis(data.analysis);
-        // Atualiza estatÃ­sticas com dados do backend
+        // Atualiza estatisticas com dados do backend
         if (data.summary) {
           setStats((prev) => ({
             ...prev,
@@ -676,26 +676,26 @@ const AdminPage: React.FC = () => {
         }
       } else {
         setAiAnalysis(
-          "âŒ Erro ao gerar anÃ¡lise: " + (data.error || "Erro desconhecido"),
+          "Erro ao gerar analise: " + (data.error || "Erro desconhecido"),
         );
       }
     } catch (error) {
-      console.error("Erro ao gerar anÃ¡lise:", error);
+      console.error("Erro ao gerar analise:", error);
       setAiAnalysis(
-        "âŒ Erro ao comunicar com o servidor. Verifique se a API estÃ¡ disponÃ­vel.",
+        "Erro ao comunicar com o servidor. Verifique se a API esta disponivel.",
       );
     } finally {
       setIsLoadingAnalysis(false);
     }
   };
 
-  // Trata salvar (tanto criaÃ§Ã£o quanto ediÃ§Ã£o)
+  // Trata salvar (tanto criacao quanto edicao)
   const handleSaveProduct = async (product: Product) => {
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
     try {
       if (editingProduct) {
-        // PUT para ediÃ§Ã£o
+        // PUT para edicao
         const response = await authenticatedFetch(
           `${API_URL}/api/products/${product.id}`,
           {
@@ -712,7 +712,7 @@ const AdminPage: React.FC = () => {
           return;
         }
       } else {
-        // POST para criaÃ§Ã£o
+        // POST para criacao
         const response = await authenticatedFetch(`${API_URL}/api/products`, {
           method: "POST",
           body: JSON.stringify(product),
@@ -727,7 +727,7 @@ const AdminPage: React.FC = () => {
         }
       }
 
-      // Fecha o modal e reseta o estado de ediÃ§Ã£o
+      // Fecha o modal e reseta o estado de edicao
       setIsFormOpen(false);
       setEditingProduct(null);
     } catch (error) {
@@ -738,7 +738,7 @@ const AdminPage: React.FC = () => {
 
   // Remove um produto pela id via API
   const handleDeleteProduct = async (productId: string) => {
-    // ConfirmaÃ§Ã£o simples antes de remover
+    // Confirmacao simples antes de remover
     if (window.confirm("Tem certeza que deseja remover este produto?")) {
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -763,21 +763,21 @@ const AdminPage: React.FC = () => {
     }
   };
 
-  // Deleta movimentaÃ§Ã£o e reverte estoque (apenas ajustes manuais)
+  // Deleta movimentacao e reverte estoque (apenas ajustes manuais)
   const handleDeleteMovement = async (movement: StockMovement) => {
     const movType = (movement as StockMovement & { type?: string }).type;
     if (movType === "sale") {
       alert(
-        "NÃ£o Ã© possÃ­vel excluir movimentaÃ§Ãµes de venda. Cancele o pedido correspondente.",
+        "Nao e possivel excluir movimentacoes de venda. Cancele o pedido correspondente.",
       );
       return;
     }
     if (
-      !window.confirm("Deseja remover esta movimentaÃ§Ã£o e reverter o estoque?")
+      !window.confirm("Deseja remover esta movimentacao e reverter o estoque?")
     )
       return;
     const product = menu.find((p) => p.id === movement.productId);
-    if (!product) return alert("Produto nÃ£o encontrado.");
+    if (!product) return alert("Produto nao encontrado.");
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
     const response = await authenticatedFetch(
       `${API_URL}/api/products/${movement.productId}`,
@@ -799,7 +799,7 @@ const AdminPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-2 sm:p-4 md:p-6">
-      {/* CabeÃ§alho */}
+      {/* Cabe?alho */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-4xl font-bold text-blue-800">
           Painel Administrativo
@@ -809,9 +809,9 @@ const AdminPage: React.FC = () => {
             onClick={() => setIsStockModalOpen(true)}
             className="bg-amber-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-amber-600 transition-colors shadow-md"
           >
-            MovimentaÃ§Ã£o Estoque
+            Movimentacao Estoque
           </button>
-          {/* Modal de movimentaÃ§Ã£o de estoque */}
+          {/* Modal de movimentacao de estoque */}
           {isStockModalOpen && (
             <StockMovementModal
               products={menu}
@@ -819,32 +819,32 @@ const AdminPage: React.FC = () => {
               onMovement={handleStockMovement}
             />
           )}
-          {/* HistÃ³rico de movimentaÃ§Ãµes de estoque */}
+          {/* Historico de movimentacoes de estoque */}
           <div className="mt-12"></div>
           <button
             onClick={() => navigate("/admin/categories")}
             className="bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-colors shadow-md"
           >
-            ðŸ“‚ Categorias
+            Categorias
           </button>
           <button
             onClick={() => navigate("/admin/outsourced-services")}
             className="bg-stone-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-stone-800 transition-colors shadow-md"
           >
-            ServiÃ§os Terceirizados
+            Servicos Terceirizados
           </button>
           <button
             onClick={() => navigate("/historico")}
             className="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-colors shadow-md"
           >
-            ðŸ“‹ HistÃ³rico de Pedidos
+            Historico de Pedidos
           </button>
           <button
             onClick={handleGenerateAnalysis}
             disabled={isLoadingAnalysis}
             className="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors shadow-md disabled:bg-indigo-300 flex items-center gap-2"
           >
-            {isLoadingAnalysis ? "â³ Analisando..." : "ðŸ¤– AnÃ¡lise com IA"}
+            {isLoadingAnalysis ? " Analisando..." : "Analise com IA"}
           </button>
           <button
             onClick={() => {
@@ -864,18 +864,18 @@ const AdminPage: React.FC = () => {
             }}
             className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md"
           >
-            ðŸšª Sair
+            Sair
           </button>
         </div>
       </div>
 
-      {/* Cards de EstatÃ­sticas */}
+      {/* Cards de Estatisticas */}
       {outsourcedAlerts.length > 0 && (
         <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-5 shadow">
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-bold text-red-800">
-                ServiÃ§os terceirizados atrasados
+                Servicos terceirizados atrasados
               </h2>
               <p className="text-sm text-red-700">
                 Existem entregas fora do prazo aguardando retorno.
@@ -885,7 +885,7 @@ const AdminPage: React.FC = () => {
               onClick={() => navigate("/admin/outsourced-services")}
               className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700"
             >
-              Ver serviÃ§os
+              Ver servicos
             </button>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
@@ -898,7 +898,7 @@ const AdminPage: React.FC = () => {
                   {alert.company_name}
                 </div>
                 <div className="text-sm text-stone-600">
-                  {alert.service_type_label || alert.service_type || "ServiÃ§o"}
+                  {alert.service_type_label || alert.service_type || "Servico"}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-3 text-sm">
                   <span className="font-semibold text-red-700">
@@ -942,18 +942,18 @@ const AdminPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Ãrea de AnÃ¡lise da IA */}
+      {/* Area de Analise da IA */}
       {showAnalysis && (
         <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-xl shadow-lg mb-6 border border-purple-200">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-purple-800 flex items-center gap-2">
-              ðŸ¤– AnÃ¡lise Inteligente de Estoque
+              Analise Inteligente de Estoque
             </h2>
             <button
               onClick={() => setShowAnalysis(false)}
               className="text-stone-500 hover:text-stone-700"
             >
-              âœ•
+              X
             </button>
           </div>
           {isLoadingAnalysis ? (
@@ -970,7 +970,7 @@ const AdminPage: React.FC = () => {
         </div>
       )}
 
-      {/* Renderiza o formulÃ¡rio/modal condicionalmente */}
+      {/* Renderiza o formulario/modal condicionalmente */}
       {isFormOpen && (
         <ProductForm
           product={editingProduct}
@@ -982,9 +982,9 @@ const AdminPage: React.FC = () => {
         />
       )}
 
-      {/* SeÃ§Ã£o de Gerenciamento de Produtos */}
+      {/* Secao de Gerenciamento de Produtos */}
       <h2 className="text-2xl font-bold text-stone-800 mb-4">
-        ðŸ“¦ Gerenciar Produtos
+        Gerenciar Produtos
       </h2>
 
       {/* Tabela que lista os produtos */}
@@ -1008,7 +1008,7 @@ const AdminPage: React.FC = () => {
                 scope="col"
                 className="px-2 sm:px-4 py-2 text-left font-medium text-stone-500 uppercase tracking-wider"
               >
-                PreÃ§o
+                Preco
               </th>
               <th
                 scope="col"
@@ -1017,7 +1017,7 @@ const AdminPage: React.FC = () => {
                 Estoque
               </th>
               <th scope="col" className="relative px-2 sm:px-4 py-2">
-                <span className="sr-only">AÃ§Ãµes</span>
+                <span className="sr-only">Acoes</span>
               </th>
             </tr>
           </thead>
@@ -1130,7 +1130,7 @@ const AdminPage: React.FC = () => {
       </div>
       <div className="mt-16 bg-white rounded-2xl shadow-lg px-6 py-8 mb-8">
         <h2 className="text-2xl font-bold text-stone-800 mb-6">
-          HistÃ³rico de MovimentaÃ§Ãµes de Estoque
+          Historico de Movimentacoes de Estoque
         </h2>
         <div className="flex flex-wrap gap-4 mb-6 items-end">
           <div>
@@ -1143,7 +1143,7 @@ const AdminPage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium mb-1">AtÃ©</label>
+            <label className="block text-xs font-medium mb-1">Ate</label>
             <input
               type="date"
               value={filterEnd}
@@ -1191,7 +1191,7 @@ const AdminPage: React.FC = () => {
                     colSpan={5}
                     className="p-6 text-center text-stone-500 text-base"
                   >
-                    Nenhuma movimentaÃ§Ã£o registrada.
+                    Nenhuma movimentacao registrada.
                   </td>
                 </tr>
               ) : (
@@ -1205,7 +1205,7 @@ const AdminPage: React.FC = () => {
                       : movType === "cancel"
                         ? "Cancelamento"
                         : movType === "return"
-                          ? "DevoluÃ§Ã£o"
+                          ? "Devolucao"
                           : "Ajuste manual";
                   return (
                     <tr key={m.id}>

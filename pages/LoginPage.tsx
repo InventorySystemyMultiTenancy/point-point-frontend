@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import "../assets/animated-gradient.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -28,18 +28,18 @@ const formatDocument = (value: string) => {
 const PlushBackground: React.FC = () => {
   const plushies = useMemo(
     () => [
-      "🧸",
-      "🐻",
-      "🐰",
-      "🦄",
-      "🐼",
-      "🧸",
-      "🐻‍❄️",
-      "🐨",
-      "🦊",
-      "🐻",
-      "🧸",
-      "🐰",
+      "\u{1F9F8}",
+      "\u{1F43B}",
+      "\u{1F430}",
+      "\u{1F984}",
+      "\u{1F43C}",
+      "\u{1F9F8}",
+      "\u{1F43B}\u{200D}\u{2744}\u{FE0F}",
+      "\u{1F428}",
+      "\u{1F98A}",
+      "\u{1F43B}",
+      "\u{1F9F8}",
+      "\u{1F430}",
     ],
     [],
   );
@@ -328,3 +328,4 @@ const LoginPage: React.FC = () => {
 };
 
 export default LoginPage;
+

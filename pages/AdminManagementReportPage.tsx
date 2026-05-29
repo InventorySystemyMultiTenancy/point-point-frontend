@@ -244,7 +244,7 @@ const AdminManagementReportPage: React.FC = () => {
   const [appliedFilter, setAppliedFilter] =
     useState<AppliedFilter>(createGeneralFilter);
 
-  // ProteÃ§Ã£o por senha extra
+  // Prote??o por senha extra
   const [senhaExtra, setSenhaExtra] = useState("");
   const [senhaCorreta, setSenhaCorreta] = useState(false);
   const [senhaErro, setSenhaErro] = useState("");
@@ -367,7 +367,7 @@ const AdminManagementReportPage: React.FC = () => {
     fetchReport(appliedFilter);
   };
 
-  // FormulÃ¡rio de senha extra
+  // Formul?rio de senha extra
   if (!senhaCorreta) {
     return (
       <div className="max-w-md mx-auto mt-16 p-6 bg-white rounded-xl shadow flex flex-col items-center">
@@ -375,7 +375,7 @@ const AdminManagementReportPage: React.FC = () => {
           Acesso Restrito
         </h2>
         <p className="mb-4 text-slate-700 text-center">
-          Digite a senha especial para acessar o RelatÃ³rio de GestÃ£o.
+          Digite a senha especial para acessar o Relat?rio de Gest?o.
         </p>
         <input
           type="password"
@@ -424,12 +424,12 @@ const AdminManagementReportPage: React.FC = () => {
               type="button"
               className="bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-emerald-800"
               onClick={() => {
-                // Gera um PDF/tabela estilizada para impressÃ£o
+                // Gera um PDF/tabela estilizada para impress?o
                 const produtos = report?.products || [];
                 const html = `
                   <html>
                   <head>
-                    <title>Estoque e SugestÃ£o de Compra</title>
+                    <title>Estoque e Sugest?o de Compra</title>
                     <style>
                       body { font-family: 'Segoe UI', Arial, sans-serif; background: #f8fafc; margin: 0; padding: 24px; }
                       h2 { color: #10b981; margin-bottom: 24px; }
@@ -444,7 +444,7 @@ const AdminManagementReportPage: React.FC = () => {
                     </style>
                   </head>
                   <body>
-                    <h2>Estoque e SugestÃ£o de Compra</h2>
+                    <h2>Estoque e Sugest?o de Compra</h2>
                     <table>
                       <thead>
                         <tr>
@@ -476,7 +476,7 @@ const AdminManagementReportPage: React.FC = () => {
                 printWindow?.print();
               }}
             >
-              Imprimir Estoque/SugestÃ£o
+              Imprimir Estoque/Sugest?o
             </button>
           </div>
           <p className="text-slate-600 mt-2">
@@ -868,7 +868,7 @@ const AdminManagementReportPage: React.FC = () => {
                           item: any,
                         ) => [
                           `${formatInteger(value)} pedidos`,
-                          `${item?.payload?.name} Â· ${formatCurrency(
+                          `${item?.payload?.name} ? ${formatCurrency(
                             item?.payload?.revenue || 0,
                           )}`,
                         ]}
@@ -958,7 +958,7 @@ const AdminManagementReportPage: React.FC = () => {
                         payload: any,
                       ) => [
                         `${formatInteger(value)} unidades`,
-                        `${payload?.payload?.name} Â· ${formatCurrency(
+                        `${payload?.payload?.name} ? ${formatCurrency(
                           payload?.payload?.revenue || 0,
                         )}`,
                       ]}
@@ -1019,7 +1019,7 @@ const AdminManagementReportPage: React.FC = () => {
                           item: any,
                         ) => [
                           formatCurrency(value),
-                          `${item?.payload?.category} Â· ${formatPercent(
+                          `${item?.payload?.category} ? ${formatPercent(
                             item?.payload?.revenueShare || 0,
                           )}`,
                         ]}

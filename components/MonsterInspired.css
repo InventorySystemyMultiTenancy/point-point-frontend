@@ -52,7 +52,7 @@ body {
 
 .login-plush-header::before,
 .login-plush-header::after {
-  content: "ðŸ§¸ ðŸ» ðŸ° ðŸ¼ ðŸ¦Š ðŸ§¸ ðŸ» ðŸ° ðŸ¼ ðŸ¦Š";
+  content: "";
   position: absolute;
   left: 0;
   right: auto;
@@ -654,7 +654,7 @@ body {
 
 .admin-modern-theme::before,
 .checkout-modern-theme::before {
-  content: "ðŸ§¸ ðŸ» ðŸ° ðŸ¼ ðŸ§¸ ðŸ» ðŸ° ðŸ¼";
+  content: "";
   position: fixed;
   left: 0;
   right: 0;

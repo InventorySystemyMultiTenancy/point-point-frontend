@@ -18,7 +18,7 @@ const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const isEdit = !!currentUser;
 
-  // Preencher campos se for ediÃ§Ã£o
+  // Preencher campos se for edi??o
   useEffect(() => {
     if (isEdit && currentUser) {
       setCpf(currentUser.cpf || "");
@@ -38,7 +38,7 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cpf || cpf.replace(/\D/g, "").length !== 11) {
-      setError("CPF invÃ¡lido. Digite 11 dÃ­gitos.");
+      setError("CPF inv?lido. Digite 11 d?gitos.");
       return;
     }
     if (!name.trim() || name.trim().length < 3) {
@@ -46,30 +46,30 @@ const RegisterPage: React.FC = () => {
       return;
     }
     if (!email.trim() || !email.includes("@")) {
-      setError("Email invÃ¡lido");
+      setError("Email inv?lido");
       return;
     }
     if (!cep.trim() || cep.replace(/\D/g, "").length !== 8) {
-      setError("CEP invÃ¡lido. Digite 8 dÃ­gitos.");
+      setError("CEP inv?lido. Digite 8 d?gitos.");
       return;
     }
     if (!address.trim() || address.trim().length < 5) {
-      setError("EndereÃ§o completo obrigatÃ³rio");
+      setError("Endere?o completo obrigat?rio");
       return;
     }
     if (!phone.trim() || phone.replace(/\D/g, "").length < 9) {
-      setError("Telefone obrigatÃ³rio e vÃ¡lido");
+      setError("Telefone obrigat?rio e v?lido");
       return;
     }
     if (!password || password.length < 6) {
-      setError("Senha obrigatÃ³ria (mÃ­nimo 6 caracteres)");
+      setError("Senha obrigat?ria (m?nimo 6 caracteres)");
       return;
     }
     setIsLoading(true);
     setError("");
     try {
       if (isEdit && currentUser) {
-        // Atualizar dados do usuÃ¡rio
+        // Atualizar dados do usu?rio
         const data = await updateUser(currentUser.id, {
           cpf,
           name,
@@ -83,7 +83,7 @@ const RegisterPage: React.FC = () => {
           login({ ...currentUser, ...data.user });
           await Swal.fire({
             title: "Dados atualizados!",
-            text: "Suas informaÃ§Ãµes foram salvas.",
+            text: "Suas informa??es foram salvas.",
             icon: "success",
             confirmButtonColor: "#7e22ce",
           });
@@ -214,14 +214,14 @@ const RegisterPage: React.FC = () => {
               htmlFor="address"
               className="block text-sm font-semibold text-stone-700 mb-2"
             >
-              EndereÃ§o Completo
+              Endere?o Completo
             </label>
             <input
               id="address"
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Rua, nÃºmero, bairro, cidade"
+              placeholder="Rua, n?mero, bairro, cidade"
               className="w-full px-4 py-3 border-2 border-stone-200 rounded-lg"
               disabled={isLoading}
             />
@@ -271,7 +271,7 @@ const RegisterPage: React.FC = () => {
                 ? "Salvando..."
                 : "Cadastrando..."
               : isEdit
-                ? "Salvar alteraÃ§Ãµes"
+                ? "Salvar altera??es"
                 : "Cadastrar"}
           </button>
         </form>
