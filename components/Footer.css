@@ -59,24 +59,27 @@
 @media (max-width: 500px) {
   header {
     min-height: 56px !important;
-    height: auto !important;
+    height: 56px !important;
   }
   header .container {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    padding: 4px 6px !important;
-    gap: 2px !important;
-    height: auto !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0 10px !important;
+    gap: 8px !important;
+    height: 100% !important;
+    min-width: 0 !important;
   }
   header .flex.items-center.gap-2.relative {
     flex-direction: row;
     align-items: center;
-    width: 100%;
-    margin-bottom: 2px;
+    width: auto;
+    min-width: 0;
+    margin-bottom: 0;
   }
   header .text-xl {
     font-size: 1em !important;
-    max-width: 100px;
+    max-width: min(44vw, 150px);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -97,10 +100,8 @@
     margin-bottom: 2px;
   }
   header button, header a {
-    min-width: 36px;
     font-size: 0.95em !important;
-    padding: 4px 8px !important;
-    margin: 0 2px 2px 0 !important;
+    margin: 0 !important;
     border-radius: 6px !important;
     max-width: 100%;
     box-sizing: border-box;
@@ -115,20 +116,20 @@
 /* Header mobile fixes */
 @media (max-width: 400px) {
   header .container {
-    flex-direction: column;
-    align-items: flex-start !important;
-    height: auto !important;
-    padding-top: 4px;
-    padding-bottom: 4px;
+    flex-direction: row !important;
+    align-items: center !important;
+    height: 100% !important;
+    padding-top: 0;
+    padding-bottom: 0;
   }
   header .container > div, header nav, header .flex.items-center.gap-4 {
-    width: 100%;
+    width: auto;
     justify-content: flex-start !important;
-    margin-bottom: 2px;
+    margin-bottom: 0;
   }
   header .text-xl {
-    font-size: 1.1em !important;
-    max-width: 120px;
+    font-size: 1em !important;
+    max-width: 42vw;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -144,7 +145,7 @@
   right: 18px;
   bottom: 60px; /* above footer */
   z-index: 120;
-  background: #6d28d9;
+  background: #2563eb;
   color: #fff;
   border: none;
   border-radius: 50%;
@@ -157,7 +158,7 @@
   font-size: 1.7em;
 }
 .floating-cart-btn:active {
-  background: #4c1d95;
+  background: #1741a6;
   transform: scale(0.96);
 }
 @media (max-width: 700px) {
@@ -167,7 +168,7 @@
 }
 .site-footer.minimal-footer {
   width: 100%;
-  background: rgba(76, 29, 149, 0.55); /* dark purple transparent */
+  background: rgba(10, 24, 60, 0.55); /* dark blue transparent */
   color: #fff;
   padding: 0.2em 0;
   position: fixed;

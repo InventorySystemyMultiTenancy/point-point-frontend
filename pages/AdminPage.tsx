@@ -1,17 +1,10 @@
-import { API_BASE_URL } from "../services/apiBase";
 // Página: /pages/AdminPage.tsx
 // Esta página fornece uma interface administrativa simples para listar,
 // adicionar, editar e remover produtos do "cardápio".
 // Comentários em português explicam cada parte do código.
 
 import React, { useState, useEffect } from "react";
-import {
-  getStockMovements,
-  addStockMovement,
-  filterStockMovementsByDate,
-  type StockMovement,
-  STOCK_MOVEMENTS_KEY,
-} from "../utils/stockMovements";
+import { type StockMovement } from "../utils/stockMovements";
 
 // Modal de movimentação de estoque para múltiplos produtos
 const StockMovementModal: React.FC<{
@@ -50,7 +43,7 @@ const StockMovementModal: React.FC<{
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4 text-purple-900">
+        <h2 className="text-xl font-bold mb-4 text-blue-800">
           Movimentação de Estoque
         </h2>
         <form
@@ -105,7 +98,7 @@ const StockMovementModal: React.FC<{
           </div>
           <button
             type="button"
-            className="w-full mb-4 py-2 bg-amber-50 text-purple-700 rounded-lg font-bold"
+            className="w-full mb-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-bold"
             onClick={addRow}
           >
             + Adicionar Produto
@@ -303,7 +296,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start sm:items-center z-50 overflow-y-auto p-2 sm:p-4">
       <div className="bg-white p-4 sm:p-8 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         {/* Título muda conforme edição ou criação */}
-        <h2 className="text-2xl font-bold mb-6 text-purple-900">
+        <h2 className="text-2xl font-bold mb-6 text-blue-800">
           {product ? "Editar Produto" : "Adicionar Produto"}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -321,7 +314,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               value={formData.name}
               onChange={handleChange}
               required
-              className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-purple-700 focus:ring-amber-200"
+              className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
             />
           </div>
           <div className="flex gap-4">
@@ -340,7 +333,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 onChange={handleChange}
                 required
                 step="0.01"
-                className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-purple-700 focus:ring-amber-200"
+                className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
               />
             </div>
             <div className="flex-1">
@@ -358,7 +351,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 onChange={handleChange}
                 required
                 step="0.01"
-                className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-purple-700 focus:ring-amber-200"
+                className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
               />
             </div>
           </div>
@@ -375,7 +368,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 id="category"
                 value={formData.category}
                 onChange={handleChange}
-                className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-purple-700 focus:ring-amber-200"
+                className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
               >
                 {categories.length > 0 ? (
                   categories.map((cat) => (
@@ -409,7 +402,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 onChange={handleChange}
                 required
                 min="0"
-                className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-purple-700 focus:ring-amber-200"
+                className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
               />
               <p className="mt-1 text-xs text-stone-500">
                 Alerta de estoque baixo quando atingir esse valor
@@ -449,7 +442,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
             <button
               type="button"
               onClick={addImageField}
-              className="mt-2 text-sm font-semibold text-purple-800 hover:text-purple-900"
+              className="mt-2 text-sm font-semibold text-blue-700 hover:text-blue-800"
             >
               + Adicionar outra imagem
             </button>
@@ -493,7 +486,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               onChange={handleChange}
               required
               min="1"
-              className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-purple-700 focus:ring-amber-200"
+              className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
             />
             <p className="mt-1 text-xs text-stone-500">
               Exemplo: venda de 30 em 30, 15 em 15, etc. O cliente só pode
@@ -512,7 +505,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
             {/* Botão salvar submete o formulário */}
             <button
               type="submit"
-              className="bg-purple-700 text-white font-semibold py-2 px-6 rounded-lg hover:bg-purple-800"
+              className="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700"
             >
               Salvar
             </button>
@@ -526,57 +519,83 @@ const ProductForm: React.FC<ProductFormProps> = ({
 // --- Componente principal da página administrativa ---
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
-  const { adminLogout } = useAuth();
+  const { logout } = useAuth();
 
   // Estado que contém a lista de produtos exibida na tabela
   const [menu, setMenu] = useState<Product[]>([]);
   // Modal de movimentação de estoque
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
-  // Histórico de movimentações
-  const [stockMovements, setStockMovements] =
-    useState<StockMovement[]>(getStockMovements());
+  // Histórico de movimentações (backend)
+  const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
   // Filtro de datas para histórico
   const [filterStart, setFilterStart] = useState("");
   const [filterEnd, setFilterEnd] = useState("");
+
+  // Busca histórico do backend
+  const loadStockMovements = async (start?: string, end?: string) => {
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+    try {
+      let url = `${API_URL}/api/admin/stock-movements`;
+      const params = new URLSearchParams();
+      if (start) params.set("start", start);
+      if (end) params.set("end", end);
+      if (params.toString()) url += `?${params.toString()}`;
+      const res = await authenticatedFetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        // Normaliza para o formato StockMovement esperado pelo template
+        setStockMovements(
+          data.map(
+            (m: {
+              id: number;
+              productId: string;
+              productName: string;
+              quantity: number;
+              type: string;
+              orderId?: string;
+              created_at: string;
+            }) => ({
+              id: String(m.id),
+              productId: m.productId,
+              productName: m.productName,
+              quantity: m.quantity,
+              date: m.created_at,
+              type: m.type,
+              orderId: m.orderId,
+            }),
+          ),
+        );
+      }
+    } catch (e) {
+      console.error("Erro ao carregar movimentações de estoque:", e);
+    }
+  };
+
   // Atualiza histórico ao abrir página ou movimentar
   useEffect(() => {
-    setStockMovements(getStockMovements());
+    loadStockMovements();
   }, [isStockModalOpen]);
+
   // Lida com movimentação de estoque
   const handleStockMovement = async (
     movements: { productId: string; quantity: number }[],
   ) => {
-    const API_URL = API_BASE_URL;
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
     try {
-      // Para simplificar, vamos fazer um loop das requests.
-      // Em produção, seria melhor um endpoint que aceitasse o array.
       for (const move of movements) {
         const product = menu.find((p) => p.id === move.productId);
         if (!product) continue;
 
-        const response = await authenticatedFetch(
-          `${API_URL}/api/products/${move.productId}`,
-          {
-            method: "PUT",
-            body: JSON.stringify({
-              stock: (product.stock || 0) + move.quantity,
-            }),
-          },
-        );
-
-        if (response.ok) {
-          addStockMovement({
-            id: `${move.productId}-${Date.now()}-${Math.random()}`,
-            productId: move.productId,
-            productName: product.name,
-            quantity: move.quantity,
-            date: new Date().toISOString(),
-          });
-        }
+        await authenticatedFetch(`${API_URL}/api/products/${move.productId}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            stock: (product.stock || 0) + move.quantity,
+          }),
+        });
       }
       await loadProducts();
-      setStockMovements(getStockMovements());
+      await loadStockMovements();
       setIsStockModalOpen(false);
     } catch (err) {
       alert("Erro ao processar movimentações");
@@ -590,9 +609,6 @@ const AdminPage: React.FC = () => {
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const [outsourcedAlerts, setOutsourcedAlerts] = useState<OutsourcedAlert[]>(
-    [],
-  );
   // Estados para estatísticas
   const [stats, setStats] = useState({
     totalProducts: 0,
@@ -600,6 +616,9 @@ const AdminPage: React.FC = () => {
     lowStock: 0,
     outOfStock: 0,
   });
+  const [outsourcedAlerts, setOutsourcedAlerts] = useState<OutsourcedAlert[]>(
+    [],
+  );
 
   // Carrega os dados iniciais do backend
 
@@ -609,19 +628,20 @@ const AdminPage: React.FC = () => {
     loadOutsourcedAlerts();
   }, []);
 
+  // Busca o total de pedidos dos últimos 30 dias
   const loadOutsourcedAlerts = async () => {
     try {
       const data = await getOutsourcedServiceAlerts();
       setOutsourcedAlerts(data.count > 0 ? data.alerts : []);
     } catch (err) {
       console.error("Erro ao buscar alertas de terceirizados:", err);
+      setOutsourcedAlerts([]);
     }
   };
 
-  // Busca o total de pedidos dos últimos 30 dias
   const loadOrdersCount = async () => {
     try {
-      const API_URL = API_BASE_URL;
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
       const res = await fetch(`${API_URL}/api/orders/last30days-count`);
       if (!res.ok) throw new Error("Erro ao buscar total de pedidos");
       const data = await res.json();
@@ -633,7 +653,7 @@ const AdminPage: React.FC = () => {
 
   const loadProducts = async () => {
     try {
-      const API_URL = API_BASE_URL;
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
       const res = await authenticatedFetch(`${API_URL}/api/products`);
       if (!res.ok) {
         throw new Error(`Erro ao carregar produtos: ${res.status}`);
@@ -659,7 +679,7 @@ const AdminPage: React.FC = () => {
   const handleGenerateAnalysis = async () => {
     setIsLoadingAnalysis(true);
     setShowAnalysis(true);
-    const API_URL = API_BASE_URL;
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
     try {
       const response = await fetch(`${API_URL}/api/ai/inventory-analysis`);
@@ -691,7 +711,7 @@ const AdminPage: React.FC = () => {
 
   // Trata salvar (tanto criação quanto edição)
   const handleSaveProduct = async (product: Product) => {
-    const API_URL = API_BASE_URL;
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
     try {
       if (editingProduct) {
@@ -740,7 +760,7 @@ const AdminPage: React.FC = () => {
   const handleDeleteProduct = async (productId: string) => {
     // Confirmação simples antes de remover
     if (window.confirm("Tem certeza que deseja remover este produto?")) {
-      const API_URL = API_BASE_URL;
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
       try {
         const response = await authenticatedFetch(
@@ -763,13 +783,22 @@ const AdminPage: React.FC = () => {
     }
   };
 
-  // Deleta movimentação e reverte estoque
+  // Deleta movimentação e reverte estoque (apenas ajustes manuais)
   const handleDeleteMovement = async (movement: StockMovement) => {
-    if (!window.confirm("Deseja remover esta movimentação?")) return;
+    const movType = (movement as StockMovement & { type?: string }).type;
+    if (movType === "sale") {
+      alert(
+        "Não é possível excluir movimentações de venda. Cancele o pedido correspondente.",
+      );
+      return;
+    }
+    if (
+      !window.confirm("Deseja remover esta movimentação e reverter o estoque?")
+    )
+      return;
     const product = menu.find((p) => p.id === movement.productId);
     if (!product) return alert("Produto não encontrado.");
-    const API_URL = API_BASE_URL;
-    // Atualiza estoque no backend (subtrai a quantidade da movimentação)
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
     const response = await authenticatedFetch(
       `${API_URL}/api/products/${movement.productId}`,
       {
@@ -780,11 +809,8 @@ const AdminPage: React.FC = () => {
       },
     );
     if (response.ok) {
-      // Remove movimentação do localStorage
-      const list = getStockMovements().filter((m) => m.id !== movement.id);
-      localStorage.setItem(STOCK_MOVEMENTS_KEY, JSON.stringify(list));
-      setStockMovements(list);
       await loadProducts();
+      await loadStockMovements();
     } else {
       alert("Erro ao atualizar estoque");
     }
@@ -794,7 +820,7 @@ const AdminPage: React.FC = () => {
     <div className="container mx-auto p-2 sm:p-4 md:p-6">
       {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-4xl font-bold text-purple-900">
+        <h1 className="text-4xl font-bold text-blue-800">
           Painel Administrativo
         </h1>
         <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
@@ -822,9 +848,9 @@ const AdminPage: React.FC = () => {
           </button>
           <button
             onClick={() => navigate("/admin/outsourced-services")}
-            className="bg-cyan-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-cyan-800 transition-colors shadow-md"
+            className="bg-stone-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-stone-800 transition-colors shadow-md"
           >
-            Servicos Terceirizados
+            Serviços Terceirizados
           </button>
           <button
             onClick={() => navigate("/historico")}
@@ -844,18 +870,18 @@ const AdminPage: React.FC = () => {
               setEditingProduct(null);
               setIsFormOpen(true);
             }}
-            className="bg-purple-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-800 transition-colors shadow-md"
+            className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md"
           >
             + Adicionar Produto
           </button>
           <button
             onClick={async () => {
               if (window.confirm("Deseja realmente sair?")) {
-                await adminLogout();
+                await logout();
                 navigate("/admin/login");
               }
             }}
-            className="bg-purple-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-800 transition-colors shadow-md"
+            className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md"
           >
             🚪 Sair
           </button>
@@ -864,43 +890,43 @@ const AdminPage: React.FC = () => {
 
       {/* Cards de Estatísticas */}
       {outsourcedAlerts.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl shadow-lg p-5 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-5 shadow">
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-xl font-bold text-red-700">
-                Servicos terceirizados atrasados
+              <h2 className="text-xl font-bold text-red-800">
+                Serviços terceirizados atrasados
               </h2>
-              <p className="text-sm text-red-600">
-                {outsourcedAlerts.length} servico(s) precisam de atencao.
+              <p className="text-sm text-red-700">
+                Existem entregas fora do prazo aguardando retorno.
               </p>
             </div>
             <button
               onClick={() => navigate("/admin/outsourced-services")}
-              className="bg-red-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-red-700"
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700"
             >
-              Ver servicos
+              Ver serviços
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="grid gap-3 md:grid-cols-2">
             {outsourcedAlerts.map((alert) => (
               <div
                 key={alert.id}
-                className="bg-white border border-red-100 rounded-lg p-4"
+                className="rounded-lg border border-red-100 bg-white p-4"
               >
                 <div className="font-bold text-stone-900">
-                  {alert.company_name || "Empresa nao informada"}
+                  {alert.company_name}
                 </div>
-                <div className="text-sm text-stone-700">
-                  {alert.service_type_label || alert.service_type || "Servico"}
+                <div className="text-sm text-stone-600">
+                  {alert.service_type_label || alert.service_type || "Serviço"}
                 </div>
-                <div className="mt-2 text-sm text-red-700 font-semibold">
-                  Prazo vencido:{" "}
-                  {alert.due_date
-                    ? new Date(alert.due_date).toLocaleDateString("pt-BR")
-                    : "-"}
-                </div>
-                <div className="text-sm text-stone-700">
-                  Quantidade faltante: {alert.remaining_quantity ?? "-"}
+                <div className="mt-2 flex flex-wrap gap-3 text-sm">
+                  <span className="font-semibold text-red-700">
+                    Prazo vencido:{" "}
+                    {new Date(alert.due_date).toLocaleDateString("pt-BR")}
+                  </span>
+                  <span className="font-semibold text-stone-700">
+                    Faltante: {alert.remaining_quantity}
+                  </span>
                 </div>
               </div>
             ))}
@@ -909,9 +935,9 @@ const AdminPage: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-amber-500">
+        <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
           <div className="text-sm text-stone-500 mb-1">Total de Produtos</div>
-          <div className="text-3xl font-bold text-purple-700">
+          <div className="text-3xl font-bold text-blue-600">
             {stats.totalProducts}
           </div>
         </div>
@@ -927,9 +953,9 @@ const AdminPage: React.FC = () => {
             {stats.lowStock}
           </div>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-purple-700">
+        <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-600">
           <div className="text-sm text-stone-500 mb-1">Esgotados</div>
-          <div className="text-3xl font-bold text-purple-800">
+          <div className="text-3xl font-bold text-blue-700">
             {stats.outOfStock}
           </div>
         </div>
@@ -937,7 +963,7 @@ const AdminPage: React.FC = () => {
 
       {/* Área de Análise da IA */}
       {showAnalysis && (
-        <div className="bg-gradient-to-r from-purple-50 to-amber-50 p-6 rounded-xl shadow-lg mb-6 border border-purple-200">
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-xl shadow-lg mb-6 border border-purple-200">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-purple-800 flex items-center gap-2">
               🤖 Análise Inteligente de Estoque
@@ -1056,7 +1082,7 @@ const AdminPage: React.FC = () => {
                   <span
                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       (product.stock || 0) === 0
-                        ? "bg-amber-100 text-purple-900"
+                        ? "bg-blue-100 text-blue-800"
                         : product.minStock !== undefined &&
                             product.stock !== undefined &&
                             product.stock < product.minStock
@@ -1069,7 +1095,7 @@ const AdminPage: React.FC = () => {
                   {product.minStock !== undefined &&
                     product.stock !== undefined &&
                     product.stock < product.minStock && (
-                      <span className="ml-1 text-[10px] sm:text-xs text-purple-700 font-bold animate-pulse">
+                      <span className="ml-1 text-[10px] sm:text-xs text-blue-600 font-bold animate-pulse">
                         Estoque baixo!
                       </span>
                     )}
@@ -1080,20 +1106,20 @@ const AdminPage: React.FC = () => {
                       setEditingProduct(product);
                       setIsFormOpen(true);
                     }}
-                    className="text-purple-700 hover:text-purple-950 mr-2 sm:mr-4"
+                    className="text-blue-600 hover:text-blue-900 mr-2 sm:mr-4"
                   >
                     Editar
                   </button>
                   <button
                     onClick={() => handleDeleteProduct(product.id)}
-                    className="text-purple-800 hover:text-purple-950 mr-2 sm:mr-4"
+                    className="text-blue-700 hover:text-blue-900 mr-2 sm:mr-4"
                   >
                     Remover
                   </button>
                   <button
                     onClick={async () => {
                       const API_URL =
-                        API_BASE_URL;
+                        import.meta.env.VITE_API_URL || "http://localhost:3001";
                       const resp = await authenticatedFetch(
                         `${API_URL}/api/products/${product.id}`,
                         {
@@ -1145,16 +1171,13 @@ const AdminPage: React.FC = () => {
             />
           </div>
           <button
-            className="bg-purple-700 text-white px-5 py-2 rounded-lg hover:bg-purple-800 font-semibold"
-            onClick={() => {
-              if (filterStart && filterEnd) {
-                setStockMovements(
-                  filterStockMovementsByDate(filterStart, filterEnd),
-                );
-              } else {
-                setStockMovements(getStockMovements());
-              }
-            }}
+            className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 font-semibold"
+            onClick={() =>
+              loadStockMovements(
+                filterStart || undefined,
+                filterEnd || undefined,
+              )
+            }
           >
             Filtrar
           </button>
@@ -1163,55 +1186,73 @@ const AdminPage: React.FC = () => {
             onClick={() => {
               setFilterStart("");
               setFilterEnd("");
-              setStockMovements(getStockMovements());
+              loadStockMovements();
             }}
           >
             Limpar Filtro
           </button>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-[480px] w-full bg-white rounded-xl shadow divide-y">
+          <table className="min-w-[560px] w-full bg-white rounded-xl shadow divide-y">
             <thead>
               <tr className="bg-stone-100">
                 <th className="p-3 text-left text-xs font-bold">Data/Hora</th>
                 <th className="p-3 text-left text-xs font-bold">Produto</th>
+                <th className="p-3 text-left text-xs font-bold">Tipo</th>
                 <th className="p-3 text-right text-xs font-bold">Quantidade</th>
-                <th className="p-3 text-right text-xs font-bold">Ação</th>
+                <th className="p-3 text-right text-xs font-bold"></th>
               </tr>
             </thead>
             <tbody>
               {stockMovements.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="p-6 text-center text-stone-500 text-base"
                   >
                     Nenhuma movimentação registrada.
                   </td>
                 </tr>
               ) : (
-                stockMovements
-                  .slice()
-                  .reverse()
-                  .map((m) => (
+                stockMovements.map((m) => {
+                  const qty = Number(m.quantity);
+                  const isEntry = qty > 0;
+                  const movType = (m as StockMovement & { type?: string }).type;
+                  const typeLabel =
+                    movType === "sale"
+                      ? "Venda"
+                      : movType === "cancel"
+                        ? "Cancelamento"
+                        : movType === "return"
+                          ? "Devolução"
+                          : "Ajuste manual";
+                  return (
                     <tr key={m.id}>
                       <td className="p-3 text-xs">
                         {new Date(m.date).toLocaleString("pt-BR")}
                       </td>
                       <td className="p-3 text-xs">{m.productName}</td>
-                      <td className="p-3 text-xs text-right font-bold text-emerald-700">
-                        +{m.quantity}
+                      <td className="p-3 text-xs text-stone-500">
+                        {typeLabel}
+                      </td>
+                      <td
+                        className={`p-3 text-xs text-right font-bold ${isEntry ? "text-emerald-700" : "text-red-600"}`}
+                      >
+                        {isEntry ? `+${qty}` : qty}
                       </td>
                       <td className="p-3 text-xs text-right">
-                        <button
-                          className="text-red-600 hover:underline"
-                          onClick={() => handleDeleteMovement(m)}
-                        >
-                          Excluir
-                        </button>
+                        {movType === "manual" && (
+                          <button
+                            className="text-red-500 hover:underline text-xs"
+                            onClick={() => handleDeleteMovement(m)}
+                          >
+                            Desfazer
+                          </button>
+                        )}
                       </td>
                     </tr>
-                  ))
+                  );
+                })
               )}
             </tbody>
           </table>

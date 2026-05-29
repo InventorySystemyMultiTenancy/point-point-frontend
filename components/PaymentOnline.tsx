@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "../services/apiBase";
 import { get as apiGet } from "../services/api";
 import { useCart } from "../contexts/CartContext";
 import React, { useState, useEffect, useCallback } from "react";
@@ -54,7 +53,7 @@ export default function PaymentOnline(props: PaymentOnlineProps) {
     orderId,
     total,
     items,
-    userEmail = "cliente@pointpoint.com",
+    userEmail = "cliente@primeplush.com",
     userName = "Cliente",
     onSuccess,
     onError,
@@ -70,7 +69,7 @@ export default function PaymentOnline(props: PaymentOnlineProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const API_URL = API_BASE_URL;
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
   // Polling do status do pedido pelo orderId
   const startOrderStatusPolling = useCallback((orderId: string) => {

@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "../services/apiBase";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Order } from "../types";
@@ -15,16 +14,18 @@ import { useAuth } from "../contexts/AuthContext";
 
 const OrderHistoryPage: React.FC = () => {
   const navigate = useNavigate();
-  const { logout, adminLogout, currentUser, currentAdmin } = useAuth();
+  const { logout, currentUser } = useAuth();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [showUndeliveredOnly, setShowUndeliveredOnly] = useState(false);
+  const [showUnpaidOnly, setShowUnpaidOnly] = useState(false);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
 
-  const BACKEND_URL = API_BASE_URL;
-  const isAdmin = currentAdmin?.role === "admin";
+  const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+  const isAdmin = currentUser?.role === "admin";
 
   const getErrorMessageByStatus = (status?: number) => {
     if (status === 401 || status === 403) {
@@ -113,21 +114,37 @@ const OrderHistoryPage: React.FC = () => {
     // eslint-disable-next-line
   }, [startDate, endDate]);
 
+  const filteredOrders = orders.filter((order) => {
+    const isUndelivered = !order.entregueCliente;
+    const isUnpaid = !["paid", "authorized"].includes(
+      order.paymentStatus ?? "pending",
+    );
+
+    if (showUndeliveredOnly && !isUndelivered) {
+      return false;
+    }
+
+    if (showUnpaidOnly && !isUnpaid) {
+      return false;
+    }
+
+    return true;
+  });
+
   return (
     <div className="container mx-auto px-4 py-6 min-h-screen bg-stone-100">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <h1 className="text-3xl font-bold text-purple-900">
+        <h1 className="text-3xl font-bold text-blue-800">
           Histórico de Pedidos
         </h1>
         <button
           onClick={async () => {
             if (window.confirm("Deseja realmente sair?")) {
-              if (isAdmin) await adminLogout();
-              else await logout();
+              await logout();
               navigate("/admin/login");
             }
           }}
-          className="bg-purple-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-800 transition-colors shadow-md"
+          className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md"
         >
           🚪 Sair
         </button>
@@ -155,9 +172,27 @@ const OrderHistoryPage: React.FC = () => {
             className="border rounded px-2 py-1"
           />
         </div>
+        <label className="flex items-center gap-2 text-sm font-medium text-stone-700 pb-2">
+          <input
+            type="checkbox"
+            checked={showUndeliveredOnly}
+            onChange={(e) => setShowUndeliveredOnly(e.target.checked)}
+            className="h-4 w-4 rounded border-stone-300 text-blue-600 focus:ring-blue-500"
+          />
+          Não entregues
+        </label>
+        <label className="flex items-center gap-2 text-sm font-medium text-stone-700 pb-2">
+          <input
+            type="checkbox"
+            checked={showUnpaidOnly}
+            onChange={(e) => setShowUnpaidOnly(e.target.checked)}
+            className="h-4 w-4 rounded border-stone-300 text-blue-600 focus:ring-blue-500"
+          />
+          Não pagos
+        </label>
         <button
           onClick={fetchOrders}
-          className="bg-purple-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-800 transition-colors shadow-md"
+          className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow-md"
         >
           Filtrar
         </button>
@@ -165,6 +200,8 @@ const OrderHistoryPage: React.FC = () => {
           onClick={() => {
             setStartDate("");
             setEndDate("");
+            setShowUndeliveredOnly(false);
+            setShowUnpaidOnly(false);
           }}
           className="bg-stone-300 text-stone-700 font-bold py-2 px-4 rounded-lg hover:bg-stone-400 transition-colors shadow-md"
         >
@@ -173,25 +210,25 @@ const OrderHistoryPage: React.FC = () => {
       </div>
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-200 border-t-purple-700 mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mb-4"></div>
           <p className="text-stone-500 font-medium">Carregando histórico...</p>
         </div>
-      ) : orders.length === 0 ? (
+      ) : filteredOrders.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-stone-200 max-w-2xl mx-auto">
           <span className="text-6xl block mb-4">📭</span>
           <h2 className="text-2xl font-bold text-stone-700">
             Nenhum pedido encontrado
           </h2>
           <p className="text-stone-500 mt-2">
-            Não há pedidos para o período selecionado.
+            Não há pedidos para os filtros selecionados.
           </p>
         </div>
       ) : (
         <div className="space-y-6">
-          {orders.map((order) => (
+          {filteredOrders.map((order) => (
             <div
               key={order.id}
-              className="bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-700 cursor-pointer hover:shadow-lg transition"
+              className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-600 cursor-pointer hover:shadow-lg transition"
               onClick={() =>
                 navigate("/historico/detalhes", { state: { order } })
               }
@@ -230,7 +267,7 @@ const OrderHistoryPage: React.FC = () => {
                 {order.paymentType === "presencial" &&
                   order.paymentStatus === "pending" && (
                     <>
-                      <span className="text-purple-700 font-bold">A PAGAR</span>
+                      <span className="text-blue-600 font-bold">A PAGAR</span>
                       <button
                         className="px-3 py-1 rounded bg-green-600 text-white text-xs font-bold hover:bg-green-700 transition"
                         onClick={async (e) => {

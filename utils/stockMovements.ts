@@ -8,7 +8,7 @@ export interface StockMovement {
 }
 
 // Utilitário para salvar e buscar do localStorage
-export const STOCK_MOVEMENTS_KEY = "pointpoint_stock_movements";
+export const STOCK_MOVEMENTS_KEY = "primeplush_stock_movements";
 
 export function getStockMovements(): StockMovement[] {
   const data = localStorage.getItem(STOCK_MOVEMENTS_KEY);

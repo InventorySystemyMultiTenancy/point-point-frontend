@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "./apiBase";
 // Atualiza os dados do usuário (self-service)
 export async function updateUser(userId: string, userData: any) {
   const response = await authenticatedFetch(`${API_URL}/users/${userId}`, {
@@ -11,32 +10,29 @@ export async function updateUser(userId: string, userData: any) {
 
 import api from "./api";
 
-const BASE_URL = API_BASE_URL;
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const API_URL = `${BASE_URL}/api`;
 
 /**
  * Pega o token JWT salvo no localStorage.
  */
 export function getToken(): string | null {
-  return localStorage.getItem("adminToken");
+  return localStorage.getItem("jwt_token");
 }
 
 /**
  * Salva o token JWT no localStorage.
  */
 function saveToken(token: string): void {
-  localStorage.setItem("adminToken", token);
-  localStorage.removeItem("jwt_token");
+  localStorage.setItem("jwt_token", token);
 }
 
 /**
  * Remove o token JWT do localStorage.
  */
 export function logout(): void {
-  localStorage.removeItem("adminToken");
-  localStorage.removeItem("adminUser");
   localStorage.removeItem("jwt_token");
-  console.log("Admin deslogado.");
+  console.log("Usuário deslogado.");
 }
 
 export interface DeleteOrderFromHistoryResponse {
@@ -120,7 +116,7 @@ export async function login(
     }
 
     const data = await response.json();
-    if (data.token) {
+    if (data.success && data.token) {
       // Salva o token no localStorage
       saveToken(data.token);
       console.log(`✅ Login bem-sucedido! Role: ${role}`);
@@ -151,16 +147,6 @@ export async function authenticatedFetch(
 ): Promise<Response> {
   const token = getToken();
 
-  if (!token) {
-    const error: ApiHttpError = new Error("Sessao admin expirada");
-    error.status = 401;
-    if (window.location.pathname.startsWith("/admin")) {
-      sessionStorage.setItem("adminAuthError", "Sessao expirada");
-      window.location.href = "/admin/login";
-    }
-    throw error;
-  }
-
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string> | undefined),
@@ -179,13 +165,12 @@ export async function authenticatedFetch(
     console.error("Acesso negado. Token inválido ou expirado.");
     logout();
     // Redireciona para a página de login (se necessário)
-    if (window.location.pathname.startsWith("/admin")) {
-      sessionStorage.setItem("adminAuthError", "Sessao expirada");
+    if (window.location.pathname.includes("/admin")) {
       window.location.href = "/admin/login";
+    } else if (window.location.pathname.includes("/kitchen")) {
+      window.location.href = "/kitchen/login";
     }
-    const error: ApiHttpError = new Error("Sessao expirada");
-    error.status = response.status;
-    throw error;
+    throw new Error("Acesso não autorizado");
   }
 
   return response;
@@ -214,7 +199,7 @@ export async function publicFetch(
 // Produtos (Admin)
 export async function getProducts() {
   try {
-    const response = await publicFetch(`${API_URL}/products`);
+    const response = await publicFetch(`${API_URL}/menu`);
 
     // ✅ Verifica se a resposta foi bem-sucedida
     if (!response.ok) {

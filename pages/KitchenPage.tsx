@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "../services/apiBase";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Order } from "../types";
@@ -18,7 +17,7 @@ const OrderHistoryPage: React.FC = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const BACKEND_URL = API_BASE_URL;
+  const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
   const fetchOrders = async () => {
     try {
@@ -92,7 +91,7 @@ const OrderHistoryPage: React.FC = () => {
         </div>
         <button
           onClick={fetchOrders}
-          className="bg-purple-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-800 transition-colors shadow-md"
+          className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow-md"
         >
           Filtrar
         </button>
@@ -108,7 +107,7 @@ const OrderHistoryPage: React.FC = () => {
       </div>
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-200 border-t-purple-700 mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mb-4"></div>
           <p className="text-stone-500 font-medium">Carregando histórico...</p>
         </div>
       ) : orders.length === 0 ? (

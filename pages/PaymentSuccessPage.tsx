@@ -1,8 +1,7 @@
-import { API_BASE_URL } from "../services/apiBase";
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-const BACKEND_URL = API_BASE_URL;
+const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 export default function PaymentSuccessPage() {
   const navigate = useNavigate();
@@ -66,13 +65,13 @@ export default function PaymentSuccessPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-50 to-amber-50">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
       <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
         <h1 className="text-2xl font-bold mb-4 text-purple-700">Confirmação de Pagamento</h1>
         <pre className={status === "approved" ? "text-green-600 text-left whitespace-pre-wrap" : "text-red-600 text-center whitespace-pre-wrap"}>{message}</pre>
         {status === "approved" && (
           <button
-            className="mt-6 bg-purple-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-800"
+            className="mt-6 bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700"
             onClick={() => navigate("/")}
           >
             Voltar para o catálogo

@@ -7,20 +7,15 @@ const AdminLoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { adminLogin, currentAdmin } = useAuth();
+  const { login, currentUser } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const authError = sessionStorage.getItem("adminAuthError");
-    if (authError) {
-      setError(authError);
-      sessionStorage.removeItem("adminAuthError");
-    }
     // Se já está logado como admin, redirecionar
-    if (currentAdmin?.role === "admin" || isAuthenticated()) {
+    if (currentUser?.role === "admin" || isAuthenticated()) {
       navigate("/admin");
     }
-  }, [currentAdmin, navigate]);
+  }, [currentUser, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +34,7 @@ const AdminLoginPage: React.FC = () => {
           historico: [],
           role: "admin" as const,
         };
-        adminLogin(adminUser);
+        login(adminUser);
         navigate("/admin");
       } else {
         setError("Senha incorreta");

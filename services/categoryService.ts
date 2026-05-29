@@ -1,8 +1,7 @@
-import { API_BASE_URL } from "./apiBase";
 // Serviço de API para Categorias com Multi-tenant
 import { authenticatedFetch, publicFetch } from "./apiService";
 
-const BASE_URL = API_BASE_URL;
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const API_URL = `${BASE_URL}/api`;
 
 export interface Category {

@@ -1,10 +1,7 @@
-import { API_BASE_URL } from "./apiBase";
 import { authenticatedFetch } from "./apiService";
 
-const BASE_URL = API_BASE_URL;
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const API_URL = `${BASE_URL}/api`;
-
-export type OutsourcedServiceStatus = "pendente" | "concluido" | string;
 
 export interface OutsourcedCompany {
   id: string;
@@ -18,20 +15,27 @@ export interface OutsourcedCompany {
   active?: boolean;
 }
 
+export interface OutsourcedDelivery {
+  id: string;
+  quantity: number;
+  delivered_at: string;
+  observation?: string | null;
+}
+
 export interface OutsourcedService {
   id: string;
   company_id: string;
-  company_name?: string;
+  company_name: string;
   service_type: string;
   service_type_label?: string;
-  status: OutsourcedServiceStatus;
+  status: "pendente" | "concluido" | string;
   input_quantity: number;
   input_unit: string;
   fabric_paid_amount?: number | null;
   expected_return_quantity: number;
   expected_return_unit: string;
-  total_delivered_quantity?: number;
-  remaining_quantity?: number;
+  total_delivered_quantity: number;
+  remaining_quantity: number;
   due_date: string;
   started_at?: string | null;
   is_overdue?: boolean;
@@ -39,33 +43,33 @@ export interface OutsourcedService {
   deliveries?: OutsourcedDelivery[];
 }
 
-export interface OutsourcedDelivery {
-  id?: string;
-  quantity: number;
-  delivered_at: string;
-  observation?: string | null;
-}
-
 export interface OutsourcedAlert {
   id: string;
-  company_name?: string;
+  company_name: string;
   service_type?: string;
   service_type_label?: string;
-  due_date?: string;
-  remaining_quantity?: number;
-}
-
-export interface OutsourcedAlertsResponse {
-  count: number;
-  alerts: OutsourcedAlert[];
+  due_date: string;
+  remaining_quantity: number;
 }
 
 export interface OutsourcedServiceType {
   value?: string;
   key?: string;
-  service_type?: string;
-  label?: string;
-  name?: string;
+  id?: string;
+  label: string;
+  input_unit?: string;
+  expected_return_unit?: string;
+}
+
+export interface OutsourcedCompanyPayload {
+  name: string;
+  document?: string;
+  contact_name?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  notes?: string;
+  active: boolean;
 }
 
 export interface OutsourcedServicePayload {
@@ -79,30 +83,54 @@ export interface OutsourcedServicePayload {
   notes?: string;
 }
 
-export type OutsourcedCompanyPayload = Omit<OutsourcedCompany, "id">;
-
-function unwrapArray<T>(data: unknown, keys: string[]): T[] {
-  if (Array.isArray(data)) return data as T[];
-  if (data && typeof data === "object") {
-    const record = data as Record<string, unknown>;
-    for (const key of keys) {
-      if (Array.isArray(record[key])) return record[key] as T[];
-    }
-  }
-  return [];
+export interface OutsourcedDeliveryPayload {
+  quantity: number;
+  delivered_at: string;
+  observation?: string;
 }
 
-async function readJson<T>(response: Response): Promise<T> {
-  const data = await response.json().catch(() => ({}));
+const readJson = async <T>(response: Response): Promise<T> => {
+  let data: unknown = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
   if (!response.ok) {
     const message =
-      typeof data === "object" && data && "message" in data
-        ? String((data as { message?: unknown }).message)
+      data &&
+      typeof data === "object" &&
+      "message" in data &&
+      typeof (data as { message?: unknown }).message === "string"
+        ? (data as { message: string }).message
         : `Erro na API (${response.status})`;
     throw new Error(message);
   }
+
   return data as T;
-}
+};
+
+const unwrapArray = <T>(data: unknown, keys: string[]): T[] => {
+  if (Array.isArray(data)) return data as T[];
+  if (!data || typeof data !== "object") return [];
+
+  for (const key of keys) {
+    const value = (data as Record<string, unknown>)[key];
+    if (Array.isArray(value)) return value as T[];
+  }
+
+  return [];
+};
+
+const unwrapObject = <T>(data: unknown, keys: string[]): T => {
+  if (!data || typeof data !== "object") return data as T;
+  for (const key of keys) {
+    const value = (data as Record<string, unknown>)[key];
+    if (value && typeof value === "object") return value as T;
+  }
+  return data as T;
+};
 
 export async function getOutsourcedServiceTypes() {
   const response = await authenticatedFetch(
@@ -130,7 +158,10 @@ export async function createOutsourcedCompany(
       body: JSON.stringify(payload),
     },
   );
-  return readJson<OutsourcedCompany>(response);
+  return unwrapObject<OutsourcedCompany>(
+    await readJson<unknown>(response),
+    ["company", "data"],
+  );
 }
 
 export async function updateOutsourcedCompany(
@@ -144,20 +175,22 @@ export async function updateOutsourcedCompany(
       body: JSON.stringify(payload),
     },
   );
-  return readJson<OutsourcedCompany>(response);
+  return unwrapObject<OutsourcedCompany>(
+    await readJson<unknown>(response),
+    ["company", "data"],
+  );
 }
 
-export async function getOutsourcedServices(params?: {
+export async function getOutsourcedServices(filters?: {
   status?: string;
   overdue?: boolean;
 }) {
-  const search = new URLSearchParams();
-  if (params?.status) search.set("status", params.status);
-  if (params?.overdue) search.set("overdue", "true");
-
-  const query = search.toString();
+  const params = new URLSearchParams();
+  if (filters?.status) params.set("status", filters.status);
+  if (filters?.overdue) params.set("overdue", "true");
+  const query = params.toString() ? `?${params.toString()}` : "";
   const response = await authenticatedFetch(
-    `${API_URL}/admin/outsourced-services${query ? `?${query}` : ""}`,
+    `${API_URL}/admin/outsourced-services${query}`,
   );
   const data = await readJson<unknown>(response);
   return unwrapArray<OutsourcedService>(data, ["services", "data"]);
@@ -168,21 +201,26 @@ export async function getOutsourcedServiceAlerts() {
     `${API_URL}/admin/outsourced-services/alerts`,
   );
   const data = await readJson<unknown>(response);
-  if (Array.isArray(data)) {
-    return { count: data.length, alerts: data as OutsourcedAlert[] };
-  }
-  const record = (data || {}) as Partial<OutsourcedAlertsResponse>;
-  return {
-    count: Number(record.count || record.alerts?.length || 0),
-    alerts: record.alerts || [],
-  };
+  const alerts = unwrapArray<OutsourcedAlert>(data, [
+    "alerts",
+    "services",
+    "data",
+  ]);
+  const count =
+    data && typeof data === "object" && typeof (data as { count?: unknown }).count === "number"
+      ? (data as { count: number }).count
+      : alerts.length;
+  return { count, alerts };
 }
 
 export async function getOutsourcedService(id: string) {
   const response = await authenticatedFetch(
     `${API_URL}/admin/outsourced-services/${id}`,
   );
-  return readJson<OutsourcedService>(response);
+  return unwrapObject<OutsourcedService>(
+    await readJson<unknown>(response),
+    ["service", "data"],
+  );
 }
 
 export async function createOutsourcedService(
@@ -195,12 +233,15 @@ export async function createOutsourcedService(
       body: JSON.stringify(payload),
     },
   );
-  return readJson<OutsourcedService>(response);
+  return unwrapObject<OutsourcedService>(
+    await readJson<unknown>(response),
+    ["service", "data"],
+  );
 }
 
 export async function addOutsourcedServiceDelivery(
   id: string,
-  payload: { quantity: number; delivered_at: string; observation?: string },
+  payload: OutsourcedDeliveryPayload,
 ) {
   const response = await authenticatedFetch(
     `${API_URL}/admin/outsourced-services/${id}/deliveries`,
@@ -209,13 +250,15 @@ export async function addOutsourcedServiceDelivery(
       body: JSON.stringify(payload),
     },
   );
-  return readJson<OutsourcedService>(response);
+  return readJson<unknown>(response);
 }
 
 export async function finalizeOutsourcedService(id: string) {
   const response = await authenticatedFetch(
     `${API_URL}/admin/outsourced-services/${id}/finalize`,
-    { method: "PUT" },
+    {
+      method: "PUT",
+    },
   );
-  return readJson<OutsourcedService>(response);
+  return readJson<unknown>(response);
 }

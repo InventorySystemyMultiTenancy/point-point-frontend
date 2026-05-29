@@ -1,7 +1,6 @@
-import { API_BASE_URL } from "./apiBase";
 import type { Order, CartItem, Product } from "../types";
 
-const API_URL = API_BASE_URL;
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 /**
  * Gera uma sugestão de compra personalizada baseada no histórico e carrinho.

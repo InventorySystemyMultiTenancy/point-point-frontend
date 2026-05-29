@@ -123,10 +123,10 @@ const AdminCategoriesPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-purple-100 to-indigo-200">
+      <div className="flex justify-center items-center min-h-screen bg-transparent">
         <div className="text-center">
           <div className="animate-spin text-6xl mb-4">🔄</div>
-          <p className="text-xl text-purple-800 font-semibold">
+          <p className="text-xl text-blue-100 font-semibold">
             Carregando categorias...
           </p>
         </div>
@@ -135,7 +135,7 @@ const AdminCategoriesPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-indigo-200 p-6">
+    <div className="min-h-screen bg-transparent p-2 sm:p-4 md:p-6">
       <div className="container mx-auto max-w-6xl">
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
@@ -210,7 +210,7 @@ const AdminCategoriesPage: React.FC = () => {
                 <div className="flex gap-2 mt-4">
                   <button
                     onClick={() => handleEditClick(category)}
-                    className="flex-1 bg-amber-500 text-white py-2 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                    className="flex-1 bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
                   >
                     ✏️ Editar
                   </button>
@@ -240,11 +240,11 @@ const AdminCategoriesPage: React.FC = () => {
                 {categories.length}
               </p>
             </div>
-            <div className="bg-amber-50 p-4 rounded-lg border-2 border-amber-200">
-              <p className="text-purple-700 text-sm font-semibold">
+            <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+              <p className="text-blue-600 text-sm font-semibold">
                 Primeira Ordem
               </p>
-              <p className="text-3xl font-bold text-purple-900">
+              <p className="text-3xl font-bold text-blue-800">
                 {categories.length > 0
                   ? Math.min(...categories.map((c) => c.order))
                   : "-"}

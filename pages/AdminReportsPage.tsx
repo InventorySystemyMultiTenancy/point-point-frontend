@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "../services/apiBase";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   LineChart,
@@ -30,7 +29,7 @@ interface AIRecommendation {
 const COLORS = [
   "#f59e0b",
   "#ef4444",
-  "#6d28d9",
+  "#3b82f6",
   "#10b981",
   "#8b5cf6",
   "#ec4899",
@@ -52,7 +51,7 @@ const AdminReportsPage: React.FC = () => {
   const fetchOrders = async () => {
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/user-orders`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/user-orders`,
       );
       if (!res.ok) throw new Error("Erro ao buscar pedidos");
       const data = await res.json();
@@ -106,7 +105,7 @@ Seja direto e focado em ações práticas. Use emojis para deixar mais visual.`;
 
       const res = await authenticatedFetch(
         `${
-          API_BASE_URL
+          import.meta.env.VITE_API_URL || "http://localhost:3001"
         }/api/ai/suggestion`,
         {
           method: "POST",
@@ -302,14 +301,14 @@ Seja direto e focado em ações práticas. Use emojis para deixar mais visual.`;
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl shadow-lg border-l-4 border-amber-500">
-              <h3 className="text-sm font-semibold text-purple-900 mb-2">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
+              <h3 className="text-sm font-semibold text-blue-800 mb-2">
                 📦 Total de Pedidos
               </h3>
-              <p className="text-3xl font-bold text-purple-950">
+              <p className="text-3xl font-bold text-blue-900">
                 {orders.length}
               </p>
-              <p className="text-sm text-purple-800 mt-2">Últimos 30 dias</p>
+              <p className="text-sm text-blue-700 mt-2">Últimos 30 dias</p>
             </div>
 
             <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl shadow-lg border-l-4 border-amber-600">
@@ -368,9 +367,9 @@ Seja direto e focado em ações práticas. Use emojis para deixar mais visual.`;
                 <Line
                   type="monotone"
                   dataKey="pedidos"
-                  stroke="#6d28d9"
+                  stroke="#3b82f6"
                   strokeWidth={3}
-                  dot={{ fill: "#6d28d9", r: 4 }}
+                  dot={{ fill: "#3b82f6", r: 4 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>
@@ -464,7 +463,7 @@ Seja direto e focado em ações práticas. Use emojis para deixar mais visual.`;
                   />
                   <Bar
                     dataKey="quantity"
-                    fill="#6d28d9"
+                    fill="#f59e0b"
                     radius={[0, 8, 8, 0]}
                   />
                 </BarChart>
@@ -521,12 +520,12 @@ Seja direto e focado em ações práticas. Use emojis para deixar mais visual.`;
                 {recommendation.peakDays.map((day) => (
                   <div
                     key={day.day}
-                    className="flex justify-between items-center p-3 bg-amber-50 rounded-lg"
+                    className="flex justify-between items-center p-3 bg-blue-50 rounded-lg"
                   >
                     <span className="font-semibold text-slate-700">
                       {day.day}
                     </span>
-                    <span className="text-purple-700 font-bold">
+                    <span className="text-blue-600 font-bold">
                       {day.orders} pedidos
                     </span>
                   </div>

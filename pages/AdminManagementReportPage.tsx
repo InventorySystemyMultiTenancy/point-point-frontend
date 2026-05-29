@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "../services/apiBase";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -141,11 +140,11 @@ const percentFormatter = new Intl.NumberFormat("pt-BR", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
-const CHART_COLORS = ["#10b981", "#6d28d9", "#f59e0b", "#ef4444"];
+const CHART_COLORS = ["#10b981", "#2563eb", "#f59e0b", "#ef4444"];
 const ABC_CLASS_COLORS = {
   A: "#ef4444",
   B: "#f59e0b",
-  C: "#6d28d9",
+  C: "#2563eb",
 };
 
 const formatCurrency = (value: number) =>
@@ -273,7 +272,7 @@ const AdminManagementReportPage: React.FC = () => {
       }
 
       const url = new URL(
-        `${API_BASE_URL}/api/admin/management-report`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/admin/management-report`,
       );
 
       if (filter.mode === "custom") {
@@ -396,7 +395,7 @@ const AdminManagementReportPage: React.FC = () => {
           }}
         />
         <button
-          className="bg-purple-800 text-white font-semibold px-6 py-2 rounded-lg hover:bg-purple-900 mt-2"
+          className="bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg hover:bg-blue-800 mt-2"
           onClick={() => {
             if (senhaExtra === SENHA_ESPECIAL) {
               setSenhaCorreta(true);
@@ -441,7 +440,7 @@ const AdminManagementReportPage: React.FC = () => {
                       tr:nth-child(odd) { background: #fff; }
                       td { font-size: 15px; color: #334155; }
                       .estoque-baixo { color: #ef4444; font-weight: bold; }
-                      .sugestao { color: #6d28d9; font-weight: bold; }
+                      .sugestao { color: #2563eb; font-weight: bold; }
                     </style>
                   </head>
                   <body>
@@ -488,7 +487,7 @@ const AdminManagementReportPage: React.FC = () => {
           type="button"
           onClick={handleRefresh}
           disabled={loading}
-          className="bg-purple-800 text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-purple-900 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading ? "Atualizando..." : "Atualizar dados"}
         </button>
@@ -504,7 +503,7 @@ const AdminManagementReportPage: React.FC = () => {
                 onClick={handleSetGeneralFilter}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   filterMode === "general"
-                    ? "bg-purple-800 text-white"
+                    ? "bg-blue-700 text-white"
                     : "text-slate-600 hover:text-slate-800"
                 }`}
               >
@@ -515,7 +514,7 @@ const AdminManagementReportPage: React.FC = () => {
                 onClick={() => setFilterMode("custom")}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   filterMode === "custom"
-                    ? "bg-purple-800 text-white"
+                    ? "bg-blue-700 text-white"
                     : "text-slate-600 hover:text-slate-800"
                 }`}
               >
@@ -584,7 +583,7 @@ const AdminManagementReportPage: React.FC = () => {
                 value={startDate}
                 onChange={(event) => setStartDate(event.target.value)}
                 max={endDate || undefined}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-purple-700"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-600"
               />
             </div>
 
@@ -597,7 +596,7 @@ const AdminManagementReportPage: React.FC = () => {
                 value={endDate}
                 onChange={(event) => setEndDate(event.target.value)}
                 min={startDate || undefined}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-purple-700"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-600"
               />
             </div>
 
@@ -640,11 +639,11 @@ const AdminManagementReportPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl shadow border-l-4 border-purple-700 p-4">
+            <div className="bg-white rounded-xl shadow border-l-4 border-blue-600 p-4">
               <p className="text-xs uppercase tracking-wide text-slate-500">
                 Ticket Medio
               </p>
-              <p className="text-2xl font-bold text-purple-800 mt-2">
+              <p className="text-2xl font-bold text-blue-700 mt-2">
                 {formatCurrency(report.summary.averageTicket)}
               </p>
               <p className="text-sm text-slate-500 mt-1">
@@ -682,7 +681,7 @@ const AdminManagementReportPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl shadow border-l-4 border-purple-700 p-4">
+            <div className="bg-white rounded-xl shadow border-l-4 border-blue-600 p-4">
               <p className="text-xs uppercase tracking-wide text-slate-500">
                 Quantidade de vendas
               </p>
@@ -753,7 +752,7 @@ const AdminManagementReportPage: React.FC = () => {
                       }
                       className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                         revenueGranularity === option.value
-                          ? "bg-purple-800 text-white"
+                          ? "bg-blue-700 text-white"
                           : "text-slate-600 hover:text-slate-800"
                       }`}
                     >
@@ -780,12 +779,12 @@ const AdminManagementReportPage: React.FC = () => {
                       >
                         <stop
                           offset="5%"
-                          stopColor="#6d28d9"
+                          stopColor="#2563eb"
                           stopOpacity={0.35}
                         />
                         <stop
                           offset="95%"
-                          stopColor="#6d28d9"
+                          stopColor="#2563eb"
                           stopOpacity={0.02}
                         />
                       </linearGradient>
@@ -816,10 +815,10 @@ const AdminManagementReportPage: React.FC = () => {
                     <Area
                       type="monotone"
                       dataKey="revenue"
-                      stroke="#6d28d9"
+                      stroke="#2563eb"
                       strokeWidth={3}
                       fill="url(#revenueFill)"
-                      dot={{ r: 3, fill: "#6d28d9" }}
+                      dot={{ r: 3, fill: "#2563eb" }}
                       activeDot={{ r: 5 }}
                     />
                   </AreaChart>
@@ -970,7 +969,7 @@ const AdminManagementReportPage: React.FC = () => {
                     />
                     <Bar
                       dataKey="quantitySold"
-                      fill="#6d28d9"
+                      fill="#2563eb"
                       radius={[0, 8, 8, 0]}
                     />
                   </BarChart>
@@ -1139,7 +1138,7 @@ const AdminManagementReportPage: React.FC = () => {
                     <Bar
                       yAxisId="left"
                       dataKey="revenue"
-                      fill="#6d28d9"
+                      fill="#2563eb"
                       radius={[6, 6, 0, 0]}
                     />
                     <Line

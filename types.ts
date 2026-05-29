@@ -50,7 +50,7 @@ export interface Order {
   paymentMethod?: "credit" | "debit" | "pix";
   installments?: number;
   fee?: number;
-  paymentStatus?: "pending" | "paid" | "canceled";
+  paymentStatus?: "pending" | "paid" | "authorized" | "canceled";
   entregueCliente?: boolean; // Indica se o pedido foi entregue ao cliente
 }
 

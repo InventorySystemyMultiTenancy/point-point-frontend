@@ -100,7 +100,7 @@ const Chatbot: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-sm">Atendente Virtual</h3>
-                  <p className="text-xs text-amber-100">Point&Point AI</p>
+                  <p className="text-xs text-blue-100">Prime Plush AI</p>
                 </div>
               </div>
               <button

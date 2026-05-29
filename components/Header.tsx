@@ -2,59 +2,58 @@ import React, { useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useStore } from "../contexts/StoreContext"; // 🏪 MULTI-TENANT
-import Chatbot from "./Chatbot";
-import logo from "../assets/pointpoint-logo.png";
+import logo from "../assets/primeplush-logo.png";
 
 const Header: React.FC = () => {
-  const { currentUser, currentAdmin, logout, adminLogout } = useAuth();
+  const { currentUser, logout } = useAuth();
   const { store } = useStore(); // 🏪 Obtém configurações da loja
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const isAdminArea = location.pathname.startsWith("/admin");
+  const isLoginRoute =
+    location.pathname === "/" ||
+    location.pathname === "/login" ||
+    location.pathname === "/register" ||
+    location.pathname === "/menu";
 
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location.pathname]);
 
   const handleLogout = () => {
-    if (isAdminArea && currentAdmin) {
-      adminLogout();
-    } else {
-      logout();
-    }
+    logout();
     setIsMenuOpen(false);
     navigate("/");
   };
 
   const activeLinkStyle = {
-    color: "#6d28d9", // roxo escuro
+    color: "#2563eb", // azul escuro
     fontWeight: 600,
   };
 
   return (
     <>
-      <header className="bg-gradient-to-r from-white via-purple-800 to-amber-200 border-b border-stone-200 sticky top-0 z-50 h-16">
-        <div className="container mx-auto px-4 h-full flex items-center justify-between">
-          {/* Logo e Chatbot lado a lado no mobile */}
-          <div className="flex items-center gap-2 relative">
+      <header
+        className={`monster-header bg-gradient-to-r from-white via-blue-800 to-blue-900 border-b border-stone-200 sticky top-0 z-50 h-16 ${
+          isLoginRoute ? "login-plush-header" : ""
+        }`}
+      >
+        <div className="container mx-auto px-3 sm:px-4 h-full flex items-center justify-between gap-3 min-w-0">
+          {/* Logo */}
+          <div className="flex items-center gap-2 relative min-w-0">
             <NavLink
-              to="/"
-              className="flex items-center gap-2 group"
+              to={currentUser ? "/menu" : "/"}
+              className="flex items-center gap-2 group min-w-0"
             >
               <img
                 src={logo}
-                alt="Point&Point logo"
-                className="w-12 h-12 rounded-lg group-hover:scale-105 transition-transform object-cover"
+                alt="PrimePlush logo"
+                className="monster-header-logo w-10 h-10 sm:w-12 sm:h-12 rounded-lg group-hover:scale-105 transition-transform object-cover shrink-0"
               />
-              <span className="text-xl font-bold text-stone-800 tracking-tight">
-                Point&Point
+              <span className="monster-header-brand text-base sm:text-xl font-bold text-stone-800 tracking-tight truncate">
+                PrimePlush
               </span>
             </NavLink>
-            {/* Chatbot ao lado do logo no mobile */}
-            <span className="block md:hidden ml-2">
-              <Chatbot />
-            </span>
           </div>
 
           {/* Navegação Central (Desktop) */}
@@ -63,7 +62,7 @@ const Header: React.FC = () => {
               (!currentUser.role || currentUser.role === "customer") && (
                 <NavLink
                   to="/menu"
-                  className="text-white transition-colors font-medium"
+                  className="monster-header-link text-white transition-colors font-medium"
                 >
                   Catálogo
                 </NavLink>
@@ -75,7 +74,7 @@ const Header: React.FC = () => {
                 style={({ isActive }) =>
                   isActive ? activeLinkStyle : undefined
                 }
-                className="text-stone-500 hover:text-purple-800 transition-colors font-medium"
+                className="monster-header-link text-stone-500 hover:text-blue-700 transition-colors font-medium"
               >
                 Pedidos Cozinha
               </NavLink>
@@ -84,42 +83,42 @@ const Header: React.FC = () => {
             {currentUser?.role === "admincustomer" && (
               <NavLink
                 to="/admin/login"
-                className="text-white hover:text-purple-800 transition-colors font-medium"
+                className="monster-header-link text-white hover:text-blue-700 transition-colors font-medium"
               >
                 Ir para Admin
               </NavLink>
             )}
 
-            {isAdminArea && currentAdmin?.role === "admin" && (
+            {currentUser?.role === "admin" && (
               <>
                 <NavLink
                   to="/admin"
-                  className="text-white hover:text-purple-800 transition-colors font-medium"
+                  className="monster-header-link text-white hover:text-blue-700 transition-colors font-medium"
                 >
                   Produtos
                 </NavLink>
                 <NavLink
-                  to="/admin/outsourced-services"
-                  className="text-white hover:text-purple-800 transition-colors font-medium"
-                >
-                  SERVIÇOS TERCEIRIZADOS
-                </NavLink>
-                <NavLink
                   to="/admin/management-report"
-                  className="text-emerald-300 hover:text-emerald-200 transition-colors font-medium"
+                  className="monster-header-link text-emerald-300 hover:text-emerald-200 transition-colors font-medium"
                 >
                   Relatorio Gestao
                 </NavLink>
                 <NavLink
+                  to="/admin/outsourced-services"
+                  className="monster-header-link text-white hover:text-purple-200 transition-colors font-medium"
+                >
+                  SERVIÇOS TERCEIRIZADOS
+                </NavLink>
+                <NavLink
                   to="/admin/reports"
-                  className="text-[#FFA500] hover:text-purple-800 transition-colors font-medium"
+                  className="monster-header-link text-[#FFA500] hover:text-blue-700 transition-colors font-medium"
                 >
                   Relatórios IA
                 </NavLink>
                 {/* SuperAdmin button: text on desktop, crown emoji on mobile */}
                 <NavLink
                   to="/superadmin/login"
-                  className="bg-purple-700 text-white font-bold py-1 px-4 rounded-lg ml-2 hover:bg-purple-800 transition-colors shadow-md superadmin-btn"
+                  className="monster-header-action bg-blue-600 text-white font-bold py-1 px-4 rounded-lg ml-2 hover:bg-blue-700 transition-colors shadow-md superadmin-btn"
                   title="SuperAdmin"
                 >
                   <span className="superadmin-btn-label">SuperAdmin</span>
@@ -136,10 +135,10 @@ const Header: React.FC = () => {
           </nav>
 
           {/* Área do Usuário (Desktop) + Menu Hambúrguer (<1100px) */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setIsMenuOpen((prev) => !prev)}
-              className="hidden max-[1100px]:inline-flex items-center justify-center h-10 w-10 rounded-lg bg-purple-800 text-white hover:bg-purple-900 transition-colors"
+              className="monster-header-action hidden max-[1100px]:inline-flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-blue-700 text-white hover:bg-blue-800 transition-colors shrink-0"
               aria-label="Abrir menu"
               title="Menu"
             >
@@ -161,26 +160,22 @@ const Header: React.FC = () => {
 
             {/* Área do Usuário (Direita) */}
             <div className="flex items-center gap-4 max-[1100px]:hidden">
-              {currentUser || (isAdminArea && currentAdmin) ? (
+              {currentUser ? (
                 <>
-                  {/* Chatbot só desktop aqui */}
-                  <span className="hidden md:block">
-                    <Chatbot />
-                  </span>
                   <div className="h-6 w-px bg-stone-200 mx-1"></div>
                   <div className="flex items-center gap-3">
                     <div className="hidden sm:block text-right leading-tight">
                       <p className="text-xs text-white font-medium">Olá,</p>
                       <p
                         className="text-sm font-bold max-w-[100px] truncate"
-                        style={{ color: "orange" }}
+                        style={{ color: "#60a5fa" }}
                       >
-                        {(isAdminArea ? currentAdmin : null || currentUser)?.name}
+                        {currentUser.name}
                       </p>
                     </div>
                     <button
                       onClick={() => navigate("/register?edit=1")}
-                      className="edit-btn bg-purple-700 text-white font-bold py-1 px-3 rounded-lg ml-2 hover:bg-purple-800 transition-colors shadow-md text-xs"
+                      className="monster-header-action edit-btn bg-blue-600 text-white font-bold py-1 px-3 rounded-lg ml-2 hover:bg-blue-700 transition-colors shadow-md text-xs"
                       title="Editar meus dados"
                     >
                       <span className="edit-btn-label">Editar meus dados</span>
@@ -207,7 +202,7 @@ const Header: React.FC = () => {
                     </button>
                     <NavLink
                       to="/meus-pedidos"
-                      className="bg-amber-100 text-purple-800 font-bold py-1 px-3 rounded-lg ml-2 hover:bg-amber-200 transition-colors shadow-md text-xs flex items-center gap-2"
+                      className="monster-header-action bg-blue-100 text-blue-700 font-bold py-1 px-3 rounded-lg ml-2 hover:bg-blue-200 transition-colors shadow-md text-xs flex items-center gap-2"
                       title="Meus Pedidos"
                     >
                       <span>📦</span>
@@ -215,7 +210,7 @@ const Header: React.FC = () => {
                     </NavLink>
                     <button
                       onClick={handleLogout}
-                      className="text-white hover:text-purple-700 hover:bg-amber-100 p-2 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg"
+                      className="text-white hover:text-blue-600 hover:bg-blue-100 p-2 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg"
                       title="Sair"
                     >
                       <svg
@@ -244,13 +239,13 @@ const Header: React.FC = () => {
       </header>
 
       {isMenuOpen && (
-        <div className="min-[1101px]:hidden bg-white border-b border-stone-200 shadow-md">
+        <div className="min-[1101px]:hidden bg-[#050604] border-b border-blue-500/30 shadow-md">
           <div className="container mx-auto px-4 py-4 flex flex-col gap-3">
             {currentUser &&
               (!currentUser.role || currentUser.role === "customer") && (
                 <NavLink
                   to="/menu"
-                  className="text-stone-700 hover:text-purple-800 font-medium"
+                  className="text-stone-100 hover:text-blue-300 font-medium"
                 >
                   Catálogo
                 </NavLink>
@@ -259,7 +254,7 @@ const Header: React.FC = () => {
             {currentUser?.role === "kitchen" && (
               <NavLink
                 to="/cozinha"
-                className="text-stone-700 hover:text-purple-800 font-medium"
+                className="text-stone-100 hover:text-blue-300 font-medium"
               >
                 Pedidos Cozinha
               </NavLink>
@@ -268,84 +263,84 @@ const Header: React.FC = () => {
             {currentUser?.role === "admincustomer" && (
               <NavLink
                 to="/admin/login"
-                className="text-stone-700 hover:text-purple-800 font-medium"
+                className="text-stone-100 hover:text-blue-300 font-medium"
               >
                 Ir para Admin
               </NavLink>
             )}
 
-            {isAdminArea && currentAdmin?.role === "admin" && (
+            {currentUser?.role === "admin" && (
               <>
                 <NavLink
                   to="/admin"
-                  className="text-stone-700 hover:text-purple-800 font-medium"
+                  className="text-stone-100 hover:text-blue-300 font-medium"
                 >
                   Produtos
                 </NavLink>
                 <NavLink
-                  to="/admin/outsourced-services"
-                  className="text-stone-700 hover:text-purple-800 font-medium"
-                >
-                  SERVIÇOS TERCEIRIZADOS
-                </NavLink>
-                <NavLink
                   to="/admin/management-report"
-                  className="text-emerald-700 hover:text-emerald-900 font-medium"
+                  className="text-stone-100 hover:text-blue-300 font-medium"
                 >
                   Relatorio Gestao
                 </NavLink>
                 <NavLink
+                  to="/admin/outsourced-services"
+                  className="text-stone-100 hover:text-purple-300 font-medium"
+                >
+                  SERVIÇOS TERCEIRIZADOS
+                </NavLink>
+                <NavLink
                   to="/admin/reports"
-                  className="text-amber-600 hover:text-purple-800 font-medium"
+                  className="text-stone-100 hover:text-blue-300 font-medium"
                 >
                   Relatórios IA
                 </NavLink>
                 <NavLink
                   to="/superadmin/login"
-                  className="text-stone-700 hover:text-purple-800 font-medium"
+                  className="text-stone-100 hover:text-blue-300 font-medium"
                 >
                   SuperAdmin
                 </NavLink>
               </>
             )}
 
-            {currentUser || (isAdminArea && currentAdmin) ? (
+            {currentUser ? (
               <>
-                <div className="h-px bg-stone-200 my-1" />
-                <p className="text-sm text-stone-500">
+                <div className="h-px bg-blue-500/20 my-1" />
+                <p className="text-sm text-stone-300">
                   Olá,{" "}
-                  <span className="font-bold text-stone-700">
-                    {(isAdminArea ? currentAdmin : null || currentUser)?.name}
+                  <span className="font-bold text-blue-300">
+                    {currentUser.name}
                   </span>
                 </p>
                 <button
                   onClick={() => navigate("/register?edit=1")}
-                  className="text-left text-stone-700 hover:text-purple-800 font-medium"
+                  className="text-left text-stone-100 hover:text-blue-300 font-medium"
                 >
                   Editar meus dados
                 </button>
                 <NavLink
                   to="/meus-pedidos"
-                  className="text-stone-700 hover:text-purple-800 font-medium"
+                  className="text-stone-100 hover:text-blue-300 font-medium"
                 >
                   Meus Pedidos
                 </NavLink>
                 <button
                   onClick={handleLogout}
-                  className="text-left text-stone-700 hover:text-purple-800 font-medium"
+                  className="text-left text-stone-100 hover:text-blue-300 font-medium"
                 >
                   Sair
                 </button>
               </>
             ) : (
-              <span className="text-sm text-stone-700">Bem-vindo!</span>
+              <span className="text-sm text-stone-100">Bem-vindo!</span>
             )}
           </div>
         </div>
       )}
 
       {/* Traço laranja embaixo do header */}
-      <div style={{ height: "4px", background: "orange", width: "100%" }} />
+      <div style={{ height: "4px", background: "#2563eb", width: "100%" }} />
     </>
   );
 };

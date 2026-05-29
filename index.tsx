@@ -2,6 +2,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import './components/MonsterInspired.css';
 import App from './App';
 
 const rootElement = document.getElementById('root');

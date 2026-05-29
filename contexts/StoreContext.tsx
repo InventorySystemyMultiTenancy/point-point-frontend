@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "../services/apiBase";
 /**
  * 🏪 STORE CONTEXT - Contexto Global da Loja (Multi-tenant)
  *
@@ -35,13 +34,13 @@ interface StoreContextType {
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
-// Configuração padrão (fallback) - Tema Point&Point
+// Configuração padrão (fallback) - Tema Pastel Kiosk
 const DEFAULT_STORE_CONFIG: Omit<StoreConfig, "id"> = {
-  name: "Point&Point",
+  name: "Pastel Kiosk",
   logo: null,
-  primaryColor: "#6d28d9", // roxo escuro
+  primaryColor: "#2563eb", // azul escuro
   secondaryColor: "#1f2937", // gray-800 - preto profundo
-  accentColor: "#d6b48c", // marrom claro
+  accentColor: "#60a5fa", // azul claro
 };
 
 interface StoreProviderProps {
@@ -62,7 +61,7 @@ export const StoreProvider: React.FC<StoreProviderProps> = ({ children }) => {
       console.log(`🏪 Carregando configuração da loja (single-tenant)`);
 
       const BACKEND_URL =
-        API_BASE_URL;
+        import.meta.env.VITE_API_URL || "http://localhost:3001";
 
       // Single-tenant: Usa configuração fixa
       const config: StoreConfig = {

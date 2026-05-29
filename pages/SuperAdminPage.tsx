@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "../services/apiBase";
 import React, { useState, useEffect } from "react";
 import SuperAdminReceivablesDetails from "../components/SuperAdminReceivablesDetails";
 
@@ -36,7 +35,7 @@ interface StatsData {
   orders: OrderDetail[];
 }
 
-import logo from "../assets/pointpoint-logo.png";
+import logo from "../assets/primeplush-logo.png";
 
 const SuperAdminPage: React.FC = () => {
   const [data, setData] = useState<StatsData | null>(null);
@@ -60,7 +59,7 @@ const SuperAdminPage: React.FC = () => {
     setError("");
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/super-admin/receivables`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/super-admin/receivables`,
         {
           headers: {
             "x-super-admin-password": password,
@@ -83,7 +82,7 @@ const SuperAdminPage: React.FC = () => {
     try {
       // Testa senha fazendo uma requisição
       const response = await fetch(
-        `${API_BASE_URL}/api/super-admin/receivables`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/super-admin/receivables`,
         {
           headers: {
             "x-super-admin-password": password,
@@ -110,16 +109,16 @@ const SuperAdminPage: React.FC = () => {
 
   if (!loggedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50">
+      <div className="superadmin-login-shell min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50">
         <form
           onSubmit={handleLogin}
-          className="bg-white shadow-2xl rounded-2xl p-10 w-full max-w-md flex flex-col gap-6 border-2 border-purple-200"
+          className="superadmin-login-card bg-white shadow-2xl rounded-2xl p-10 w-full max-w-md flex flex-col gap-6 border-2 border-purple-200"
         >
           <div className="flex flex-col items-center gap-3">
-            <img src={logo} alt="Point&Point Logo" className="w-24 h-24 mb-2" />
+            <img src={logo} alt="PrimePlush Logo" className="w-24 h-24 mb-2" />
             <h2 className="text-3xl font-bold text-purple-600">Super Admin</h2>
             <p className="text-gray-600 text-sm text-center">
-              Controle Financeiro Point&Point
+              Controle Financeiro PrimePlush
             </p>
           </div>
           <input
@@ -165,13 +164,13 @@ const SuperAdminPage: React.FC = () => {
       console.log(
         "[FRONTEND] Enviando POST para /api/super-admin/receivables/mark-received-by-ids",
         {
-          url: `${API_BASE_URL}/api/super-admin/receivables/mark-received-by-ids`,
+          url: `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/super-admin/receivables/mark-received-by-ids`,
           password,
           orderIds: pendingOrderIds,
         },
       );
       const response = await fetch(
-        `${API_BASE_URL}/api/super-admin/receivables/mark-received-by-ids`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/super-admin/receivables/mark-received-by-ids`,
         {
           method: "POST",
           headers: {

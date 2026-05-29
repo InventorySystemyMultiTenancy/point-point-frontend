@@ -3,13 +3,34 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "env": {
-    "VITE_API_URL": "https://point-point-backend.onrender.com"
+    "VITE_API_URL": "https://backendkioskpro.onrender.com",
+    "VITE_DEFAULT_STORE_ID": "pastel1"
   },
-  "rewrites": [
+  "redirects": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://point-point-backend.onrender.com/api/$1"
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.selfmachine.com.br"
+        }
+      ],
+      "destination": "https://pastel1.selfmachine.com.br",
+      "permanent": true
     },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "selfmachine.com.br"
+        }
+      ],
+      "destination": "https://pastel1.selfmachine.com.br",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"

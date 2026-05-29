@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "../services/apiBase";
 import React from "react";
 
 interface ItemDetail {
@@ -133,10 +132,10 @@ const SuperAdminReceivablesDetails: React.FC<
             </div>
 
             <button
-              className="self-start px-2 py-1 bg-purple-700 text-white rounded text-xs font-bold hover:bg-purple-800 transition shrink-0"
+              className="self-start px-2 py-1 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700 transition shrink-0"
               onClick={() => {
                 const backendUrl =
-                  API_BASE_URL;
+                  import.meta.env.VITE_API_URL || "http://localhost:3001";
                 window.open(
                   `${backendUrl}/api/orders/${order.id}/receipt-pdf`,
                   "_blank",

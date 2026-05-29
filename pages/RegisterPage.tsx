@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "../services/apiBase";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -86,7 +85,7 @@ const RegisterPage: React.FC = () => {
             title: "Dados atualizados!",
             text: "Suas informações foram salvas.",
             icon: "success",
-            confirmButtonColor: "#6d28d9",
+            confirmButtonColor: "#2563eb",
           });
           navigate("/menu");
         } else {
@@ -95,7 +94,7 @@ const RegisterPage: React.FC = () => {
       } else {
         // Cadastro normal
         const response = await fetch(
-          `${API_BASE_URL}/api/users/register`,
+          `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/users/register`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -119,7 +118,7 @@ const RegisterPage: React.FC = () => {
             title: "Cadastro realizado!",
             text: "Sua conta foi criada com sucesso.",
             icon: "success",
-            confirmButtonColor: "#6d28d9",
+            confirmButtonColor: "#2563eb",
           });
           navigate("/login");
         }
@@ -136,7 +135,7 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-stone-100 to-amber-50 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-stone-100 to-blue-50 p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-10">
         <h1 className="text-3xl font-bold text-gray-800 mb-6">
           {isEdit ? "Editar meus dados" : "Cadastro"}
@@ -261,7 +260,7 @@ const RegisterPage: React.FC = () => {
               disabled={isLoading}
             />
           </div>
-          {error && <p className="text-purple-700 text-sm mt-2">{error}</p>}
+          {error && <p className="text-blue-600 text-sm mt-2">{error}</p>}
           <button
             type="submit"
             disabled={isLoading}

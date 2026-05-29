@@ -2,12 +2,12 @@
  * 🏪 TENANT RESOLVER - Identificação da Loja (Multi-tenant)
  *
  * Identifica qual loja está sendo acessada baseada no subdomínio da URL.
- * Exemplo: pointpoint-joao.kioskpro.com.br -> storeId: "pointpoint-joao"
+ * Exemplo: primeplush-joao.kioskpro.com.br -> storeId: "primeplush-joao"
  *
  * PRIORIDADE:
  * 1. Variável de ambiente (VITE_DEFAULT_STORE_ID) - MÁXIMA PRIORIDADE
  * 2. Subdomínio (exceto 'www')
- * 3. Fallback padrão (pointpoint_01)
+ * 3. Fallback padrão (primeplush_01)
  */
 
 // SINGLE-TENANT: Defina o ID da loja única aqui ou via .env

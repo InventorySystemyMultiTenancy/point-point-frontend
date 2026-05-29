@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "../services/apiBase";
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { Order } from "../types";
@@ -17,7 +16,7 @@ const OrderDetailPage: React.FC = () => {
             Pedido não encontrado
           </h2>
           <button
-            className="bg-purple-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-800 transition-colors shadow-md"
+            className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md"
             onClick={() => navigate(-1)}
           >
             Voltar
@@ -30,14 +29,14 @@ const OrderDetailPage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-6 min-h-screen bg-stone-100">
       <div className="bg-white rounded-xl shadow-md p-6 max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-purple-900 mb-4">
+        <h1 className="text-3xl font-bold text-blue-800 mb-4">
           Detalhes do Pedido #{order.id.slice(-4)}
         </h1>
         <button
           className="mb-4 bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 transition-colors shadow-md"
           onClick={() => {
             const backendUrl =
-              API_BASE_URL;
+              import.meta.env.VITE_API_URL || "http://localhost:3001";
             window.open(
               `${backendUrl}/api/orders/${order.id}/receipt-pdf`,
               "_blank",
@@ -97,7 +96,7 @@ const OrderDetailPage: React.FC = () => {
           </div>
         )}
         <button
-          className="mt-6 bg-purple-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-800 transition-colors shadow-md"
+          className="mt-6 bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md"
           onClick={() => navigate(-1)}
         >
           Voltar

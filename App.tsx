@@ -27,7 +27,6 @@ import Header from "./components/Header";
 import Chatbot from "./components/Chatbot";
 // import InactivityGuard from "./components/InactivityGuard";
 import type { UserRole } from "./types";
-import { isAuthenticated as hasAdminToken } from "./services/apiService";
 
 import OrderDetailPage from "./pages/OrderDetailPage";
 import CustomerOrdersPage from "./pages/CustomerOrdersPage";
@@ -53,6 +52,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   if (currentUser.role === "kitchen") {
     return <Navigate to="/cozinha" replace />;
   }
+  if (currentUser.role === "admin") {
+    return <Navigate to="/admin" replace />;
+  }
   return <>{children}</>;
 };
 
@@ -62,26 +64,13 @@ const RoleProtectedRoute: React.FC<{
   allowedRoles: UserRole[];
   redirectTo?: string;
 }> = ({ children, allowedRoles, redirectTo = "/login" }) => {
-  const { currentUser, currentAdmin } = useAuth();
-
-  const userRole = currentUser?.role || "customer";
-  if (currentUser && userRole !== "admin" && allowedRoles.includes(userRole)) {
-    return <>{children}</>;
-  }
-
-  if (allowedRoles.includes("admin")) {
-    if (!hasAdminToken()) {
-      return <Navigate to={redirectTo} replace />;
-    }
-    if (currentAdmin?.role === "admin" || hasAdminToken()) {
-      return <>{children}</>;
-    }
-  }
+  const { currentUser } = useAuth();
 
   if (!currentUser) {
     return <Navigate to={redirectTo} replace />;
   }
 
+  const userRole = currentUser.role || "customer";
   if (!allowedRoles.includes(userRole)) {
     return <Navigate to={redirectTo} replace />;
   }
@@ -113,10 +102,23 @@ const App: React.FC = () => {
 
 const RouterBody: React.FC = () => {
   const location = useLocation();
-  const isLoginRoute =
-    location.pathname === "/login" ||
-    location.pathname === "/admin/login";
   const { store, loading, error } = useStore(); // 🏪 MULTI-TENANT
+  const isLoginRoute =
+    location.pathname === "/" ||
+    location.pathname === "/login" ||
+    location.pathname === "/register";
+  const isFullBleedRoute = isLoginRoute || location.pathname === "/menu";
+  const isAdminThemeRoute =
+    location.pathname.startsWith("/admin") ||
+    location.pathname.startsWith("/superadmin");
+  const isCheckoutThemeRoute = location.pathname === "/payment";
+  const mainClassName = isFullBleedRoute
+    ? "bg-[#02132f]"
+    : isAdminThemeRoute
+      ? "admin-modern-theme p-4 md:p-8"
+      : isCheckoutThemeRoute
+        ? "checkout-modern-theme p-4 md:p-8"
+        : "p-4 md:p-8";
 
   // Loading state enquanto carrega a loja
   if (loading) {
@@ -138,10 +140,14 @@ const RouterBody: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-100 text-stone-800">
       {/* <InactivityGuard /> */}
-      <Header />
+      {!isLoginRoute && <Header />}
       <main
-        className={isLoginRoute ? "p-0" : "p-4 md:p-8"}
-        style={{ background: isLoginRoute ? "transparent" : "#FFF6E5" }}
+        className={mainClassName}
+        style={
+          isFullBleedRoute || isAdminThemeRoute || isCheckoutThemeRoute
+            ? undefined
+            : { background: "#FFF6E5" }
+        }
       >
         <Routes>
           <Route path="/superadmin/login" element={<SuperAdminPage />} />
@@ -157,14 +163,18 @@ const RouterBody: React.FC = () => {
               </RoleProtectedRoute>
             }
           />
-          <Route path="/" element={<MenuPage />} />
+          <Route path="/" element={<LoginPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
           {/* Rota protegida para clientes */}
           <Route
             path="/menu"
-            element={<MenuPage />}
+            element={
+              <ProtectedRoute>
+                <MenuPage />
+              </ProtectedRoute>
+            }
           />
 
           {/* Rota protegida para pagamento */}

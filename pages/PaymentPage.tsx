@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "../services/apiBase";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -15,7 +14,7 @@ import {
 import type { Order, CartItem } from "../types";
 import PaymentOnline from "../components/PaymentOnline";
 
-const BACKEND_URL = API_BASE_URL;
+const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 // Helper para requisições padrão (single-tenant)
 const fetchStandard = async (url: string, options: RequestInit = {}) => {
@@ -426,10 +425,10 @@ const PaymentPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
-      <h1 className="text-3xl font-bold text-purple-900 mb-8 flex items-center gap-2">
+      <h1 className="text-3xl font-bold text-blue-800 mb-8 flex items-center gap-2">
         <button
           onClick={() => navigate("/menu")}
-          className="text-purple-700 hover:bg-amber-100 p-2 rounded-full transition-all duration-300 ease-in-out transform hover:scale-110 shadow-lg"
+          className="text-blue-600 hover:bg-blue-100 p-2 rounded-full transition-all duration-300 ease-in-out transform hover:scale-110 shadow-lg"
           disabled={status === "processing"}
         >
           ←
@@ -457,7 +456,7 @@ const PaymentPage: React.FC = () => {
           </ul>
           <div className="border-t pt-4 flex justify-between items-center">
             <span className="text-lg text-stone-500">Total a pagar:</span>
-            <span className="text-3xl font-bold text-purple-700">
+            <span className="text-3xl font-bold text-blue-600">
               {(paymentType === "presencial" || paymentType === "online") &&
               paymentMethod === "credit" &&
               taxaSelecionada
@@ -466,7 +465,7 @@ const PaymentPage: React.FC = () => {
             </span>
           </div>
           {paymentType === "presencial" && paymentMethod === "credit" && (
-            <div className="mt-2 text-sm text-purple-800 text-right">
+            <div className="mt-2 text-sm text-blue-700 text-right">
               Taxa: {taxaSelecionada.toFixed(2)}% ({selectedInstallments}
               x)
             </div>
@@ -487,7 +486,7 @@ const PaymentPage: React.FC = () => {
                 💻 Pagamento Online (Mercado Pago)
               </button>
               <button
-                className="p-4 rounded-xl border-2 border-amber-500 bg-amber-50 text-purple-950 font-bold text-lg hover:bg-amber-100 transition-all"
+                className="p-4 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-900 font-bold text-lg hover:bg-blue-100 transition-all"
                 onClick={() => setPaymentType("presencial")}
               >
                 🏪 Pagar na Loja Girakids
@@ -501,7 +500,7 @@ const PaymentPage: React.FC = () => {
               {/* Cria o pedido antes de exibir o PaymentOnline */}
               {!onlineOrderId && !creatingOnlineOrder && (
                 <button
-                  className="w-full bg-purple-700 text-white font-bold py-4 px-6 rounded-xl mb-4"
+                  className="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-xl mb-4"
                   onClick={async () => {
                     setCreatingOnlineOrder(true);
                     try {
@@ -587,7 +586,7 @@ const PaymentPage: React.FC = () => {
 
           {/* Pagamento Presencial (Modo Manual/A Pagar) */}
           {paymentType === "presencial" && (
-            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded text-center text-purple-900 font-semibold">
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded text-center text-blue-800 font-semibold">
               <span className="block text-2xl mb-2">
                 🏪 Pagamento na Loja Girakids
               </span>
@@ -599,8 +598,8 @@ const PaymentPage: React.FC = () => {
                   <button
                     className={`px-6 py-3 rounded font-bold text-lg transition-all ${
                       paymentMethod === "credit"
-                        ? "bg-purple-700 text-white"
-                        : "bg-white text-purple-800 border border-purple-700"
+                        ? "bg-blue-600 text-white"
+                        : "bg-white text-blue-700 border border-blue-600"
                     }`}
                     onClick={() => {
                       setPaymentMethod("credit");
@@ -674,17 +673,17 @@ const PaymentPage: React.FC = () => {
               {presencialStep === "select-installments" &&
                 paymentMethod === "credit" && (
                   <div className="mb-2">
-                    <span className="font-semibold text-purple-800">
+                    <span className="font-semibold text-blue-700">
                       Parcelamento disponível:
                     </span>
-                    <ul className="text-sm text-purple-900 mt-1 flex flex-wrap gap-2">
+                    <ul className="text-sm text-blue-800 mt-1 flex flex-wrap gap-2">
                       {[1, 2, 3, 4, 5, 6].map((parcelas) => (
                         <li key={parcelas}>
                           <button
                             className={`px-2 py-1 rounded ${
                               selectedInstallments === parcelas
-                                ? "bg-purple-700 text-white"
-                                : "bg-white text-purple-800 border border-purple-700"
+                                ? "bg-blue-600 text-white"
+                                : "bg-white text-blue-700 border border-blue-600"
                             }`}
                             onClick={() => {
                               setSelectedInstallments(parcelas);
@@ -703,7 +702,7 @@ const PaymentPage: React.FC = () => {
               {/* Step 3: Finalizar pedido */}
               {presencialStep === "finalize" && (
                 <button
-                  className="mt-4 px-6 py-3 rounded bg-purple-700 text-white font-bold text-lg hover:bg-purple-800 transition-all"
+                  className="mt-4 px-6 py-3 rounded bg-blue-600 text-white font-bold text-lg hover:bg-blue-700 transition-all"
                   onClick={async () => {
                     setStatus("processing");
                     setErrorMessage("");
