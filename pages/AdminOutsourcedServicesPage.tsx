@@ -117,10 +117,10 @@ const getTypeLabel = (
   value;
 
 const statusClasses = (service: OutsourcedService) => {
-  if (service.is_overdue) return "bg-red-100 text-red-700 border-red-200";
+  if (service.is_overdue) return "outsourced-status-pill is-overdue";
   if (service.status === "concluido")
-    return "bg-emerald-100 text-emerald-700 border-emerald-200";
-  return "bg-amber-100 text-amber-800 border-amber-200";
+    return "outsourced-status-pill is-complete";
+  return "outsourced-status-pill is-pending";
 };
 
 const ProgressBar: React.FC<{ service: OutsourcedService }> = ({ service }) => {
@@ -566,7 +566,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className={`rounded-full border px-3 py-1 text-xs font-bold ${statusClasses(service)}`}
+                        className={statusClasses(service)}
                         >
                           {service.is_overdue
                             ? "Atrasado"
@@ -648,10 +648,10 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   <td className="px-4 py-3">{company.email || "-"}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-bold ${
+                      className={`outsourced-status-pill ${
                         company.active === false
-                          ? "bg-stone-100 text-stone-600"
-                          : "bg-emerald-100 text-emerald-700"
+                          ? "is-inactive"
+                          : "is-complete"
                       }`}
                     >
                       {company.active === false ? "Inativa" : "Ativa"}
@@ -949,7 +949,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                       Status
                     </p>
                     <span
-                      className={`mt-1 inline-block rounded-full border px-3 py-1 text-xs font-bold ${statusClasses(selectedService)}`}
+                      className={statusClasses(selectedService)}
                     >
                       {selectedService.is_overdue
                         ? "Atrasado"

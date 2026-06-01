@@ -1171,27 +1171,27 @@ const AdminPage: React.FC = () => {
                 </td>
                 <td className="px-2 sm:px-4 py-2 whitespace-nowrap">
                   <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    className={`admin-stock-pill ${
                       (product.stock || 0) <= 0
-                        ? "bg-amber-100 text-amber-900"
+                        ? "admin-stock-pill-backorder"
                         : product.minStock !== undefined &&
                             product.stock !== undefined &&
                             product.stock < product.minStock
-                          ? "bg-yellow-100 text-yellow-800 animate-pulse"
-                          : "bg-green-100 text-green-800"
+                          ? "admin-stock-pill-low"
+                          : "admin-stock-pill-ok"
                     }`}
                   >
                     {product.stock || 0} un.
                   </span>
                   {(product.stock || 0) <= 0 && (
-                    <span className="ml-1 text-[10px] sm:text-xs text-amber-700 font-bold">
+                    <span className="admin-stock-note">
                       Sob encomenda
                     </span>
                   )}
                   {product.minStock !== undefined &&
                     product.stock !== undefined &&
                     product.stock < product.minStock && (
-                      <span className="ml-1 text-[10px] sm:text-xs text-blue-600 font-bold animate-pulse">
+                      <span className="admin-stock-note">
                         Estoque baixo!
                       </span>
                     )}

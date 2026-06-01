@@ -1179,3 +1179,55 @@ body {
   }
 }
 
+.admin-stock-pill,
+.outsourced-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  border-radius: 999px;
+  border: 1px solid transparent !important;
+  padding: 0.18rem 0.62rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+}
+
+.admin-stock-pill-ok,
+.outsourced-status-pill.is-complete {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(52, 211, 153, 0.55) !important;
+  color: #bbf7d0 !important;
+}
+
+.admin-stock-pill-low,
+.outsourced-status-pill.is-pending {
+  background: rgba(245, 158, 11, 0.22) !important;
+  border-color: rgba(251, 191, 36, 0.6) !important;
+  color: #fde68a !important;
+}
+
+.admin-stock-pill-backorder,
+.outsourced-status-pill.is-overdue {
+  background: rgba(239, 68, 68, 0.22) !important;
+  border-color: rgba(248, 113, 113, 0.62) !important;
+  color: #fecaca !important;
+}
+
+.outsourced-status-pill.is-inactive {
+  background: rgba(148, 163, 184, 0.18) !important;
+  border-color: rgba(203, 213, 225, 0.45) !important;
+  color: #e2e8f0 !important;
+}
+
+.admin-stock-note {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #bfdbfe !important;
+  white-space: nowrap;
+}
+
