@@ -197,7 +197,7 @@ const EmployeePage: React.FC = () => {
 
   return (
     <div className="min-h-screen text-stone-900">
-      <header className="sticky top-0 z-40 rounded-xl border border-blue-500/20 bg-white text-white shadow-xl">
+      <header className="relative z-20 rounded-xl border border-blue-500/20 bg-white text-white shadow-xl lg:sticky lg:top-0">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-3 py-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
