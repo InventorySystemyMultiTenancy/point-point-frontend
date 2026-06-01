@@ -190,27 +190,29 @@ const EmployeePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fff6e5] text-stone-900">
-      <header className="sticky top-0 z-40 border-b border-stone-200 bg-[#3b2418] text-white shadow-xl">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+    <div className="min-h-screen text-stone-900">
+      <header className="sticky top-0 z-40 rounded-xl border border-blue-500/20 bg-white text-white shadow-xl">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-3 py-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
             <img
               src={logo}
               alt="Point&Point"
-              className="h-12 w-12 shrink-0 rounded-lg object-cover"
+              className="h-11 w-11 shrink-0 rounded-lg object-cover sm:h-12 sm:w-12"
             />
             <div className="min-w-0">
-              <p className="text-sm font-bold uppercase tracking-wide text-[#d2b48c]">
+              <p className="text-xs font-black uppercase tracking-wide text-[#d2b48c] sm:text-sm">
                 Point&Point
               </p>
-              <h1 className="truncate text-xl font-bold">Painel do funcionario</h1>
+              <h1 className="text-lg font-black leading-tight text-white sm:text-xl">
+                Painel do funcionario
+              </h1>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3 lg:w-auto">
             <button
               type="button"
               onClick={() => setActiveTab("orders")}
-              className={`rounded-xl px-4 py-3 text-sm font-black shadow-sm transition ${
+              className={`min-h-12 rounded-xl px-4 py-3 text-sm font-black shadow-sm transition ${
                 activeTab === "orders"
                   ? "bg-purple-700 text-white ring-2 ring-white/30"
                   : "bg-white/10 text-stone-100 hover:bg-white/20"
@@ -221,7 +223,7 @@ const EmployeePage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab("outsourced")}
-              className={`col-span-2 rounded-xl px-4 py-3 text-sm font-black shadow-sm transition sm:col-span-1 ${
+              className={`min-h-12 rounded-xl px-4 py-3 text-sm font-black shadow-sm transition ${
                 activeTab === "outsourced"
                   ? "bg-purple-700 text-white ring-2 ring-white/30"
                   : "bg-[#d2b48c] text-stone-950 hover:bg-[#c6a477]"
@@ -232,7 +234,7 @@ const EmployeePage: React.FC = () => {
             <button
               type="button"
               onClick={logout}
-              className="rounded-xl bg-white/10 px-4 py-3 text-sm font-black text-stone-100 hover:bg-white/20"
+              className="min-h-12 rounded-xl bg-white/10 px-4 py-3 text-sm font-black text-stone-100 hover:bg-white/20"
             >
               Sair
             </button>
@@ -240,30 +242,32 @@ const EmployeePage: React.FC = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6">
+      <main className="mx-auto max-w-7xl px-0 py-4 sm:px-4 sm:py-6">
         {activeTab === "outsourced" ? (
           <AdminOutsourcedServicesPage />
         ) : (
           <section className="space-y-4">
-            <div className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow sm:flex-row sm:items-center sm:justify-between">
-              <div>
+            <div className="flex flex-col gap-4 rounded-xl bg-white p-4 shadow sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <p className="text-sm font-bold uppercase tracking-wide text-purple-700">
                   Separacao de pedidos
                 </p>
-                <h2 className="text-2xl font-bold">Historico de pedidos</h2>
+                <h2 className="text-xl font-black leading-tight sm:text-2xl">
+                  Historico de pedidos
+                </h2>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-[minmax(220px,1fr)_auto]">
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Buscar pedido ou cliente"
-                  className="rounded-lg border border-stone-300 px-3 py-2 focus:border-purple-700 focus:outline-none"
+                  className="min-h-11 w-full rounded-lg border border-stone-300 px-3 py-2 focus:border-purple-700 focus:outline-none"
                 />
                 <button
                   type="button"
                   onClick={loadOrders}
                   disabled={loadingOrders}
-                  className="rounded-lg bg-purple-700 px-4 py-2 font-bold text-white hover:bg-purple-800 disabled:opacity-60"
+                  className="min-h-11 rounded-lg bg-purple-700 px-4 py-2 font-bold text-white hover:bg-purple-800 disabled:opacity-60"
                 >
                   Atualizar
                 </button>
@@ -276,7 +280,91 @@ const EmployeePage: React.FC = () => {
               </div>
             )}
 
-            <div className="overflow-x-auto rounded-lg bg-white shadow">
+            <div className="space-y-3 md:hidden">
+              {loadingOrders ? (
+                <div className="rounded-xl bg-white p-6 text-center font-semibold text-stone-500 shadow">
+                  Carregando...
+                </div>
+              ) : filteredOrders.length === 0 ? (
+                <div className="rounded-xl bg-white p-6 text-center font-semibold text-stone-500 shadow">
+                  Nenhum pedido encontrado.
+                </div>
+              ) : (
+                filteredOrders.map((order) => {
+                  const customer =
+                    order.userName || order.customerName || order.cliente || "-";
+                  const date =
+                    order.timestamp || order.created_at || order.createdAt;
+                  const progress = checklistProgress(order);
+                  const itemSummary =
+                    (order.items || [])
+                      .map(
+                        (item) =>
+                          `${item.quantity || 0}x ${
+                            item.name || item.productName || "Item"
+                          }`,
+                      )
+                      .join(", ") || "-";
+
+                  return (
+                    <button
+                      key={order.id}
+                      type="button"
+                      onClick={() => setSelectedOrder(order)}
+                      className="block w-full rounded-xl bg-white p-4 text-left shadow transition hover:bg-purple-50"
+                    >
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold uppercase text-stone-500">
+                            Pedido
+                          </p>
+                          <p className="break-all text-base font-black text-stone-950">
+                            {order.id}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${
+                            progress.complete
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-900"
+                          }`}
+                        >
+                          {progress.done}/{progress.total}
+                        </span>
+                      </div>
+                      <div className="grid gap-2 text-sm text-stone-700">
+                        <div>
+                          <span className="font-black">Cliente:</span>{" "}
+                          {customer}
+                        </div>
+                        <div>
+                          <span className="font-black">Itens:</span>{" "}
+                          {itemSummary}
+                        </div>
+                        <div>
+                          <span className="font-black">Total:</span>{" "}
+                          {formatMoney(order.total)}
+                        </div>
+                        <div>
+                          <span className="font-black">Data:</span>{" "}
+                          {formatDate(date)}
+                        </div>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-700">
+                            {order.paymentStatus || order.paymentType || "Pagamento -"}
+                          </span>
+                          <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-700">
+                            {order.entregueCliente ? "Entregue" : "Entrega pendente"}
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="hidden overflow-x-auto rounded-lg bg-white shadow md:block">
               <table className="w-full min-w-[900px] text-sm">
                 <thead className="bg-stone-100">
                   <tr>
