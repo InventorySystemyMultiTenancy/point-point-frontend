@@ -218,13 +218,13 @@ const EmployeePage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen((open) => !open)}
-              className="flex h-11 w-11 shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl bg-white/10 text-white ring-1 ring-white/20 lg:hidden"
+              className="flex h-11 w-11 shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl bg-[#d2b48c] text-stone-950 ring-1 ring-white/30 lg:hidden"
               aria-label="Abrir menu"
               aria-expanded={isMobileMenuOpen}
             >
-              <span className="h-0.5 w-6 rounded bg-white" />
-              <span className="h-0.5 w-6 rounded bg-white" />
-              <span className="h-0.5 w-6 rounded bg-white" />
+              <span className="h-0.5 w-6 rounded bg-stone-950" />
+              <span className="h-0.5 w-6 rounded bg-stone-950" />
+              <span className="h-0.5 w-6 rounded bg-stone-950" />
             </button>
           </div>
           <div
@@ -238,7 +238,7 @@ const EmployeePage: React.FC = () => {
               className={`min-h-12 rounded-xl px-4 py-3 text-sm font-black shadow-sm transition ${
                 activeTab === "orders"
                   ? "bg-purple-700 text-white ring-2 ring-white/30"
-                  : "bg-white/10 text-stone-100 hover:bg-white/20"
+                  : "bg-[#09152c] text-white ring-1 ring-blue-400/30 hover:bg-[#102347]"
               }`}
             >
               Pedidos
@@ -249,7 +249,7 @@ const EmployeePage: React.FC = () => {
               className={`min-h-12 rounded-xl px-4 py-3 text-sm font-black shadow-sm transition ${
                 activeTab === "outsourced"
                   ? "bg-purple-700 text-white ring-2 ring-white/30"
-                  : "bg-[#d2b48c] text-stone-950 hover:bg-[#c6a477]"
+                  : "bg-[#d2b48c] text-stone-950 ring-1 ring-white/30 hover:bg-[#c6a477]"
               }`}
             >
               Abrir terceirizados
@@ -257,7 +257,7 @@ const EmployeePage: React.FC = () => {
             <button
               type="button"
               onClick={logout}
-              className="min-h-12 rounded-xl bg-white/10 px-4 py-3 text-sm font-black text-stone-100 hover:bg-white/20"
+              className="min-h-12 rounded-xl bg-[#09152c] px-4 py-3 text-sm font-black text-white ring-1 ring-blue-400/30 hover:bg-[#102347]"
             >
               Sair
             </button>
@@ -348,8 +348,8 @@ const EmployeePage: React.FC = () => {
                         <span
                           className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${
                             progress.complete
-                              ? "bg-green-100 text-green-800"
-                              : "bg-yellow-100 text-yellow-900"
+                              ? "bg-green-200 text-green-950"
+                              : "bg-yellow-200 text-yellow-950"
                           }`}
                         >
                           {progress.done}/{progress.total}
@@ -456,8 +456,8 @@ const EmployeePage: React.FC = () => {
                             <span
                               className={`rounded-full px-3 py-1 text-xs font-black ${
                                 progress.complete
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-yellow-100 text-yellow-900"
+                                  ? "bg-green-200 text-green-950"
+                                  : "bg-yellow-200 text-yellow-950"
                               }`}
                             >
                               {progress.done}/{progress.total} separado
