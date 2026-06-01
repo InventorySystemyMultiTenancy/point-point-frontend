@@ -81,6 +81,7 @@ export interface User {
   historico: Order[];
   pontos?: number;
   role?: UserRole; // Tipo de usuário: customer (padrão), kitchen ou admin
+  fullAccess?: boolean;
 }
 
 export interface CartItem extends Product {

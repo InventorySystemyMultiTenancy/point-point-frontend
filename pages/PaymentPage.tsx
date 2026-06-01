@@ -20,6 +20,10 @@ import {
   isCartItemBackorder,
 } from "../utils/backorder";
 import { formatMoney, toMoneyNumber } from "../utils/money";
+import {
+  canSeeImportedCatalog,
+  isImportedProduct,
+} from "../utils/privateCatalog";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -100,6 +104,10 @@ const PaymentPage: React.FC = () => {
   const [onlineOrderId, setOnlineOrderId] = useState<string | null>(null);
   const [creatingOnlineOrder, setCreatingOnlineOrder] = useState(false);
   const [orderHasBackorder, setOrderHasBackorder] = useState(false);
+  const [guestName, setGuestName] = useState("");
+  const [showGuestNameModal, setShowGuestNameModal] = useState(false);
+  const [pendingGuestAction, setPendingGuestAction] = useState<null | (() => Promise<void>)>(null);
+  const [guestNameError, setGuestNameError] = useState("");
 
   // Ref para limpeza (cleanup) ao desmontar a pÃ¡gina
   const paymentIdRef = useRef<string | null>(null);
@@ -239,6 +247,37 @@ const PaymentPage: React.FC = () => {
         : undefined,
     }));
 
+  const getBuyerName = () => currentUser?.name || guestName.trim();
+
+  const ensurePrivateCatalogAllowed = () => {
+    if (canSeeImportedCatalog(currentUser?.fullAccess)) return true;
+    const privateItem = cartItems.find(isImportedProduct);
+    if (!privateItem) return true;
+    Swal.fire({
+      icon: "warning",
+      title: "Acesso completo necessario",
+      text: "Produtos importados exigem acesso completo. Remova este item para finalizar.",
+      confirmButtonText: "OK",
+    });
+    return false;
+  };
+
+  const runWithGuestName = async (action: () => Promise<void>) => {
+    if (!ensurePrivateCatalogAllowed()) return;
+    if (!currentUser && !guestName.trim()) {
+      setGuestNameError("");
+      setPendingGuestAction(() => action);
+      setShowGuestNameModal(true);
+      return;
+    }
+    await action();
+  };
+
+  const buildBuyerPayload = () =>
+    currentUser
+      ? { userId: currentUser.id, userName: currentUser.name }
+      : { userName: guestName.trim() };
+
   const finalizeOrder = async (
     orderId: string,
     paymentId: string,
@@ -273,8 +312,8 @@ const PaymentPage: React.FC = () => {
 
       const orderData: Order = {
         id: orderId,
-        userId: currentUser!.id,
-        userName: currentUser!.name,
+        userId: currentUser?.id || "guest",
+        userName: getBuyerName(),
         items: cartItems.map((i) => ({
           productId: i.id,
           name: i.name,
@@ -287,7 +326,9 @@ const PaymentPage: React.FC = () => {
         status: "active",
       };
 
-      addOrderToHistory(orderData);
+      if (currentUser) {
+        addOrderToHistory(orderData);
+      }
 
       setActivePayment(null);
       setStatus("success");
@@ -320,7 +361,9 @@ const PaymentPage: React.FC = () => {
 
       // Redireciona para a pÃ¡gina inicial apÃ³s 5 segundos
       setTimeout(async () => {
-        await logout();
+        if (currentUser) {
+          await logout();
+        }
         navigate("/", { replace: true });
       }, 5000);
     } catch (error) {
@@ -339,8 +382,7 @@ const PaymentPage: React.FC = () => {
     const orderResp = await fetchStandard(`${BACKEND_URL}/api/orders`, {
       method: "POST",
       body: JSON.stringify({
-        userId: currentUser!.id,
-        userName: currentUser!.name,
+        ...buildBuyerPayload(),
         items: buildOrderItems(),
         total:
           paymentType === "presencial" &&
@@ -356,8 +398,10 @@ const PaymentPage: React.FC = () => {
         fee: paymentMethod === "credit" ? taxaSelecionada : 0,
       }),
     });
-    if (!orderResp.ok) throw new Error("Erro ao criar pedido");
-    const data = await orderResp.json();
+    const data = await orderResp.json().catch(() => ({}));
+    if (!orderResp.ok) {
+      throw new Error(data.error || data.message || "Erro ao criar pedido");
+    }
     setOrderHasBackorder(Boolean(data.hasBackorder || backorderItems.length > 0));
     return data.id;
   };
@@ -371,14 +415,14 @@ const PaymentPage: React.FC = () => {
 
       const result = await createPixPayment({
         amount: cartTotal,
-        description: `Pedido de ${currentUser!.name}`,
+        description: `Pedido de ${getBuyerName()}`,
         orderId: orderId,
         email: currentUser?.email,
-        payerName: currentUser?.name,
+        payerName: getBuyerName(),
         items: buildOrderItems(),
         user: {
           email: currentUser?.email,
-          name: currentUser?.name,
+          name: getBuyerName(),
         },
       });
 
@@ -415,14 +459,14 @@ const PaymentPage: React.FC = () => {
 
       const result = await createCardPayment({
         amount: valorFinal,
-        description: `Pedido ${currentUser!.name}`,
+        description: `Pedido ${getBuyerName()}`,
         orderId: orderId,
         paymentMethod: paymentMethod as "credit" | "debit",
         installments: paymentMethod === "credit" ? selectedInstallments : 1,
         items: buildOrderItems(),
         user: {
           email: currentUser?.email,
-          name: currentUser?.name,
+          name: getBuyerName(),
         },
       });
 
@@ -568,42 +612,56 @@ const PaymentPage: React.FC = () => {
                 <button
                   className="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-xl mb-4"
                   onClick={async () => {
-                    const confirmed = await confirmBackorderIfNeeded();
-                    if (!confirmed) return;
-                    setCreatingOnlineOrder(true);
-                    try {
-                      const orderResp = await fetchStandard(
-                        `${BACKEND_URL}/api/orders`,
-                        {
-                          method: "POST",
-                          body: JSON.stringify({
-                            userId: currentUser!.id,
-                            userName: currentUser!.name,
-                            items: buildOrderItems(),
-                            total: cartTotal,
-                            observation,
-                            status: "pending",
-                          }),
-                        },
-                      );
-                      if (!orderResp.ok)
-                        throw new Error("Erro ao criar pedido");
-                      const data = await orderResp.json();
-                      setOrderHasBackorder(
-                        Boolean(data.hasBackorder || backorderItems.length > 0),
-                      );
-                      setOnlineOrderId(data.id);
-                    } catch (err: any) {
-                      Swal.fire({
-                        icon: "error",
-                        title: "Erro ao criar pedido",
-                        text: err.message || "Erro desconhecido",
-                        confirmButtonText: "OK",
-                      });
-                      setPaymentType(null);
-                    } finally {
-                      setCreatingOnlineOrder(false);
-                    }
+                    await runWithGuestName(async () => {
+                      const confirmed = await confirmBackorderIfNeeded();
+                      if (!confirmed) return;
+                      setCreatingOnlineOrder(true);
+                      try {
+                        const orderResp = await fetchStandard(
+                          `${BACKEND_URL}/api/orders`,
+                          {
+                            method: "POST",
+                            body: JSON.stringify({
+                              ...buildBuyerPayload(),
+                              items: buildOrderItems(),
+                              total: cartTotal,
+                              observation,
+                              status: "pending",
+                            }),
+                          },
+                        );
+                        const data = await orderResp.json().catch(() => ({}));
+                        if (!orderResp.ok) {
+                          throw new Error(
+                            data.error || data.message || "Erro ao criar pedido",
+                          );
+                        }
+                        setOrderHasBackorder(
+                          Boolean(data.hasBackorder || backorderItems.length > 0),
+                        );
+                        setOnlineOrderId(data.id);
+                      } catch (err: any) {
+                        if (
+                          !currentUser &&
+                          String(err.message || "").includes(
+                            "Nome obrigatório para comprar sem cadastro",
+                          )
+                        ) {
+                          setGuestNameError(err.message);
+                          setShowGuestNameModal(true);
+                          return;
+                        }
+                        Swal.fire({
+                          icon: "error",
+                          title: "Erro ao criar pedido",
+                          text: err.message || "Erro desconhecido",
+                          confirmButtonText: "OK",
+                        });
+                        setPaymentType(null);
+                      } finally {
+                        setCreatingOnlineOrder(false);
+                      }
+                    });
                   }}
                   disabled={creatingOnlineOrder}
                 >
@@ -618,7 +676,7 @@ const PaymentPage: React.FC = () => {
                   total={cartTotal}
                   items={buildOrderItems()}
                   userEmail={currentUser?.email || ""}
-                  userName={currentUser?.name || ""}
+                  userName={getBuyerName()}
                   onSuccess={(paymentId) => {
                     Swal.fire({
                       icon: "success",
@@ -765,63 +823,78 @@ const PaymentPage: React.FC = () => {
                 <button
                   className="mt-4 px-6 py-3 rounded bg-blue-600 text-white font-bold text-lg hover:bg-blue-700 transition-all"
                   onClick={async () => {
-                    const confirmed = await confirmBackorderIfNeeded();
-                    if (!confirmed) return;
-                    setStatus("processing");
-                    setErrorMessage("");
-                    try {
-                      const orderResp = await fetchStandard(
-                        `${BACKEND_URL}/api/orders`,
-                        {
-                          method: "POST",
-                          body: JSON.stringify({
-                            userId: currentUser!.id,
-                            userName: currentUser!.name,
-                            items: buildOrderItems(),
-                            paymentType: "presencial",
-                            paymentMethod,
-                            installments:
-                              paymentMethod === "credit"
-                                ? selectedInstallments
-                                : 1,
-                            fee:
-                              paymentMethod === "credit" ? taxaSelecionada : 0,
-                            total:
-                              paymentMethod === "credit"
-                                ? totalComTaxa
-                                : cartTotal,
-                            paymentStatus: "pending",
-                            observation,
-                          }),
-                        },
-                      );
-                      if (!orderResp.ok)
-                        throw new Error("Erro ao criar pedido");
-                      const orderData = await orderResp.json();
-                      setOrderHasBackorder(
-                        Boolean(orderData.hasBackorder || backorderItems.length > 0),
-                      );
-                      setStatus("success");
-                      clearCart();
-                      setPresencialStep(null);
-                      setPaymentType(null);
+                    await runWithGuestName(async () => {
+                      const confirmed = await confirmBackorderIfNeeded();
+                      if (!confirmed) return;
+                      setStatus("processing");
+                      setErrorMessage("");
+                      try {
+                        const orderResp = await fetchStandard(
+                          `${BACKEND_URL}/api/orders`,
+                          {
+                            method: "POST",
+                            body: JSON.stringify({
+                              ...buildBuyerPayload(),
+                              items: buildOrderItems(),
+                              paymentType: "presencial",
+                              paymentMethod,
+                              installments:
+                                paymentMethod === "credit"
+                                  ? selectedInstallments
+                                  : 1,
+                              fee:
+                                paymentMethod === "credit" ? taxaSelecionada : 0,
+                              total:
+                                paymentMethod === "credit"
+                                  ? totalComTaxa
+                                  : cartTotal,
+                              paymentStatus: "pending",
+                              observation,
+                            }),
+                          },
+                        );
+                        const orderData = await orderResp.json().catch(() => ({}));
+                        if (!orderResp.ok) {
+                          throw new Error(
+                            orderData.error ||
+                              orderData.message ||
+                              "Erro ao criar pedido",
+                          );
+                        }
+                        setOrderHasBackorder(
+                          Boolean(orderData.hasBackorder || backorderItems.length > 0),
+                        );
+                        setStatus("success");
+                        clearCart();
+                        setPresencialStep(null);
+                        setPaymentType(null);
 
-                      // Abrir PDF em nova aba se o pedido foi criado com sucesso
-                      if (orderData && orderData.id) {
-                        const pdfUrl = `${BACKEND_URL}/api/orders/${orderData.id}/receipt-pdf`;
-                        window.open(pdfUrl, "_blank");
+                        if (orderData && orderData.id) {
+                          const pdfUrl = `${BACKEND_URL}/api/orders/${orderData.id}/receipt-pdf`;
+                          window.open(pdfUrl, "_blank");
+                        }
+
+                        setTimeout(() => {
+                          navigate("/");
+                        }, 500);
+                      } catch (err: any) {
+                        if (
+                          !currentUser &&
+                          String(err.message || "").includes(
+                            "Nome obrigatório para comprar sem cadastro",
+                          )
+                        ) {
+                          setStatus("idle");
+                          setGuestNameError(err.message);
+                          setShowGuestNameModal(true);
+                          return;
+                        }
+                        setStatus("error");
+                        setErrorMessage(
+                          err.message || "Erro ao salvar pedido presencial.",
+                        );
                       }
-
-                      // Redirecionar para o catÃ¡logo apÃ³s um pequeno delay
-                      setTimeout(() => {
-                        navigate("/");
-                      }, 500);
-                    } catch (err: any) {
-                      setStatus("error");
-                      setErrorMessage(
-                        err.message || "Erro ao salvar pedido presencial.",
-                      );
-                    }
+                    });
                   }}
                 >
                   Finalizar Pedido
@@ -842,6 +915,70 @@ const PaymentPage: React.FC = () => {
           )}
         </div>
       </div>
+      {showGuestNameModal && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 className="mb-2 text-2xl font-black text-stone-900">
+              Nome para finalizar
+            </h2>
+            <p className="mb-4 text-sm font-semibold text-stone-600">
+              Informe pelo menos seu nome para comprar sem cadastro.
+            </p>
+            <label className="block">
+              <span className="mb-1 block text-sm font-bold text-stone-700">
+                Nome
+              </span>
+              <input
+                value={guestName}
+                onChange={(event) => {
+                  setGuestName(event.target.value);
+                  setGuestNameError("");
+                }}
+                className="w-full rounded-lg border border-stone-300 px-3 py-3 text-stone-900 focus:border-blue-600 focus:outline-none"
+                placeholder="Seu nome"
+                autoFocus
+              />
+            </label>
+            {guestNameError && (
+              <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm font-bold text-red-700">
+                {guestNameError}
+              </p>
+            )}
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowGuestNameModal(false);
+                  setPendingGuestAction(null);
+                  setGuestNameError("");
+                }}
+                className="rounded-lg bg-stone-200 px-4 py-3 font-bold text-stone-800 hover:bg-stone-300"
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!guestName.trim()) {
+                    setGuestNameError("Nome obrigatório para comprar sem cadastro");
+                    return;
+                  }
+                  const action = pendingGuestAction;
+                  setShowGuestNameModal(false);
+                  setPendingGuestAction(null);
+                  setGuestNameError("");
+                  if (action) {
+                    await action();
+                  }
+                }}
+                className="rounded-lg bg-blue-600 px-4 py-3 font-black text-white hover:bg-blue-700"
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

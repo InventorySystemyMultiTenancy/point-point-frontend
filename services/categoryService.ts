@@ -1,5 +1,5 @@
 // Serviço de API para Categorias com Multi-tenant
-import { authenticatedFetch, publicFetch } from "./apiService";
+import { authenticatedFetch, catalogFetch } from "./apiService";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const API_URL = `${BASE_URL}/api`;
@@ -17,7 +17,7 @@ export interface Category {
  */
 export async function getCategories(): Promise<Category[]> {
   try {
-    const response = await publicFetch(`${API_URL}/categories`);
+    const response = await catalogFetch(`${API_URL}/categories`);
 
     if (!response.ok) {
       const errorText = await response.text();

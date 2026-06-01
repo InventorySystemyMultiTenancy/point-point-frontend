@@ -15,6 +15,11 @@ import {
   isProductBackorder,
 } from "../utils/backorder";
 import { formatMoney } from "../utils/money";
+import {
+  canSeeImportedCatalog,
+  filterPrivateCatalog,
+  isImportedProduct,
+} from "../utils/privateCatalog";
 
 // URL da API
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -498,6 +503,7 @@ const MenuPage: React.FC = () => {
     addToCart,
     cartTotal,
     updateQuantity,
+    removeFromCart,
     clearCart,
     observation,
     setObservation,
@@ -600,7 +606,7 @@ const MenuPage: React.FC = () => {
       const data = await getProducts();
       // ✅ Valida se é array antes de setar
       if (Array.isArray(data)) {
-        setMenu(data);
+        setMenu(filterPrivateCatalog(data, currentUser?.fullAccess));
       } else {
         console.error(
           "❌ Backend retornou dados inválidos (não é array):",
@@ -623,7 +629,7 @@ const MenuPage: React.FC = () => {
       console.log("📦 Categorias recebidas:", data);
 
       if (data.length > 0) {
-        setDynamicCategories(data);
+        setDynamicCategories(filterPrivateCatalog(data, currentUser?.fullAccess));
         console.log(
           `✅ ${data.length} categorias carregadas e setadas no estado`,
         );
@@ -638,7 +644,16 @@ const MenuPage: React.FC = () => {
   useEffect(() => {
     fetchMenuData();
     fetchCategories(); // 🆕 Carrega categorias
-  }, []);
+  }, [currentUser?.fullAccess]);
+
+  useEffect(() => {
+    if (canSeeImportedCatalog(currentUser?.fullAccess)) return;
+    cartItems.forEach((item) => {
+      if (isImportedProduct(item)) {
+        removeFromCart(item.id);
+      }
+    });
+  }, [cartItems, currentUser?.fullAccess, removeFromCart]);
 
   useEffect(() => {
     const fetchSuggestion = async () => {
@@ -717,7 +732,16 @@ const MenuPage: React.FC = () => {
   }, [currentBannerIndex, latestProducts.length]);
 
   const handleCheckout = () => {
-    if (!currentUser || cartItems.length === 0) return;
+    if (cartItems.length === 0) return;
+    if (!canSeeImportedCatalog(currentUser?.fullAccess)) {
+      const privateItem = cartItems.find(isImportedProduct);
+      if (privateItem) {
+        alert(
+          "Produtos importados exigem acesso completo. Remova este item para finalizar.",
+        );
+        return;
+      }
+    }
     navigate("/payment");
   };
 

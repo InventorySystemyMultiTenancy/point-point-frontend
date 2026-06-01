@@ -3,7 +3,7 @@ import "../assets/animated-gradient.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
-import { employeeLogin, saveToken } from "../services/apiService";
+import { employeeLogin, saveToken, saveUserToken } from "../services/apiService";
 import type { User } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -109,6 +109,9 @@ const LoginPage: React.FC = () => {
 
   const handleLoginSuccess = async (user: User, apiToken?: string) => {
     await ensureAdminToken(user, apiToken);
+    if (apiToken && user.role !== "admin") {
+      saveUserToken(apiToken);
+    }
     clearCart();
     login(user);
     navigate("/menu");
@@ -402,6 +405,16 @@ const LoginPage: React.FC = () => {
           {mode === "login"
             ? "Ainda nao tenho cadastro"
             : "Ja tenho cadastro"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            clearCart();
+            navigate("/menu");
+          }}
+          className="mt-3 w-full rounded-lg border border-amber-100/40 py-3 text-sm font-bold text-amber-50 hover:bg-white/10"
+        >
+          Entrar sem cadastro
         </button>
       </section>
     </main>

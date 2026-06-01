@@ -131,7 +131,13 @@ const StockMovementModal: React.FC<{
 };
 import { useNavigate } from "react-router-dom";
 import type { Product } from "../types";
-import { authenticatedFetch, getBackorderedProducts } from "../services/apiService";
+import type { User } from "../types";
+import {
+  authenticatedFetch,
+  getBackorderedProducts,
+  getUsers,
+  updateUserFullAccess,
+} from "../services/apiService";
 import { useAuth } from "../contexts/AuthContext";
 import {
   getOutsourcedServiceAlerts,
@@ -621,6 +627,10 @@ const AdminPage: React.FC = () => {
       totalBackorderedUnits: 0,
       products: [],
     });
+  const [users, setUsers] = useState<User[]>([]);
+  const [updatingFullAccessId, setUpdatingFullAccessId] = useState<string | null>(
+    null,
+  );
 
   // Carrega os dados iniciais do backend
 
@@ -629,6 +639,7 @@ const AdminPage: React.FC = () => {
     loadOrdersCount();
     loadOutsourcedAlerts();
     loadBackorderedProducts();
+    loadUsers();
   }, []);
 
   // Busca o total de pedidos dos ultimos 30 dias
@@ -665,6 +676,39 @@ const AdminPage: React.FC = () => {
     } catch (err) {
       console.error("Erro ao buscar produtos sob encomenda:", err);
       setBackorderedData({ totalBackorderedUnits: 0, products: [] });
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const data = await getUsers();
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data.users)
+          ? data.users
+          : Array.isArray(data.data)
+            ? data.data
+            : [];
+      setUsers(list);
+    } catch (err) {
+      console.error("Erro ao carregar usuarios:", err);
+      setUsers([]);
+    }
+  };
+
+  const handleToggleFullAccess = async (user: User) => {
+    setUpdatingFullAccessId(user.id);
+    try {
+      const data = await updateUserFullAccess(user.id, !user.fullAccess);
+      const updatedUser = data.user || data;
+      setUsers((prev) =>
+        prev.map((item) => (item.id === user.id ? { ...item, ...updatedUser } : item)),
+      );
+    } catch (err) {
+      console.error("Erro ao atualizar acesso completo:", err);
+      alert("Erro ao atualizar acesso completo do usuario.");
+    } finally {
+      setUpdatingFullAccessId(null);
     }
   };
 
@@ -1050,6 +1094,61 @@ const AdminPage: React.FC = () => {
             {stats.outOfStock}
           </div>
         </div>
+      </div>
+
+      <div className="mb-6 rounded-xl border-l-4 border-purple-500 bg-white p-5 shadow-lg">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-white">Usuarios</h2>
+            <p className="text-sm font-semibold text-blue-100">
+              Controle quem pode ver a categoria privada importados.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={loadUsers}
+            className="rounded-lg bg-purple-700 px-4 py-2 text-sm font-bold text-white hover:bg-purple-800"
+          >
+            Atualizar usuarios
+          </button>
+        </div>
+        {users.length === 0 ? (
+          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-blue-100">
+            Nenhum usuario encontrado.
+          </p>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            {users.map((user) => (
+              <div
+                key={user.id}
+                className="flex flex-col gap-3 rounded-lg border border-blue-500/20 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <div className="font-black text-white">{user.name}</div>
+                  <div className="truncate text-xs font-semibold text-blue-100">
+                    {user.email || user.cpf || user.id}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleToggleFullAccess(user)}
+                  disabled={updatingFullAccessId === user.id}
+                  className={`rounded-full px-4 py-2 text-xs font-black transition disabled:opacity-60 ${
+                    user.fullAccess
+                      ? "bg-green-600 text-white hover:bg-green-700"
+                      : "bg-stone-700 text-white hover:bg-stone-800"
+                  }`}
+                >
+                  {updatingFullAccessId === user.id
+                    ? "Salvando..."
+                    : user.fullAccess
+                      ? "Acesso completo"
+                      : "Sem acesso completo"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Area de Analise da IA */}

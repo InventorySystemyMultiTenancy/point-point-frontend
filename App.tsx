@@ -191,21 +191,13 @@ const RouterBody: React.FC = () => {
           {/* Rota protegida para clientes */}
           <Route
             path="/menu"
-            element={
-              <ProtectedRoute>
-                <MenuPage />
-              </ProtectedRoute>
-            }
+            element={<MenuPage />}
           />
 
           {/* Rota protegida para pagamento */}
           <Route
             path="/payment"
-            element={
-              <ProtectedRoute>
-                <PaymentPage />
-              </ProtectedRoute>
-            }
+            element={<PaymentPage />}
           />
 
           {/* Rotas de login especiais */}

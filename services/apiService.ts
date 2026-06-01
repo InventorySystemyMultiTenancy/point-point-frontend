@@ -51,11 +51,24 @@ export function clearEmployeeToken(): void {
   localStorage.removeItem("employeeToken");
 }
 
+export function getUserToken(): string | null {
+  return localStorage.getItem("userToken");
+}
+
+export function saveUserToken(token: string): void {
+  localStorage.setItem("userToken", token);
+}
+
+export function clearUserToken(): void {
+  localStorage.removeItem("userToken");
+}
+
 /**
  * Remove o token JWT do localStorage.
  */
 export function logout(): void {
   localStorage.removeItem("jwt_token");
+  clearUserToken();
   console.log("UsuÃ¡rio deslogado.");
 }
 
@@ -284,6 +297,23 @@ export async function publicFetch(
   return fetch(url, { ...options, headers });
 }
 
+export async function catalogFetch(
+  url: string,
+  options: RequestInit = {},
+): Promise<Response> {
+  const token = getUserToken();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string> | undefined),
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return fetch(url, { ...options, headers });
+}
+
 /**
  * FunÃ§Ãµes auxiliares para operaÃ§Ãµes comuns da API com autenticaÃ§Ã£o
  */
@@ -291,7 +321,7 @@ export async function publicFetch(
 // Produtos (Admin)
 export async function getProducts() {
   try {
-    const response = await publicFetch(`${API_URL}/products`);
+    const response = await catalogFetch(`${API_URL}/products`);
 
     // âœ… Verifica se a resposta foi bem-sucedida
     if (!response.ok) {
@@ -377,6 +407,17 @@ export async function deleteOrder(orderId: string) {
 // UsuÃ¡rios (Admin)
 export async function getUsers() {
   const response = await authenticatedFetch(`${API_URL}/users`);
+  return response.json();
+}
+
+export async function updateUserFullAccess(userId: string, fullAccess: boolean) {
+  const response = await authenticatedFetch(
+    `${API_URL}/users/${userId}/full-access`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ fullAccess }),
+    },
+  );
   return response.json();
 }
 
