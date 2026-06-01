@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { BACKORDER_NOTICE } from "../utils/backorder";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -7,6 +8,7 @@ export default function PaymentSuccessPage() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<string>("checking");
   const [message, setMessage] = useState<string>("");
+  const [hasBackorder, setHasBackorder] = useState(false);
 
 
   const pdfOpenedRef = useRef(false);
@@ -35,6 +37,7 @@ export default function PaymentSuccessPage() {
           if (data.status === "approved") {
             setStatus("approved");
             setMessage("Pagamento confirmado! Obrigado pela compra.");
+            setHasBackorder(Boolean(data.hasBackorder || data.order?.hasBackorder));
             if (!pdfOpenedRef.current) {
               const pdfOrderId = data.orderId || orderId;
               if (pdfOrderId) {
@@ -69,6 +72,16 @@ export default function PaymentSuccessPage() {
       <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
         <h1 className="text-2xl font-bold mb-4 text-purple-700">Confirmação de Pagamento</h1>
         <pre className={status === "approved" ? "text-green-600 text-left whitespace-pre-wrap" : "text-red-600 text-center whitespace-pre-wrap"}>{message}</pre>
+        {status === "approved" && hasBackorder && (
+          <div className="mt-5 rounded-xl border-2 border-amber-400 bg-amber-50 p-4 text-left">
+            <h2 className="text-lg font-black text-amber-900">
+              Produto sob encomenda
+            </h2>
+            <p className="mt-1 text-sm font-bold text-amber-800">
+              {BACKORDER_NOTICE}
+            </p>
+          </div>
+        )}
         {status === "approved" && (
           <button
             className="mt-6 bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700"

@@ -23,6 +23,12 @@ export interface Product {
   videoUrl: string;
   popular?: boolean;
   stock?: number;
+  stock_reserved?: number | null;
+  stock_available?: number | null;
+  isAvailable?: boolean;
+  isBackorder?: boolean;
+  backorderQuantity?: number;
+  backorderNotice?: string;
   minStock?: number; // Estoque mínimo
   quantidadeVenda?: number; // Quantidade mínima de venda
   active?: boolean; // Produto ativo ou inativo
@@ -33,6 +39,9 @@ export interface OrderItem {
   name: string;
   quantity: number;
   price: number;
+  isBackorder?: boolean;
+  backorderQuantity?: number;
+  backorderNotice?: string;
 }
 
 export interface Order {
@@ -52,6 +61,8 @@ export interface Order {
   fee?: number;
   paymentStatus?: "pending" | "paid" | "authorized" | "canceled";
   entregueCliente?: boolean; // Indica se o pedido foi entregue ao cliente
+  hasBackorder?: boolean;
+  backorderNotice?: string;
 }
 
 export type UserRole =

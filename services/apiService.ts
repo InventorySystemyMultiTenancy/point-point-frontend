@@ -354,6 +354,13 @@ export async function deleteProduct(productId: string) {
   return response.json();
 }
 
+export async function getBackorderedProducts() {
+  const response = await authenticatedFetch(
+    `${API_URL}/admin/backordered-products`,
+  );
+  return response.json();
+}
+
 // Pedidos (Kitchen/Admin)
 export async function getOrders() {
   const response = await authenticatedFetch(`${API_URL}/orders`);

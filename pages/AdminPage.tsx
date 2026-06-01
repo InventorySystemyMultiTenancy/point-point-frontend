@@ -131,12 +131,29 @@ const StockMovementModal: React.FC<{
 };
 import { useNavigate } from "react-router-dom";
 import type { Product } from "../types";
-import { authenticatedFetch } from "../services/apiService";
+import { authenticatedFetch, getBackorderedProducts } from "../services/apiService";
 import { useAuth } from "../contexts/AuthContext";
 import {
   getOutsourcedServiceAlerts,
   type OutsourcedAlert,
 } from "../services/outsourcedServices";
+
+type BackorderedProduct = {
+  id?: string;
+  productId?: string;
+  name?: string;
+  productName?: string;
+  category?: string;
+  stock?: number;
+  backorderQuantity?: number;
+  quantityBackordered?: number;
+  orderedQuantity?: number;
+};
+
+type BackorderedProductsData = {
+  totalBackorderedUnits: number;
+  products: BackorderedProduct[];
+};
 
 // --- Componente de formulario de produto (Modal) ---
 // Props esperadas pelo formulario:
@@ -599,6 +616,11 @@ const AdminPage: React.FC = () => {
   const [outsourcedAlerts, setOutsourcedAlerts] = useState<OutsourcedAlert[]>(
     [],
   );
+  const [backorderedData, setBackorderedData] =
+    useState<BackorderedProductsData>({
+      totalBackorderedUnits: 0,
+      products: [],
+    });
 
   // Carrega os dados iniciais do backend
 
@@ -606,6 +628,7 @@ const AdminPage: React.FC = () => {
     loadProducts();
     loadOrdersCount();
     loadOutsourcedAlerts();
+    loadBackorderedProducts();
   }, []);
 
   // Busca o total de pedidos dos ultimos 30 dias
@@ -628,6 +651,20 @@ const AdminPage: React.FC = () => {
       setStats((prev) => ({ ...prev, totalOrders: data.totalOrders || 0 }));
     } catch (err) {
       console.error("Erro ao buscar total de pedidos:", err);
+    }
+  };
+
+  const loadBackorderedProducts = async () => {
+    try {
+      const data = await getBackorderedProducts();
+      const payload = data.data || data;
+      setBackorderedData({
+        totalBackorderedUnits: Number(payload.totalBackorderedUnits || 0),
+        products: Array.isArray(payload.products) ? payload.products : [],
+      });
+    } catch (err) {
+      console.error("Erro ao buscar produtos sob encomenda:", err);
+      setBackorderedData({ totalBackorderedUnits: 0, products: [] });
     }
   };
 
@@ -791,6 +828,7 @@ const AdminPage: React.FC = () => {
     if (response.ok) {
       removeStockMovement(movement.id);
       await loadProducts();
+      await loadBackorderedProducts();
       await loadStockMovements();
     } else {
       alert("Erro ao atualizar estoque");
@@ -914,6 +952,78 @@ const AdminPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <div className="mb-6 rounded-xl border-2 border-amber-300 bg-amber-50 p-5 shadow">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-amber-900">
+              Produtos encomendados
+            </h2>
+            <p className="text-sm font-semibold text-amber-800">
+              Estoque negativo significa unidades ja vendidas sob encomenda.
+            </p>
+          </div>
+          <div className="rounded-lg bg-amber-600 px-4 py-3 text-center text-white">
+            <div className="text-xs font-bold uppercase">Unidades</div>
+            <div className="text-3xl font-black">
+              {backorderedData.totalBackorderedUnits}
+            </div>
+          </div>
+        </div>
+        {backorderedData.products.length === 0 ? (
+          <p className="rounded-lg bg-white/70 p-4 text-sm font-semibold text-amber-900">
+            Nenhum produto com estoque negativo no momento.
+          </p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg bg-white">
+            <table className="min-w-full divide-y divide-amber-100 text-sm">
+              <thead className="bg-amber-100">
+                <tr>
+                  <th className="px-4 py-3 text-left font-black text-amber-950">
+                    Produto
+                  </th>
+                  <th className="px-4 py-3 text-left font-black text-amber-950">
+                    Categoria
+                  </th>
+                  <th className="px-4 py-3 text-right font-black text-amber-950">
+                    Estoque
+                  </th>
+                  <th className="px-4 py-3 text-right font-black text-amber-950">
+                    Encomendado
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-amber-100">
+                {backorderedData.products.map((product) => {
+                  const stock = Number(product.stock || 0);
+                  const orderedQuantity = Number(
+                    product.backorderQuantity ||
+                      product.quantityBackordered ||
+                      product.orderedQuantity ||
+                      Math.abs(Math.min(stock, 0)),
+                  );
+                  return (
+                    <tr key={product.id || product.productId || product.name}>
+                      <td className="px-4 py-3 font-bold text-stone-900">
+                        {product.name || product.productName || "Produto"}
+                      </td>
+                      <td className="px-4 py-3 text-stone-700">
+                        {product.category || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-right font-black text-red-700">
+                        {stock} un.
+                      </td>
+                      <td className="px-4 py-3 text-right font-black text-amber-800">
+                        {orderedQuantity} un.
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
@@ -1062,8 +1172,8 @@ const AdminPage: React.FC = () => {
                 <td className="px-2 sm:px-4 py-2 whitespace-nowrap">
                   <span
                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      (product.stock || 0) === 0
-                        ? "bg-blue-100 text-blue-800"
+                      (product.stock || 0) <= 0
+                        ? "bg-amber-100 text-amber-900"
                         : product.minStock !== undefined &&
                             product.stock !== undefined &&
                             product.stock < product.minStock
@@ -1073,6 +1183,11 @@ const AdminPage: React.FC = () => {
                   >
                     {product.stock || 0} un.
                   </span>
+                  {(product.stock || 0) <= 0 && (
+                    <span className="ml-1 text-[10px] sm:text-xs text-amber-700 font-bold">
+                      Sob encomenda
+                    </span>
+                  )}
                   {product.minStock !== undefined &&
                     product.stock !== undefined &&
                     product.stock < product.minStock && (

@@ -11,8 +11,14 @@ import {
   cancelPayment,
   clearPaymentQueue,
 } from "../services/paymentService";
-import type { Order, CartItem } from "../types";
+import type { Order } from "../types";
 import PaymentOnline from "../components/PaymentOnline";
+import {
+  BACKORDER_NOTICE,
+  BACKORDER_SHORT_NOTICE,
+  getBackorderQuantity,
+  isCartItemBackorder,
+} from "../utils/backorder";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -92,6 +98,7 @@ const PaymentPage: React.FC = () => {
   // Novo estado para orderId do pagamento online
   const [onlineOrderId, setOnlineOrderId] = useState<string | null>(null);
   const [creatingOnlineOrder, setCreatingOnlineOrder] = useState(false);
+  const [orderHasBackorder, setOrderHasBackorder] = useState(false);
 
   // Ref para limpeza (cleanup) ao desmontar a pÃ¡gina
   const paymentIdRef = useRef<string | null>(null);
@@ -187,6 +194,50 @@ const PaymentPage: React.FC = () => {
     setQrCodeBase64(null);
   };
 
+  const backorderItems = cartItems.filter(isCartItemBackorder);
+
+  const confirmBackorderIfNeeded = async () => {
+    if (backorderItems.length === 0) return true;
+
+    const itemsHtml = backorderItems
+      .map((item) => {
+        const quantity = getBackorderQuantity(item);
+        const quantityLabel = quantity > 0 ? ` (${quantity} un. sob encomenda)` : "";
+        return `<li><strong>${item.name}</strong>${quantityLabel}</li>`;
+      })
+      .join("");
+
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Este pedido contém produto sob encomenda",
+      html: `
+        <p>Um ou mais produtos têm prazo mínimo de espera de 7 dias úteis.</p>
+        <ul style="margin-top:12px;text-align:left">${itemsHtml}</ul>
+      `,
+      confirmButtonText: "Entendi e quero continuar",
+      cancelButtonText: "Voltar ao carrinho",
+      showCancelButton: true,
+      reverseButtons: true,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    });
+
+    return result.isConfirmed;
+  };
+
+  const buildOrderItems = () =>
+    cartItems.map((i) => ({
+      id: i.id,
+      name: i.name,
+      quantity: i.quantity,
+      price: i.price,
+      isBackorder: isCartItemBackorder(i),
+      backorderQuantity: getBackorderQuantity(i),
+      backorderNotice: isCartItemBackorder(i)
+        ? i.backorderNotice || BACKORDER_NOTICE
+        : undefined,
+    }));
+
   const finalizeOrder = async (
     orderId: string,
     paymentId: string,
@@ -281,17 +332,15 @@ const PaymentPage: React.FC = () => {
   };
 
   const createOrder = async () => {
+    const confirmed = await confirmBackorderIfNeeded();
+    if (!confirmed) throw new Error("Pedido sob encomenda nao confirmado");
+
     const orderResp = await fetchStandard(`${BACKEND_URL}/api/orders`, {
       method: "POST",
       body: JSON.stringify({
         userId: currentUser!.id,
         userName: currentUser!.name,
-        items: cartItems.map((i) => ({
-          id: i.id,
-          name: i.name,
-          quantity: i.quantity,
-          price: i.price,
-        })),
+        items: buildOrderItems(),
         total:
           paymentType === "presencial" &&
           paymentMethod === "credit" &&
@@ -308,6 +357,7 @@ const PaymentPage: React.FC = () => {
     });
     if (!orderResp.ok) throw new Error("Erro ao criar pedido");
     const data = await orderResp.json();
+    setOrderHasBackorder(Boolean(data.hasBackorder || backorderItems.length > 0));
     return data.id;
   };
 
@@ -324,12 +374,7 @@ const PaymentPage: React.FC = () => {
         orderId: orderId,
         email: currentUser?.email,
         payerName: currentUser?.name,
-        items: cartItems.map((i) => ({
-          id: i.id,
-          name: i.name,
-          quantity: i.quantity,
-          price: i.price,
-        })),
+        items: buildOrderItems(),
         user: {
           email: currentUser?.email,
           name: currentUser?.name,
@@ -345,6 +390,11 @@ const PaymentPage: React.FC = () => {
       setActivePayment({ id: result.paymentId, type: "pix", orderId });
     } catch (err: any) {
       console.error(err);
+      if (err.message === "Pedido sob encomenda nao confirmado") {
+        setStatus("idle");
+        setPaymentStatusMessage("");
+        return;
+      }
       setStatus("error");
       setErrorMessage(err.message || "Erro no PIX.");
     }
@@ -368,12 +418,7 @@ const PaymentPage: React.FC = () => {
         orderId: orderId,
         paymentMethod: paymentMethod as "credit" | "debit",
         installments: paymentMethod === "credit" ? selectedInstallments : 1,
-        items: cartItems.map((i) => ({
-          id: i.id,
-          name: i.name,
-          quantity: i.quantity,
-          price: i.price,
-        })),
+        items: buildOrderItems(),
         user: {
           email: currentUser?.email,
           name: currentUser?.name,
@@ -390,6 +435,11 @@ const PaymentPage: React.FC = () => {
       setActivePayment({ id: result.paymentId, type: "card", orderId });
     } catch (err: any) {
       console.error(err);
+      if (err.message === "Pedido sob encomenda nao confirmado") {
+        setStatus("idle");
+        setPaymentStatusMessage("");
+        return;
+      }
       setStatus("error");
       setErrorMessage(err.message || "Erro ao conectar maquininha.");
     }
@@ -417,6 +467,16 @@ const PaymentPage: React.FC = () => {
               Comprovante enviado para seu e-mail!
             </span>
           </p>
+          {orderHasBackorder && (
+            <div className="mb-6 rounded-xl border-2 border-amber-400 bg-amber-50 p-4 text-left">
+              <h3 className="text-lg font-black text-amber-900">
+                Produto sob encomenda
+              </h3>
+              <p className="mt-1 text-sm font-bold text-amber-800">
+                {BACKORDER_NOTICE}
+              </p>
+            </div>
+          )}
           <p className="text-sm text-stone-400">Redirecionando...</p>
         </div>
       </div>
@@ -447,6 +507,11 @@ const PaymentPage: React.FC = () => {
               <li key={item.id} className="flex justify-between text-stone-600">
                 <span>
                   {item.quantity}x {item.name}
+                  {isCartItemBackorder(item) && (
+                    <span className="mt-1 block text-xs font-black uppercase tracking-wide text-amber-700">
+                      Sob encomenda - {BACKORDER_SHORT_NOTICE}
+                    </span>
+                  )}
                 </span>
                 <span className="font-semibold">
                   R$ {(item.price * item.quantity).toFixed(2)}
@@ -502,6 +567,8 @@ const PaymentPage: React.FC = () => {
                 <button
                   className="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-xl mb-4"
                   onClick={async () => {
+                    const confirmed = await confirmBackorderIfNeeded();
+                    if (!confirmed) return;
                     setCreatingOnlineOrder(true);
                     try {
                       const orderResp = await fetchStandard(
@@ -511,12 +578,7 @@ const PaymentPage: React.FC = () => {
                           body: JSON.stringify({
                             userId: currentUser!.id,
                             userName: currentUser!.name,
-                            items: cartItems.map((i) => ({
-                              id: i.id,
-                              name: i.name,
-                              quantity: i.quantity,
-                              price: i.price,
-                            })),
+                            items: buildOrderItems(),
                             total: cartTotal,
                             observation,
                             status: "pending",
@@ -526,6 +588,9 @@ const PaymentPage: React.FC = () => {
                       if (!orderResp.ok)
                         throw new Error("Erro ao criar pedido");
                       const data = await orderResp.json();
+                      setOrderHasBackorder(
+                        Boolean(data.hasBackorder || backorderItems.length > 0),
+                      );
                       setOnlineOrderId(data.id);
                     } catch (err: any) {
                       Swal.fire({
@@ -550,12 +615,7 @@ const PaymentPage: React.FC = () => {
                 <PaymentOnline
                   orderId={onlineOrderId}
                   total={cartTotal}
-                  items={cartItems.map((i) => ({
-                    id: i.id,
-                    name: i.name,
-                    quantity: i.quantity,
-                    price: i.price,
-                  }))}
+                  items={buildOrderItems()}
                   userEmail={currentUser?.email || ""}
                   userName={currentUser?.name || ""}
                   onSuccess={(paymentId) => {
@@ -704,6 +764,8 @@ const PaymentPage: React.FC = () => {
                 <button
                   className="mt-4 px-6 py-3 rounded bg-blue-600 text-white font-bold text-lg hover:bg-blue-700 transition-all"
                   onClick={async () => {
+                    const confirmed = await confirmBackorderIfNeeded();
+                    if (!confirmed) return;
                     setStatus("processing");
                     setErrorMessage("");
                     try {
@@ -714,12 +776,7 @@ const PaymentPage: React.FC = () => {
                           body: JSON.stringify({
                             userId: currentUser!.id,
                             userName: currentUser!.name,
-                            items: cartItems.map((i) => ({
-                              id: i.id,
-                              name: i.name,
-                              quantity: i.quantity,
-                              price: i.price,
-                            })),
+                            items: buildOrderItems(),
                             paymentType: "presencial",
                             paymentMethod,
                             installments:
@@ -740,6 +797,9 @@ const PaymentPage: React.FC = () => {
                       if (!orderResp.ok)
                         throw new Error("Erro ao criar pedido");
                       const orderData = await orderResp.json();
+                      setOrderHasBackorder(
+                        Boolean(orderData.hasBackorder || backorderItems.length > 0),
+                      );
                       setStatus("success");
                       clearCart();
                       setPresencialStep(null);
