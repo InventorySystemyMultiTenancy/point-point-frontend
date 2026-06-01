@@ -625,7 +625,7 @@ const MenuPage: React.FC = () => {
     try {
       console.log("🔄 Carregando categorias do backend...");
       const { getCategories } = await import("../services/categoryService");
-      const data = await getCategories();
+      const data = await getCategories({ catalog: true });
       console.log("📦 Categorias recebidas:", data);
 
       if (data.length > 0) {

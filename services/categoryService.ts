@@ -10,14 +10,20 @@ export interface Category {
   icon: string;
   order: number;
   store_id: string;
+  source?: "categories" | "products" | string;
 }
 
 /**
  * Busca todas as categorias da loja atual (público)
  */
-export async function getCategories(): Promise<Category[]> {
+export async function getCategories(
+  options: { catalog?: boolean } = {},
+): Promise<Category[]> {
   try {
-    const response = await catalogFetch(`${API_URL}/categories`);
+    const url = `${API_URL}/categories${options.catalog ? "?catalog=true" : ""}`;
+    const response = options.catalog
+      ? await catalogFetch(url)
+      : await authenticatedFetch(url);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -29,13 +35,20 @@ export async function getCategories(): Promise<Category[]> {
     }
 
     const data = await response.json();
+    const categories = Array.isArray(data)
+      ? data
+      : Array.isArray(data.categories)
+        ? data.categories
+        : Array.isArray(data.data)
+          ? data.data
+          : [];
 
-    if (!Array.isArray(data)) {
+    if (!Array.isArray(categories)) {
       console.error("❌ Backend retornou dados inválidos (não é array):", data);
       return [];
     }
 
-    return data;
+    return categories;
   } catch (error) {
     console.error("❌ Erro ao buscar categorias:", error);
     return [];
@@ -56,8 +69,14 @@ export async function createCategory(categoryData: {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Erro ao criar categoria");
+    const error = await response.json().catch(() => ({}));
+    const message = error.error || error.message || "Erro ao criar categoria";
+    if (response.status === 409 || String(message).includes("Categoria já existe")) {
+      throw new Error(
+        "Essa categoria já existe. Ela já está disponível para seleção.",
+      );
+    }
+    throw new Error(message);
   }
 
   return response.json();

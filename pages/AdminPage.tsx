@@ -628,6 +628,7 @@ const AdminPage: React.FC = () => {
       products: [],
     });
   const [users, setUsers] = useState<User[]>([]);
+  const [userSearch, setUserSearch] = useState("");
   const [updatingFullAccessId, setUpdatingFullAccessId] = useState<string | null>(
     null,
   );
@@ -711,6 +712,16 @@ const AdminPage: React.FC = () => {
       setUpdatingFullAccessId(null);
     }
   };
+
+  const normalizedUserSearch = userSearch.trim().toLowerCase();
+  const searchedUsers =
+    normalizedUserSearch.length >= 2
+      ? users
+          .filter((user) =>
+            String(user.name || "").toLowerCase().includes(normalizedUserSearch),
+          )
+          .slice(0, 20)
+      : [];
 
   const loadProducts = async () => {
     try {
@@ -1101,24 +1112,49 @@ const AdminPage: React.FC = () => {
           <div>
             <h2 className="text-2xl font-black text-white">Usuarios</h2>
             <p className="text-sm font-semibold text-blue-100">
-              Controle quem pode ver a categoria privada importados.
+              Busque pelo nome para liberar a categoria privada importados.
             </p>
           </div>
+        </div>
+        <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_auto]">
+          <input
+            value={userSearch}
+            onChange={(event) => setUserSearch(event.target.value)}
+            placeholder="Buscar usuario por nome"
+            className="min-h-11 rounded-lg border border-blue-500/30 px-3 py-2 text-white placeholder:text-blue-100/70 focus:border-purple-500 focus:outline-none"
+          />
           <button
             type="button"
             onClick={loadUsers}
             className="rounded-lg bg-purple-700 px-4 py-2 text-sm font-bold text-white hover:bg-purple-800"
           >
-            Atualizar usuarios
+            Atualizar
           </button>
         </div>
-        {users.length === 0 ? (
+        {normalizedUserSearch.length > 0 && normalizedUserSearch.length < 2 ? (
+          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-blue-100">
+            Digite pelo menos 2 letras para buscar.
+          </p>
+        ) : normalizedUserSearch.length === 0 ? (
+          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-blue-100">
+            Digite um nome para localizar usuarios.
+          </p>
+        ) : users.length === 0 ? (
           <p className="rounded-lg bg-white p-4 text-sm font-semibold text-blue-100">
             Nenhum usuario encontrado.
           </p>
+        ) : searchedUsers.length === 0 ? (
+          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-blue-100">
+            Nenhum usuario encontrado para "{userSearch.trim()}".
+          </p>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {users.map((user) => (
+          <>
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-blue-100">
+              Mostrando {searchedUsers.length} resultado(s)
+              {users.length > searchedUsers.length ? " mais proximos" : ""}.
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+            {searchedUsers.map((user) => (
               <div
                 key={user.id}
                 className="flex flex-col gap-3 rounded-lg border border-blue-500/20 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
@@ -1147,7 +1183,8 @@ const AdminPage: React.FC = () => {
                 </button>
               </div>
             ))}
-          </div>
+            </div>
+          </>
         )}
       </div>
 

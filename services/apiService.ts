@@ -302,6 +302,7 @@ export async function catalogFetch(
   options: RequestInit = {},
 ): Promise<Response> {
   const token = getUserToken();
+  let requestUrl = url;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string> | undefined),
@@ -309,9 +310,19 @@ export async function catalogFetch(
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
+  } else {
+    try {
+      const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
+      if (currentUser?.id) {
+        const separator = requestUrl.includes("?") ? "&" : "?";
+        requestUrl = `${requestUrl}${separator}userId=${encodeURIComponent(currentUser.id)}`;
+      }
+    } catch {
+      // visitante sem token segue sem identificacao
+    }
   }
 
-  return fetch(url, { ...options, headers });
+  return fetch(requestUrl, { ...options, headers });
 }
 
 /**
