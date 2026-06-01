@@ -1301,3 +1301,18 @@ body {
   color: #052e16 !important;
 }
 
+@media (max-width: 1023px) {
+  .employee-header {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  .employee-header.is-menu-open {
+    margin-bottom: 10.5rem !important;
+  }
+
+  .employee-main.is-menu-open {
+    margin-top: 0.75rem !important;
+  }
+}
+

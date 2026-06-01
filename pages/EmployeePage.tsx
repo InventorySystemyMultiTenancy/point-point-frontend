@@ -197,7 +197,11 @@ const EmployeePage: React.FC = () => {
 
   return (
     <div className="min-h-screen text-stone-900">
-      <header className="relative z-20 rounded-xl border border-blue-500/20 bg-white text-white shadow-xl lg:sticky lg:top-0">
+      <header
+        className={`employee-header relative z-20 rounded-xl border border-blue-500/20 bg-white text-white shadow-xl lg:sticky lg:top-0 ${
+          isMobileMenuOpen ? "is-menu-open" : ""
+        }`}
+      >
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-3 py-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
@@ -265,7 +269,11 @@ const EmployeePage: React.FC = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-0 py-4 sm:px-4 sm:py-6">
+      <main
+        className={`employee-main mx-auto max-w-7xl px-0 py-4 sm:px-4 sm:py-6 ${
+          isMobileMenuOpen ? "is-menu-open" : ""
+        }`}
+      >
         {activeTab === "outsourced" ? (
           <AdminOutsourcedServicesPage />
         ) : (
