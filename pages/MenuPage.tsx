@@ -14,6 +14,7 @@ import {
   isCartItemBackorder,
   isProductBackorder,
 } from "../utils/backorder";
+import { formatMoney } from "../utils/money";
 
 // URL da API
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -83,7 +84,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <div className="mt-2">
           <div className="flex flex-col gap-3">
             <span className="monster-product-price text-xl md:text-2xl font-bold text-stone-800">
-              R$ {product.price.toFixed(2)}
+              R$ {formatMoney(product.price)}
             </span>
             {product.quantidadeVenda && product.quantidadeVenda > 1 && (
               <span
@@ -245,7 +246,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
                     {item.name}
                   </p>
                   <p className="text-sm md:text-base font-semibold text-blue-300">
-                    R$ {item.price.toFixed(2)}
+                    R$ {formatMoney(item.price)}
                   </p>
                   {isCartItemBackorder(item) && (
                     <div className="mt-2 rounded border border-amber-300 bg-amber-100 px-2 py-1 text-xs font-black uppercase tracking-wide text-amber-900">

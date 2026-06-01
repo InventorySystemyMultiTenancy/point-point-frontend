@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import type { Order } from "../types";
 import { authenticatedFetch } from "../services/apiService";
+import { toMoneyNumber } from "../utils/money";
 
 interface AIRecommendation {
   topProducts: { name: string; quantity: number; revenue: number }[];
@@ -162,7 +163,7 @@ Seja direto e focado em ações práticas. Use emojis para deixar mais visual.`;
         };
         productMap.set(item.name, {
           quantity: existing.quantity + item.quantity,
-          revenue: existing.revenue + item.price * item.quantity,
+          revenue: existing.revenue + toMoneyNumber(item.price) * item.quantity,
         });
       });
     });

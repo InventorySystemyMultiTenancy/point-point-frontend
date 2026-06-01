@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import type { Order } from "../types";
+import { formatMoney } from "../utils/money";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -60,7 +61,7 @@ const CustomerOrdersPage: React.FC = () => {
               </div>
               <div className="mb-2">
                 <span className="font-semibold">Total:</span> R${" "}
-                {order.total.toFixed(2)}
+                {formatMoney(order.total)}
                 {order.paymentStatus === "pending" && (
                   <span className="ml-2 text-red-600 font-bold">A pagar</span>
                 )}
@@ -71,7 +72,7 @@ const CustomerOrdersPage: React.FC = () => {
               <ul className="text-sm text-stone-700">
                 {order.items.map((item, idx) => (
                   <li key={item.productId || idx}>
-                    {item.name} x {item.quantity} - R$ {item.price.toFixed(2)}
+                    {item.name} x {item.quantity} - R$ {formatMoney(item.price)}
                   </li>
                 ))}
               </ul>

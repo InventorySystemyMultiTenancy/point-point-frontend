@@ -7,6 +7,7 @@ import React, {
   useEffect,
 } from "react";
 import type { CartItem, Product } from "../types";
+import { toMoneyNumber } from "../utils/money";
 
 /*
   Define o formato do contexto do carrinho.
@@ -144,7 +145,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
   // Calcula o total do carrinho somando price * quantity de cada item
   const cartTotal = cartItems.reduce(
-    (total, item) => total + item.price * item.quantity,
+    (total, item) => total + toMoneyNumber(item.price) * item.quantity,
     0,
   );
 

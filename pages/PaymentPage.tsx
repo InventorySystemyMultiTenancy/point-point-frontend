@@ -19,6 +19,7 @@ import {
   getBackorderQuantity,
   isCartItemBackorder,
 } from "../utils/backorder";
+import { formatMoney, toMoneyNumber } from "../utils/money";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -132,7 +133,7 @@ const PaymentPage: React.FC = () => {
   useEffect(() => {
     if (paymentStatusData?.status === "approved" && activePayment) {
       console.log(
-        "âœ… Pagamento detectado pelo React Query:",
+        "Pagamento detectado pelo React Query:",
         paymentStatusData,
       );
       finalizeOrder(
@@ -147,7 +148,7 @@ const PaymentPage: React.FC = () => {
         paymentStatusData?.status === "rejected") &&
       activePayment
     ) {
-      console.log("âŒ Pagamento cancelado/rejeitado:", paymentStatusData);
+      console.log("Pagamento cancelado/rejeitado:", paymentStatusData);
       handlePaymentFailure(paymentStatusData);
     }
   }, [paymentStatusData, activePayment]);
@@ -161,7 +162,7 @@ const PaymentPage: React.FC = () => {
     return () => {
       if (paymentIdRef.current) {
         console.log(
-          `ðŸ§¹ Cleanup: Cancelando pagamento ${paymentIdRef.current} no backend...`,
+          `Cleanup: Cancelando pagamento ${paymentIdRef.current} no backend...`,
         );
         fetchStandard(
           `${BACKEND_URL}/api/payment/cancel/${paymentIdRef.current}`,
@@ -179,7 +180,7 @@ const PaymentPage: React.FC = () => {
     setStatus("error");
 
     const reasonMessages: Record<string, string> = {
-      canceled_by_user: "Pagamento cancelado na maquininha pelo usuÃ¡rio",
+      canceled_by_user: "Pagamento cancelado na maquininha pelo usuario",
       payment_error: "Erro ao processar pagamento na maquininha",
       canceled_by_system: "Pagamento cancelado pelo sistema",
       rejected_by_terminal: "Pagamento rejeitado pela maquininha",
@@ -188,7 +189,7 @@ const PaymentPage: React.FC = () => {
     const errorMsg =
       data.message ||
       (data.reason ? reasonMessages[data.reason] : null) ||
-      "Pagamento nÃ£o aprovado. Tente novamente.";
+      "Pagamento nao aprovado. Tente novamente.";
 
     setErrorMessage(errorMsg);
     setQrCodeBase64(null);
@@ -230,7 +231,7 @@ const PaymentPage: React.FC = () => {
       id: i.id,
       name: i.name,
       quantity: i.quantity,
-      price: i.price,
+      price: toMoneyNumber(i.price),
       isBackorder: isCartItemBackorder(i),
       backorderQuantity: getBackorderQuantity(i),
       backorderNotice: isCartItemBackorder(i)
@@ -311,7 +312,7 @@ const PaymentPage: React.FC = () => {
       // Gera link do WhatsApp com o PDF
       const whatsappNumber = 11989009259; // ajuste conforme seu modelo de usuÃ¡rio
       const whatsappMsg = encodeURIComponent(
-        `OlÃ¡! Segue o comprovante do seu pedido: ${pdfUrl}`,
+        `Ola! Segue o comprovante do seu pedido: ${pdfUrl}`,
       );
       const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMsg}`;
       // Abre WhatsApp em nova aba (opcional: pode exibir botÃ£o/link na tela de sucesso)
@@ -403,7 +404,7 @@ const PaymentPage: React.FC = () => {
   // FunÃ§Ã£o usada para integraÃ§Ã£o com maquininha (se for usar o fluxo automÃ¡tico)
   const handleCardPayment = async () => {
     setStatus("processing");
-    setPaymentStatusMessage("Conectando Ã  maquininha...");
+    setPaymentStatusMessage("Conectando a maquininha...");
 
     try {
       const orderId = await createOrder();
@@ -455,7 +456,7 @@ const PaymentPage: React.FC = () => {
             className="w-32 h-auto mx-auto mb-4 rounded-lg"
           />
           <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-4xl">âœ…</span>
+            <span className="text-4xl">OK</span>
           </div>
           <h2 className="text-3xl font-bold text-green-800 mb-2">
             Pagamento Aprovado!
@@ -488,10 +489,10 @@ const PaymentPage: React.FC = () => {
       <h1 className="text-3xl font-bold text-blue-800 mb-8 flex items-center gap-2">
         <button
           onClick={() => navigate("/menu")}
-          className="text-blue-600 hover:bg-blue-100 p-2 rounded-full transition-all duration-300 ease-in-out transform hover:scale-110 shadow-lg"
+          className="px-4 py-2 rounded-lg bg-white text-blue-700 text-sm font-bold hover:bg-blue-100 transition-all shadow-lg"
           disabled={status === "processing"}
         >
-          â†
+          Voltar
         </button>
         Finalizar Pagamento
       </h1>
@@ -514,7 +515,7 @@ const PaymentPage: React.FC = () => {
                   )}
                 </span>
                 <span className="font-semibold">
-                  R$ {(item.price * item.quantity).toFixed(2)}
+                  R$ {formatMoney(toMoneyNumber(item.price) * item.quantity)}
                 </span>
               </li>
             ))}
@@ -542,19 +543,19 @@ const PaymentPage: React.FC = () => {
           {!paymentType && (
             <>
               <h2 className="text-xl font-bold text-stone-800 mb-2">
-                Como vocÃª quer pagar?
+                Como voce quer pagar?
               </h2>
               <button
                 className="p-4 rounded-xl border-2 border-green-500 bg-green-50 text-green-900 font-bold text-lg hover:bg-green-100 transition-all"
                 onClick={() => setPaymentType("online")}
               >
-                ðŸ’» Pagamento Online (Mercado Pago)
+                Pagamento Online (Mercado Pago)
               </button>
               <button
                 className="p-4 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-900 font-bold text-lg hover:bg-blue-100 transition-all"
                 onClick={() => setPaymentType("presencial")}
               >
-                ðŸª Pagar na Loja Point&Point
+                Pagar na Loja Point&Point
               </button>
             </>
           )}
@@ -648,7 +649,7 @@ const PaymentPage: React.FC = () => {
           {paymentType === "presencial" && (
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded text-center text-blue-800 font-semibold">
               <span className="block text-2xl mb-2">
-                ðŸª Pagamento na Loja Point&Point
+                Pagamento na Loja Point&Point
               </span>
 
               {/* Step 1: SeleÃ§Ã£o do mÃ©todo */}
@@ -667,7 +668,7 @@ const PaymentPage: React.FC = () => {
                       setPresencialStep("select-installments");
                     }}
                   >
-                    CrÃ©dito
+                    Credito
                   </button>
                   <button
                     className={`px-6 py-3 rounded font-bold text-lg transition-all ${
@@ -680,7 +681,7 @@ const PaymentPage: React.FC = () => {
                       setPresencialStep("finalize");
                     }}
                   >
-                    DÃ©bito
+                    Debito
                   </button>
                   <button
                     className={`px-6 py-3 rounded font-bold text-lg transition-all ${
@@ -734,7 +735,7 @@ const PaymentPage: React.FC = () => {
                 paymentMethod === "credit" && (
                   <div className="mb-2">
                     <span className="font-semibold text-blue-700">
-                      Parcelamento disponÃ­vel:
+                      Parcelamento disponivel:
                     </span>
                     <ul className="text-sm text-blue-800 mt-1 flex flex-wrap gap-2">
                       {[1, 2, 3, 4, 5, 6].map((parcelas) => (
