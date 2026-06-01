@@ -953,13 +953,13 @@ const AdminPage: React.FC = () => {
         </div>
       )}
 
-      <div className="mb-6 rounded-xl border-2 border-amber-300 bg-amber-50 p-5 shadow">
+      <div className="mb-6 rounded-xl border-l-4 border-amber-500 bg-white p-5 shadow-lg">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-2xl font-black text-amber-900">
+            <h2 className="text-2xl font-black text-white">
               Produtos encomendados
             </h2>
-            <p className="text-sm font-semibold text-amber-800">
+            <p className="text-sm font-semibold text-blue-100">
               Estoque negativo significa unidades ja vendidas sob encomenda.
             </p>
           </div>
@@ -971,7 +971,7 @@ const AdminPage: React.FC = () => {
           </div>
         </div>
         {backorderedData.products.length === 0 ? (
-          <p className="rounded-lg bg-white/70 p-4 text-sm font-semibold text-amber-900">
+          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-blue-100">
             Nenhum produto com estoque negativo no momento.
           </p>
         ) : (
