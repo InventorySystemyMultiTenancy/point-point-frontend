@@ -69,6 +69,7 @@ const EmployeePage: React.FC = () => {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<EmployeeOrder | null>(null);
   const [checkedItems, setCheckedItems] = useState<Record<string, Record<string, boolean>>>(() => {
     try {
@@ -189,29 +190,51 @@ const EmployeePage: React.FC = () => {
     window.open(`${API_URL}/orders/${order.id}/receipt-pdf`, "_blank");
   };
 
+  const selectTab = (tab: EmployeeTab) => {
+    setActiveTab(tab);
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <div className="min-h-screen text-stone-900">
       <header className="sticky top-0 z-40 rounded-xl border border-blue-500/20 bg-white text-white shadow-xl">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-3 py-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-3">
-            <img
-              src={logo}
-              alt="Point&Point"
-              className="h-11 w-11 shrink-0 rounded-lg object-cover sm:h-12 sm:w-12"
-            />
-            <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-wide text-[#d2b48c] sm:text-sm">
-                Point&Point
-              </p>
-              <h1 className="text-lg font-black leading-tight text-white sm:text-xl">
-                Painel do funcionario
-              </h1>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <img
+                src={logo}
+                alt="Point&Point"
+                className="h-11 w-11 shrink-0 rounded-lg object-cover sm:h-12 sm:w-12"
+              />
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-wide text-[#d2b48c] sm:text-sm">
+                  Point&Point
+                </p>
+                <h1 className="text-lg font-black leading-tight text-white sm:text-xl">
+                  Painel do funcionario
+                </h1>
+              </div>
             </div>
-          </div>
-          <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3 lg:w-auto">
             <button
               type="button"
-              onClick={() => setActiveTab("orders")}
+              onClick={() => setIsMobileMenuOpen((open) => !open)}
+              className="flex h-11 w-11 shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl bg-white/10 text-white ring-1 ring-white/20 lg:hidden"
+              aria-label="Abrir menu"
+              aria-expanded={isMobileMenuOpen}
+            >
+              <span className="h-0.5 w-6 rounded bg-white" />
+              <span className="h-0.5 w-6 rounded bg-white" />
+              <span className="h-0.5 w-6 rounded bg-white" />
+            </button>
+          </div>
+          <div
+            className={`w-full grid-cols-1 gap-2 sm:grid-cols-3 lg:grid lg:w-auto ${
+              isMobileMenuOpen ? "grid" : "hidden"
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => selectTab("orders")}
               className={`min-h-12 rounded-xl px-4 py-3 text-sm font-black shadow-sm transition ${
                 activeTab === "orders"
                   ? "bg-purple-700 text-white ring-2 ring-white/30"
@@ -222,7 +245,7 @@ const EmployeePage: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("outsourced")}
+              onClick={() => selectTab("outsourced")}
               className={`min-h-12 rounded-xl px-4 py-3 text-sm font-black shadow-sm transition ${
                 activeTab === "outsourced"
                   ? "bg-purple-700 text-white ring-2 ring-white/30"
