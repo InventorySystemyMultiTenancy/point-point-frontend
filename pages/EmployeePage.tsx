@@ -14,6 +14,8 @@ const API_URL = `${BASE_URL}/api`;
 type EmployeeTab = "orders" | "outsourced";
 
 interface EmployeeOrderItem {
+  id?: string;
+  productId?: string;
   name?: string;
   productName?: string;
   quantity?: number;
@@ -67,6 +69,15 @@ const EmployeePage: React.FC = () => {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [selectedOrder, setSelectedOrder] = useState<EmployeeOrder | null>(null);
+  const [checkedItems, setCheckedItems] = useState<Record<string, Record<string, boolean>>>(() => {
+    try {
+      const saved = localStorage.getItem("employee_order_checklist");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
 
   useEffect(() => {
     if (!isEmployeeAuthenticated()) {
@@ -95,6 +106,10 @@ const EmployeePage: React.FC = () => {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    localStorage.setItem("employee_order_checklist", JSON.stringify(checkedItems));
+  }, [checkedItems]);
+
   const filteredOrders = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return orders;
@@ -113,50 +128,111 @@ const EmployeePage: React.FC = () => {
     navigate("/", { replace: true });
   };
 
+  const getItemKey = (item: EmployeeOrderItem, index: number) =>
+    item.id || item.productId || `${item.name || item.productName || "item"}-${index}`;
+
+  const getOrderCheckedItems = (orderId: string) => checkedItems[orderId] || {};
+
+  const toggleItemChecked = (
+    orderId: string,
+    item: EmployeeOrderItem,
+    index: number,
+  ) => {
+    const itemKey = getItemKey(item, index);
+    setCheckedItems((prev) => ({
+      ...prev,
+      [orderId]: {
+        ...(prev[orderId] || {}),
+        [itemKey]: !prev[orderId]?.[itemKey],
+      },
+    }));
+  };
+
+  const checklistProgress = (order: EmployeeOrder) => {
+    const items = order.items || [];
+    if (items.length === 0) return { done: 0, total: 0, complete: false };
+    const orderChecks = getOrderCheckedItems(order.id);
+    const done = items.filter((item, index) => orderChecks[getItemKey(item, index)]).length;
+    return { done, total: items.length, complete: done === items.length };
+  };
+
+  const markPaid = async (order: EmployeeOrder) => {
+    const response = await employeeFetch(`${API_URL}/orders/${order.id}/mark-paid`, {
+      method: "PUT",
+    });
+    if (!response.ok) {
+      alert("Erro ao marcar como pago");
+      return;
+    }
+    await loadOrders();
+    setSelectedOrder((prev) =>
+      prev?.id === order.id ? { ...prev, paymentStatus: "paid" } : prev,
+    );
+  };
+
+  const markDelivered = async (order: EmployeeOrder) => {
+    const response = await employeeFetch(
+      `${API_URL}/orders/${order.id}/mark-delivered`,
+      { method: "PUT" },
+    );
+    if (!response.ok) {
+      alert("Erro ao marcar como entregue");
+      return;
+    }
+    await loadOrders();
+    setSelectedOrder((prev) =>
+      prev?.id === order.id ? { ...prev, entregueCliente: true } : prev,
+    );
+  };
+
+  const openPdf = (order: EmployeeOrder) => {
+    window.open(`${API_URL}/orders/${order.id}/receipt-pdf`, "_blank");
+  };
+
   return (
     <div className="min-h-screen bg-[#fff6e5] text-stone-900">
-      <header className="border-b border-stone-200 bg-[#3b2418] text-white shadow">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <header className="sticky top-0 z-40 border-b border-stone-200 bg-[#3b2418] text-white shadow-xl">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
             <img
               src={logo}
               alt="Point&Point"
-              className="h-12 w-12 rounded-lg object-cover"
+              className="h-12 w-12 shrink-0 rounded-lg object-cover"
             />
-            <div>
+            <div className="min-w-0">
               <p className="text-sm font-bold uppercase tracking-wide text-[#d2b48c]">
                 Point&Point
               </p>
-              <h1 className="text-xl font-bold">Painel do funcionario</h1>
+              <h1 className="truncate text-xl font-bold">Painel do funcionario</h1>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <button
               type="button"
               onClick={() => setActiveTab("orders")}
-              className={`rounded-lg px-4 py-2 text-sm font-bold ${
+              className={`rounded-xl px-4 py-3 text-sm font-black shadow-sm transition ${
                 activeTab === "orders"
-                  ? "bg-purple-700 text-white"
+                  ? "bg-purple-700 text-white ring-2 ring-white/30"
                   : "bg-white/10 text-stone-100 hover:bg-white/20"
               }`}
             >
-              Historico de pedidos
+              Pedidos
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("outsourced")}
-              className={`rounded-lg px-4 py-2 text-sm font-bold ${
+              className={`col-span-2 rounded-xl px-4 py-3 text-sm font-black shadow-sm transition sm:col-span-1 ${
                 activeTab === "outsourced"
-                  ? "bg-purple-700 text-white"
-                  : "bg-white/10 text-stone-100 hover:bg-white/20"
+                  ? "bg-purple-700 text-white ring-2 ring-white/30"
+                  : "bg-[#d2b48c] text-stone-950 hover:bg-[#c6a477]"
               }`}
             >
-              Servicos terceirizados
+              Abrir terceirizados
             </button>
             <button
               type="button"
               onClick={logout}
-              className="rounded-lg bg-[#d2b48c] px-4 py-2 text-sm font-bold text-stone-900 hover:bg-[#c6a477]"
+              className="rounded-xl bg-white/10 px-4 py-3 text-sm font-black text-stone-100 hover:bg-white/20"
             >
               Sair
             </button>
@@ -209,6 +285,7 @@ const EmployeePage: React.FC = () => {
                     <th className="px-4 py-3 text-left">Data</th>
                     <th className="px-4 py-3 text-left">Itens</th>
                     <th className="px-4 py-3 text-left">Total</th>
+                    <th className="px-4 py-3 text-left">Separacao</th>
                     <th className="px-4 py-3 text-left">Pagamento</th>
                     <th className="px-4 py-3 text-left">Entrega</th>
                     <th className="px-4 py-3 text-left">Observacao</th>
@@ -217,14 +294,14 @@ const EmployeePage: React.FC = () => {
                 <tbody className="divide-y divide-stone-100">
                   {loadingOrders ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center">
+                      <td colSpan={9} className="px-4 py-8 text-center">
                         Carregando...
                       </td>
                     </tr>
                   ) : filteredOrders.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={8}
+                        colSpan={9}
                         className="px-4 py-8 text-center text-stone-500"
                       >
                         Nenhum pedido encontrado.
@@ -239,8 +316,13 @@ const EmployeePage: React.FC = () => {
                         "-";
                       const date =
                         order.timestamp || order.created_at || order.createdAt;
+                      const progress = checklistProgress(order);
                       return (
-                        <tr key={order.id} className="hover:bg-purple-50/50">
+                        <tr
+                          key={order.id}
+                          className="cursor-pointer hover:bg-purple-50/70"
+                          onClick={() => setSelectedOrder(order)}
+                        >
                           <td className="px-4 py-3 font-bold">{order.id}</td>
                           <td className="px-4 py-3">{customer}</td>
                           <td className="px-4 py-3">{formatDate(date)}</td>
@@ -258,6 +340,17 @@ const EmployeePage: React.FC = () => {
                           </td>
                           <td className="px-4 py-3 font-bold">
                             {formatMoney(order.total)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-black ${
+                                progress.complete
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-yellow-100 text-yellow-900"
+                              }`}
+                            >
+                              {progress.done}/{progress.total} separado
+                            </span>
                           </td>
                           <td className="px-4 py-3">
                             {order.paymentStatus || order.paymentType || "-"}
@@ -278,6 +371,149 @@ const EmployeePage: React.FC = () => {
           </section>
         )}
       </main>
+
+      {selectedOrder && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-0 sm:items-center sm:p-4"
+          onClick={() => setSelectedOrder(null)}
+        >
+          <div
+            className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-2xl sm:p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-sm font-bold uppercase tracking-wide text-purple-700">
+                  Separacao do pedido
+                </p>
+                <h2 className="text-2xl font-black text-stone-900">
+                  Pedido #{selectedOrder.id}
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-stone-600">
+                  Cliente:{" "}
+                  {selectedOrder.userName ||
+                    selectedOrder.customerName ||
+                    selectedOrder.cliente ||
+                    "-"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedOrder(null)}
+                className="rounded-xl bg-stone-100 px-4 py-2 font-bold text-stone-700 hover:bg-stone-200"
+              >
+                Fechar
+              </button>
+            </div>
+
+            {(() => {
+              const progress = checklistProgress(selectedOrder);
+              const orderChecks = getOrderCheckedItems(selectedOrder.id);
+              return (
+                <>
+                  <div className="mb-4 rounded-xl border border-purple-100 bg-purple-50 p-4">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <span className="font-black text-purple-900">
+                        Checklist de separacao
+                      </span>
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-purple-800">
+                        {progress.done}/{progress.total}
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-white">
+                      <div
+                        className="h-full rounded-full bg-purple-700 transition-all"
+                        style={{
+                          width:
+                            progress.total > 0
+                              ? `${(progress.done / progress.total) * 100}%`
+                              : "0%",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {(selectedOrder.items || []).map((item, index) => {
+                      const itemKey = getItemKey(item, index);
+                      const checked = Boolean(orderChecks[itemKey]);
+                      return (
+                        <label
+                          key={itemKey}
+                          className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${
+                            checked
+                              ? "border-green-200 bg-green-50"
+                              : "border-stone-200 bg-white hover:bg-stone-50"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() =>
+                              toggleItemChecked(selectedOrder.id, item, index)
+                            }
+                            className="mt-1 h-5 w-5 rounded border-stone-300 text-purple-700 focus:ring-purple-600"
+                          />
+                          <span className="flex-1">
+                            <span className="block text-lg font-black text-stone-900">
+                              {item.quantity || 0}x{" "}
+                              {item.name || item.productName || "Item"}
+                            </span>
+                            <span className="text-sm font-semibold text-stone-500">
+                              {checked ? "Separado" : "Pendente de separacao"}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {selectedOrder.observation && (
+                    <div className="mt-4 rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-sm font-semibold text-yellow-900">
+                      <span className="font-black">Observacao:</span>{" "}
+                      {selectedOrder.observation}
+                    </div>
+                  )}
+
+                  <div className="mt-5 grid gap-2 sm:grid-cols-3">
+                    <button
+                      type="button"
+                      onClick={() => openPdf(selectedOrder)}
+                      className="rounded-xl bg-stone-800 px-4 py-3 font-black text-white hover:bg-stone-900"
+                    >
+                      Gerar PDF
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => markPaid(selectedOrder)}
+                      disabled={["paid", "authorized"].includes(
+                        selectedOrder.paymentStatus || "",
+                      )}
+                      className="rounded-xl bg-green-600 px-4 py-3 font-black text-white hover:bg-green-700 disabled:bg-green-200 disabled:text-green-800"
+                    >
+                      {["paid", "authorized"].includes(
+                        selectedOrder.paymentStatus || "",
+                      )
+                        ? "Pedido pago"
+                        : "Marcar como pago"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => markDelivered(selectedOrder)}
+                      disabled={selectedOrder.entregueCliente}
+                      className="rounded-xl bg-purple-700 px-4 py-3 font-black text-white hover:bg-purple-800 disabled:bg-purple-200 disabled:text-purple-900"
+                    >
+                      {selectedOrder.entregueCliente
+                        ? "Entregue ao cliente"
+                        : "Entregar ao cliente"}
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
