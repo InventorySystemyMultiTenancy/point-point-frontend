@@ -218,13 +218,13 @@ const EmployeePage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen((open) => !open)}
-              className="flex h-11 w-11 shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl bg-[#d2b48c] text-stone-950 ring-1 ring-white/30 lg:hidden"
+              className="employee-menu-toggle lg:hidden"
               aria-label="Abrir menu"
               aria-expanded={isMobileMenuOpen}
             >
-              <span className="h-0.5 w-6 rounded bg-stone-950" />
-              <span className="h-0.5 w-6 rounded bg-stone-950" />
-              <span className="h-0.5 w-6 rounded bg-stone-950" />
+              <span />
+              <span />
+              <span />
             </button>
           </div>
           <div
@@ -237,8 +237,8 @@ const EmployeePage: React.FC = () => {
               onClick={() => selectTab("orders")}
               className={`min-h-12 rounded-xl px-4 py-3 text-sm font-black shadow-sm transition ${
                 activeTab === "orders"
-                  ? "bg-purple-700 text-white ring-2 ring-white/30"
-                  : "bg-[#09152c] text-white ring-1 ring-blue-400/30 hover:bg-[#102347]"
+                  ? "employee-menu-action is-active"
+                  : "employee-menu-action"
               }`}
             >
               Pedidos
@@ -248,8 +248,8 @@ const EmployeePage: React.FC = () => {
               onClick={() => selectTab("outsourced")}
               className={`min-h-12 rounded-xl px-4 py-3 text-sm font-black shadow-sm transition ${
                 activeTab === "outsourced"
-                  ? "bg-purple-700 text-white ring-2 ring-white/30"
-                  : "bg-[#d2b48c] text-stone-950 ring-1 ring-white/30 hover:bg-[#c6a477]"
+                  ? "employee-menu-action is-active"
+                  : "employee-menu-action is-outsourced"
               }`}
             >
               Abrir terceirizados
@@ -257,7 +257,7 @@ const EmployeePage: React.FC = () => {
             <button
               type="button"
               onClick={logout}
-              className="min-h-12 rounded-xl bg-[#09152c] px-4 py-3 text-sm font-black text-white ring-1 ring-blue-400/30 hover:bg-[#102347]"
+              className="employee-menu-action"
             >
               Sair
             </button>
@@ -346,10 +346,8 @@ const EmployeePage: React.FC = () => {
                           </p>
                         </div>
                         <span
-                          className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${
-                            progress.complete
-                              ? "bg-green-200 text-green-950"
-                              : "bg-yellow-200 text-yellow-950"
+                          className={`employee-progress-badge shrink-0 ${
+                            progress.complete ? "is-complete" : "is-pending"
                           }`}
                         >
                           {progress.done}/{progress.total}
@@ -454,10 +452,8 @@ const EmployeePage: React.FC = () => {
                           </td>
                           <td className="px-4 py-3">
                             <span
-                              className={`rounded-full px-3 py-1 text-xs font-black ${
-                                progress.complete
-                                  ? "bg-green-200 text-green-950"
-                                  : "bg-yellow-200 text-yellow-950"
+                              className={`employee-progress-badge ${
+                                progress.complete ? "is-complete" : "is-pending"
                               }`}
                             >
                               {progress.done}/{progress.total} separado
