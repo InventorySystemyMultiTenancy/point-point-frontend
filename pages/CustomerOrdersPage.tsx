@@ -9,42 +9,20 @@ const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const looksLikeCents = (value: number) =>
   Number.isInteger(value) && Math.abs(value) >= 1000;
 
-const shouldDisplayOrderAsCents = (order: Order) => {
-  const total = toMoneyNumber(order.total);
-  const itemsTotal = order.items.reduce(
-    (sum, item) => sum + toMoneyNumber(item.price) * Number(item.quantity || 0),
-    0,
-  );
-
-  if (!looksLikeCents(total)) return false;
-  if (itemsTotal > 0 && Math.abs(total / 100 - itemsTotal) < 0.01) {
-    return true;
-  }
-
-  return (
-    itemsTotal > 0 &&
-    Math.abs(total - itemsTotal) < 0.01 &&
-    order.items.every((item) => looksLikeCents(toMoneyNumber(item.price)))
-  );
-};
-
-const getDisplayItemPrice = (item: OrderItem, useCents: boolean) => {
+const getDisplayItemPrice = (item: OrderItem) => {
   const price = toMoneyNumber(item.price);
-  return useCents ? price / 100 : price;
+  return looksLikeCents(price) ? price / 100 : price;
 };
 
 const getDisplayOrderTotal = (order: Order) => {
-  const useCents = shouldDisplayOrderAsCents(order);
   const itemsTotal = order.items.reduce(
-    (sum, item) =>
-      sum +
-      getDisplayItemPrice(item, useCents) * Number(item.quantity || 0),
+    (sum, item) => sum + getDisplayItemPrice(item) * Number(item.quantity || 0),
     0,
   );
 
   if (itemsTotal > 0) return itemsTotal;
   const total = toMoneyNumber(order.total);
-  return useCents ? total / 100 : total;
+  return looksLikeCents(total) ? total / 100 : total;
 };
 
 const getPreparationStatus = (order: Order) =>
@@ -121,15 +99,12 @@ const CustomerOrdersPage: React.FC = () => {
                 </span>
               </div>
               <ul className="text-sm text-stone-700">
-                {order.items.map((item, idx) => {
-                  const useCents = shouldDisplayOrderAsCents(order);
-                  return (
-                    <li key={item.productId || idx}>
-                      {item.name} x {item.quantity} - R${" "}
-                      {formatMoney(getDisplayItemPrice(item, useCents))}
-                    </li>
-                  );
-                })}
+                {order.items.map((item, idx) => (
+                  <li key={item.productId || idx}>
+                    {item.name} x {item.quantity} - R${" "}
+                    {formatMoney(getDisplayItemPrice(item))}
+                  </li>
+                ))}
               </ul>
             </li>
           ))}

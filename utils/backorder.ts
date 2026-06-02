@@ -12,8 +12,11 @@ const getNumericField = (
   const record = product as Record<string, unknown>;
 
   for (const fieldName of fieldNames) {
+    if (!(fieldName in record)) continue;
+
     const value = record[fieldName];
-    if (value === undefined || value === null || value === "") continue;
+    if (value === undefined || value === "") continue;
+    if (value === null) return 0;
 
     const numericValue = Number(value);
     if (Number.isFinite(numericValue)) {
