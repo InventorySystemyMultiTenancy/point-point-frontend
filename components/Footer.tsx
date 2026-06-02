@@ -27,12 +27,12 @@ const Footer = () => {
     <div ref={footerRef} className="site-footer minimal-footer">
       <div className="footer-row">
         <span>
-          <a href="https://wa.me/5511942058445" target="_blank" rel="noopener noreferrer">WhatsApp: 11 94205-8445</a>
+          <a href="https://wa.me/5511942058445" target="_blank" rel="noopener noreferrer">WhatsApp: 16 99773 5290</a>
         </span>
         <span>
           <a href="mailto:contato@pointpoint.com">contato@pointpoint.com</a>
         </span>
-        <span>Av. Cachoeira Paulista, 17</span>
+        <span>Rua Ângelo Marquezi, 59</span>
         <span>POIT&POIT 2026</span>
         <span>Todos os direitos reservados</span>
       </div>
