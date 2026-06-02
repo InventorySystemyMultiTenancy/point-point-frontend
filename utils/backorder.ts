@@ -6,15 +6,20 @@ export const BACKORDER_NOTICE =
 export const BACKORDER_SHORT_NOTICE = "Prazo mínimo: 7 dias úteis";
 
 export const getAvailableStock = (product: Product | CartItem) => {
-  if (product.stock_available !== undefined && product.stock_available !== null) {
-    return Number(product.stock_available);
+  const stock =
+    product.stock !== undefined && product.stock !== null
+      ? Number(product.stock)
+      : null;
+  const stockAvailable =
+    product.stock_available !== undefined && product.stock_available !== null
+      ? Number(product.stock_available)
+      : null;
+
+  if (stock !== null && stockAvailable !== null) {
+    return Math.min(stock, stockAvailable);
   }
 
-  if (product.stock !== undefined && product.stock !== null) {
-    return Number(product.stock);
-  }
-
-  return null;
+  return stockAvailable ?? stock;
 };
 
 export const isProductBackorder = (product: Product | CartItem) => {
