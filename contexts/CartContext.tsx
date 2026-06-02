@@ -5,6 +5,7 @@ import React, {
   useContext,
   ReactNode,
   useEffect,
+  useCallback,
 } from "react";
 import type { CartItem, Product } from "../types";
 import { toMoneyNumber } from "../utils/money";
@@ -23,6 +24,7 @@ interface CartContextType {
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
+  refreshCartItemProducts: (products: Product[]) => void;
   clearCart: () => void;
   cartTotal: number;
   observation: string;
@@ -143,6 +145,18 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     setObservation("");
   };
 
+  const refreshCartItemProducts = useCallback((products: Product[]) => {
+    if (!products.length) return;
+    const productsById = new Map(products.map((product) => [product.id, product]));
+
+    setCartItems((prevItems) =>
+      prevItems.map((item) => {
+        const latestProduct = productsById.get(item.id);
+        return latestProduct ? { ...item, ...latestProduct, quantity: item.quantity } : item;
+      }),
+    );
+  }, []);
+
   // Calcula o total do carrinho somando price * quantity de cada item
   const cartTotal = cartItems.reduce(
     (total, item) => total + toMoneyNumber(item.price) * item.quantity,
@@ -157,6 +171,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
         addToCart,
         removeFromCart,
         updateQuantity,
+        refreshCartItemProducts,
         clearCart,
         cartTotal,
         observation,

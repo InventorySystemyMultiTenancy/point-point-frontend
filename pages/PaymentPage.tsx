@@ -547,6 +547,14 @@ const PaymentPage: React.FC = () => {
           <h2 className="text-xl font-bold text-stone-800 mb-4 border-b pb-2">
             Resumo do Pedido
           </h2>
+          {backorderItems.length > 0 && (
+            <div className="mb-4 rounded-xl border-2 border-amber-400 bg-amber-50 p-4 text-amber-900">
+              <p className="font-black">Este pedido contém produto sob encomenda.</p>
+              <p className="mt-1 text-sm font-bold">
+                Prazo mínimo de espera: 7 dias úteis para ficar pronto.
+              </p>
+            </div>
+          )}
           <ul className="space-y-3 max-h-64 overflow-y-auto mb-4">
             {cartItems.map((item) => (
               <li key={item.id} className="flex justify-between text-stone-600">

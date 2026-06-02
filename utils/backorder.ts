@@ -5,15 +5,35 @@ export const BACKORDER_NOTICE =
 
 export const BACKORDER_SHORT_NOTICE = "Prazo mínimo: 7 dias úteis";
 
+const getNumericField = (
+  product: Product | CartItem,
+  fieldNames: string[],
+): number | null => {
+  const record = product as Record<string, unknown>;
+
+  for (const fieldName of fieldNames) {
+    const value = record[fieldName];
+    if (value === undefined || value === null || value === "") continue;
+
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue)) {
+      return numericValue;
+    }
+  }
+
+  return null;
+};
+
 export const getAvailableStock = (product: Product | CartItem) => {
-  const stock =
-    product.stock !== undefined && product.stock !== null
-      ? Number(product.stock)
-      : null;
-  const stockAvailable =
-    product.stock_available !== undefined && product.stock_available !== null
-      ? Number(product.stock_available)
-      : null;
+  const stock = getNumericField(product, ["stock", "estoque"]);
+  const stockAvailable = getNumericField(product, [
+    "stock_available",
+    "stockAvailable",
+    "availableStock",
+    "available_stock",
+    "estoqueDisponivel",
+    "estoque_disponivel",
+  ]);
 
   if (stock !== null && stockAvailable !== null) {
     return Math.min(stock, stockAvailable);
@@ -24,7 +44,11 @@ export const getAvailableStock = (product: Product | CartItem) => {
 
 export const isProductBackorder = (product: Product | CartItem) => {
   const availableStock = getAvailableStock(product);
-  return Boolean(product.isBackorder) || (availableStock !== null && availableStock <= 0);
+  const record = product as Record<string, unknown>;
+  return (
+    Boolean(product.isBackorder || record.is_backorder || record.backorder) ||
+    (availableStock !== null && availableStock <= 0)
+  );
 };
 
 export const isCartItemBackorder = (item: CartItem) => {

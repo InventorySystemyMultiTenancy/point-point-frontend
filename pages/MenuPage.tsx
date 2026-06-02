@@ -503,6 +503,7 @@ const MenuPage: React.FC = () => {
     addToCart,
     cartTotal,
     updateQuantity,
+    refreshCartItemProducts,
     removeFromCart,
     clearCart,
     observation,
@@ -645,6 +646,10 @@ const MenuPage: React.FC = () => {
     fetchMenuData();
     fetchCategories(); // 🆕 Carrega categorias
   }, [currentUser?.fullAccess]);
+
+  useEffect(() => {
+    refreshCartItemProducts(menu);
+  }, [menu, refreshCartItemProducts]);
 
   useEffect(() => {
     if (canSeeImportedCatalog(currentUser?.fullAccess)) return;

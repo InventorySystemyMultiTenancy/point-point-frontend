@@ -1,10 +1,54 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import type { Order } from "../types";
-import { formatMoney } from "../utils/money";
+import type { Order, OrderItem } from "../types";
+import { formatMoney, toMoneyNumber } from "../utils/money";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
+const looksLikeCents = (value: number) =>
+  Number.isInteger(value) && Math.abs(value) >= 1000;
+
+const shouldDisplayOrderAsCents = (order: Order) => {
+  const total = toMoneyNumber(order.total);
+  const itemsTotal = order.items.reduce(
+    (sum, item) => sum + toMoneyNumber(item.price) * Number(item.quantity || 0),
+    0,
+  );
+
+  if (!looksLikeCents(total)) return false;
+  if (itemsTotal > 0 && Math.abs(total / 100 - itemsTotal) < 0.01) {
+    return true;
+  }
+
+  return (
+    itemsTotal > 0 &&
+    Math.abs(total - itemsTotal) < 0.01 &&
+    order.items.every((item) => looksLikeCents(toMoneyNumber(item.price)))
+  );
+};
+
+const getDisplayItemPrice = (item: OrderItem, useCents: boolean) => {
+  const price = toMoneyNumber(item.price);
+  return useCents ? price / 100 : price;
+};
+
+const getDisplayOrderTotal = (order: Order) => {
+  const useCents = shouldDisplayOrderAsCents(order);
+  const itemsTotal = order.items.reduce(
+    (sum, item) =>
+      sum +
+      getDisplayItemPrice(item, useCents) * Number(item.quantity || 0),
+    0,
+  );
+
+  if (itemsTotal > 0) return itemsTotal;
+  const total = toMoneyNumber(order.total);
+  return useCents ? total / 100 : total;
+};
+
+const getPreparationStatus = (order: Order) =>
+  order.entregueCliente ? "Pronto para retirada" : "Em montagem";
 
 const CustomerOrdersPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -61,20 +105,31 @@ const CustomerOrdersPage: React.FC = () => {
               </div>
               <div className="mb-2">
                 <span className="font-semibold">Total:</span> R${" "}
-                {formatMoney(order.total)}
+                {formatMoney(getDisplayOrderTotal(order))}
                 {order.paymentStatus === "pending" && (
                   <span className="ml-2 text-red-600 font-bold">A pagar</span>
                 )}
               </div>
               <div className="mb-2">
-                <span className="font-semibold">Status:</span> {order.status}
+                <span className="font-semibold">Separação:</span>{" "}
+                <span
+                  className={`font-bold ${
+                    order.entregueCliente ? "text-green-700" : "text-blue-700"
+                  }`}
+                >
+                  {getPreparationStatus(order)}
+                </span>
               </div>
               <ul className="text-sm text-stone-700">
-                {order.items.map((item, idx) => (
-                  <li key={item.productId || idx}>
-                    {item.name} x {item.quantity} - R$ {formatMoney(item.price)}
-                  </li>
-                ))}
+                {order.items.map((item, idx) => {
+                  const useCents = shouldDisplayOrderAsCents(order);
+                  return (
+                    <li key={item.productId || idx}>
+                      {item.name} x {item.quantity} - R${" "}
+                      {formatMoney(getDisplayItemPrice(item, useCents))}
+                    </li>
+                  );
+                })}
               </ul>
             </li>
           ))}
