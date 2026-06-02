@@ -224,7 +224,7 @@ const LoginPage: React.FC = () => {
       <section className="login-glass-card w-full max-w-md rounded-2xl p-7 shadow-2xl sm:p-9">
         <div className="mb-7 text-center">
           <p className="mb-2 text-sm font-bold uppercase tracking-[0.22em] text-amber-100">
-            Point&Point
+            POIT&POIT
           </p>
           <h1 className="text-3xl font-bold text-white">
             {mode === "login"

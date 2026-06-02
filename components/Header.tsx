@@ -72,11 +72,11 @@ const Header: React.FC = () => {
             <NavLink to={currentUser ? "/menu" : "/"} className="flex items-center gap-2 group min-w-0">
               <img
                 src={logo}
-                alt="Point&Point logo"
+                alt="POIT&POIT logo"
                 className="monster-header-logo w-10 h-10 sm:w-12 sm:h-12 rounded-lg group-hover:scale-105 transition-transform object-cover shrink-0"
               />
               <span className="monster-header-brand text-base sm:text-xl font-bold text-stone-800 tracking-tight whitespace-nowrap">
-                Point&Point
+                POIT&POIT
               </span>
             </NavLink>
           </div>

@@ -33,7 +33,7 @@ const Footer = () => {
           <a href="mailto:contato@pointpoint.com">contato@pointpoint.com</a>
         </span>
         <span>Av. Cachoeira Paulista, 17</span>
-        <span>Point&Point 2026</span>
+        <span>POIT&POIT 2026</span>
         <span>Todos os direitos reservados</span>
       </div>
     </div>

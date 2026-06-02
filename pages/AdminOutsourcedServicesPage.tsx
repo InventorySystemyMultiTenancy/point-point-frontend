@@ -391,7 +391,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-wide text-purple-700">
-            Point&Point Admin
+            POIT&POIT Admin
           </p>
           <h1 className="text-3xl font-bold text-stone-900">
             Servicos Terceirizados

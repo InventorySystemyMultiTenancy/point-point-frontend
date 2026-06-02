@@ -207,12 +207,12 @@ const EmployeePage: React.FC = () => {
             <div className="flex min-w-0 items-center gap-3">
               <img
                 src={logo}
-                alt="Point&Point"
+                alt="POIT&POIT"
                 className="h-11 w-11 shrink-0 rounded-lg object-cover sm:h-12 sm:w-12"
               />
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-wide text-[#d2b48c] sm:text-sm">
-                  Point&Point
+                  POIT&POIT
                 </p>
                 <h1 className="text-lg font-black leading-tight text-white sm:text-xl">
                   Painel do funcionario

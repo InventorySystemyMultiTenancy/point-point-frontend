@@ -47,11 +47,11 @@ const EmployeeLoginPage: React.FC = () => {
           <div className="mb-6 flex flex-col items-center text-center">
             <img
               src={logo}
-              alt="Point&Point"
+              alt="POIT&POIT"
               className="mb-3 h-20 w-20 rounded-xl object-cover"
             />
             <p className="text-sm font-bold uppercase tracking-wide text-purple-700">
-              Point&Point
+              POIT&POIT
             </p>
             <h1 className="text-2xl font-bold text-stone-900">
               Acesso de funcionario

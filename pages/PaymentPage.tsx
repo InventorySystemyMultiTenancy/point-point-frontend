@@ -607,7 +607,7 @@ const PaymentPage: React.FC = () => {
                 className="p-4 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-900 font-bold text-lg hover:bg-blue-100 transition-all"
                 onClick={() => setPaymentType("presencial")}
               >
-                Pagar na Loja Point&Point
+                Pagar na Loja POIT&POIT
               </button>
             </>
           )}
@@ -715,7 +715,7 @@ const PaymentPage: React.FC = () => {
           {paymentType === "presencial" && (
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded text-center text-blue-800 font-semibold">
               <span className="block text-2xl mb-2">
-                Pagamento na Loja Point&Point
+                Pagamento na Loja POIT&POIT
               </span>
 
               {/* Step 1: SeleÃ§Ã£o do mÃ©todo */}

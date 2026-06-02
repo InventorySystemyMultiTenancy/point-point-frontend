@@ -9,10 +9,16 @@ export const isImportedProduct = (product: Product | CartItem) =>
 export const canSeeImportedCatalog = (fullAccess?: boolean | null) =>
   Boolean(fullAccess);
 
+export const filterActiveCatalog = <T extends { active?: boolean | null }>(
+  items: T[],
+) => items.filter((item) => item.active !== false);
+
 export const filterPrivateCatalog = <T extends { category?: string; name?: string }>(
   items: T[],
   fullAccess?: boolean | null,
 ) =>
   canSeeImportedCatalog(fullAccess)
-    ? items
-    : items.filter((item) => !isImportedCategory(item.category || item.name));
+    ? filterActiveCatalog(items)
+    : filterActiveCatalog(items).filter(
+        (item) => !isImportedCategory(item.category || item.name),
+      );

@@ -252,7 +252,7 @@ const AdminManagementReportPage: React.FC = () => {
             Relatorio de Gestao
           </h1>
           <p className="text-slate-600 mt-2">
-            Financeiro Point&Point: faturamento, custos, gastos e lucro liquido.
+            Financeiro POIT&POIT: faturamento, custos, gastos e lucro liquido.
           </p>
         </div>
         <button
