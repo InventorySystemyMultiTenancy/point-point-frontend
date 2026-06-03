@@ -83,6 +83,7 @@ const AdminManagementReportPage: React.FC = () => {
   const [filterMode, setFilterMode] = useState<FilterMode>("general");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [isExpenseFormOpen, setIsExpenseFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<ManagementExpense | null>(null);
   const [expenseForm, setExpenseForm] = useState<ExpenseFormState>(emptyExpenseForm);
 
@@ -162,6 +163,7 @@ const AdminManagementReportPage: React.FC = () => {
   };
 
   const openExpenseForm = (expense?: ManagementExpense) => {
+    setIsExpenseFormOpen(true);
     setEditingExpense(expense || null);
     setExpenseForm(
       expense
@@ -179,6 +181,7 @@ const AdminManagementReportPage: React.FC = () => {
   };
 
   const closeExpenseForm = () => {
+    setIsExpenseFormOpen(false);
     setEditingExpense(null);
     setExpenseForm(emptyExpenseForm);
   };
@@ -377,7 +380,7 @@ const AdminManagementReportPage: React.FC = () => {
             </button>
           </div>
 
-          {(editingExpense || expenseForm.description || expenseForm.amount) && (
+          {isExpenseFormOpen && (
             <form onSubmit={saveExpense} className="grid gap-4 rounded-xl bg-white p-5 shadow md:grid-cols-2">
               <FormInput label="Descricao" required value={expenseForm.description} onChange={(value) => setExpenseForm((prev) => ({ ...prev, description: value }))} />
               <FormInput label="Valor" type="number" min="0.01" step="0.01" required value={expenseForm.amount} onChange={(value) => setExpenseForm((prev) => ({ ...prev, amount: value }))} />
