@@ -548,7 +548,7 @@ const PaymentPage: React.FC = () => {
             Resumo do Pedido
           </h2>
           {backorderItems.length > 0 && (
-            <div className="mb-4 rounded-xl border-2 border-amber-400 bg-amber-50 p-4 text-amber-900">
+            <div className="mb-4 rounded-xl border-2 border-amber-400 bg-amber-500 p-4 text-amber-900">
               <p className="font-black">Este pedido contém produto sob encomenda.</p>
               <p className="mt-1 text-sm font-bold">
                 Prazo mínimo de espera: 7 dias úteis para ficar pronto.
