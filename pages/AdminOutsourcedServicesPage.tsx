@@ -241,6 +241,9 @@ const SummaryCard: React.FC<{
 );
 
 const AdminOutsourcedServicesPage: React.FC = () => {
+  const isEmployeeView = `${window.location.pathname}${window.location.hash}`.includes(
+    "/employee",
+  );
   const [activeTab, setActiveTab] = useState<"services" | "companies">(
     "services",
   );
@@ -570,6 +573,15 @@ const AdminOutsourcedServicesPage: React.FC = () => {
 
   const serviceInputUnit = getInputUnit(serviceForm.service_type);
   const expectedReturnTotal = totalItemsQuantity(serviceForm.expected_return_items);
+  const selectedServiceExpectedProducts = selectedService?.expected_return_items
+    ?.map(itemProductId)
+    .filter(Boolean);
+  const deliveryProducts =
+    selectedServiceExpectedProducts && selectedServiceExpectedProducts.length > 0
+      ? products.filter((product) =>
+          selectedServiceExpectedProducts.includes(product.id),
+        )
+      : products;
 
   return (
     <div className="container mx-auto p-2 sm:p-4 md:p-6">
@@ -582,20 +594,22 @@ const AdminOutsourcedServicesPage: React.FC = () => {
             Servicos Terceirizados
           </h1>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={openNewService}
-            className="rounded-lg bg-purple-700 px-5 py-2 font-bold text-white shadow hover:bg-purple-800"
-          >
-            Novo servico
-          </button>
-          <button
-            onClick={openNewCompany}
-            className="rounded-lg bg-stone-700 px-5 py-2 font-bold text-white shadow hover:bg-stone-800"
-          >
-            Nova empresa
-          </button>
-        </div>
+        {!isEmployeeView && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={openNewService}
+              className="rounded-lg bg-purple-700 px-5 py-2 font-bold text-white shadow hover:bg-purple-800"
+            >
+              Novo servico
+            </button>
+            <button
+              onClick={openNewCompany}
+              className="rounded-lg bg-stone-700 px-5 py-2 font-bold text-white shadow hover:bg-stone-800"
+            >
+              Nova empresa
+            </button>
+          </div>
+        )}
       </div>
 
       {error && (
@@ -812,14 +826,16 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   "Telefone",
                   "Email",
                   "Status",
-                  "Acoes",
+                  !isEmployeeView ? "Acoes" : null,
                 ].map((header) => (
+                  header && (
                   <th
                     key={header}
                     className="px-4 py-3 text-left text-xs font-bold uppercase text-stone-500"
                   >
                     {header}
                   </th>
+                  )
                 ))}
               </tr>
             </thead>
@@ -849,14 +865,16 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                       {company.active === false ? "Inativa" : "Ativa"}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => openEditCompany(company)}
-                      className="font-bold text-purple-700 hover:text-purple-900"
-                    >
-                      Editar
-                    </button>
-                  </td>
+                  {!isEmployeeView && (
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => openEditCompany(company)}
+                        className="font-bold text-purple-700 hover:text-purple-900"
+                      >
+                        Editar
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -1262,7 +1280,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                       <ProductQuantityRow
                         key={`delivery-${index}`}
                         item={item}
-                        products={products}
+                        products={deliveryProducts}
                         onChange={(field, value) =>
                           updateDeliveryItem(index, field, value)
                         }

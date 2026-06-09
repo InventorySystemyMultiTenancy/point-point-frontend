@@ -49,12 +49,6 @@ const unwrapOrders = (data: unknown): EmployeeOrder[] => {
   return [];
 };
 
-const formatMoney = (value?: number) =>
-  Number(value || 0).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-
 const formatDate = (value?: string) => {
   if (!value) return "-";
   const date = new Date(value);
@@ -157,20 +151,6 @@ const EmployeePage: React.FC = () => {
     return { done, total: items.length, complete: done === items.length };
   };
 
-  const markPaid = async (order: EmployeeOrder) => {
-    const response = await employeeFetch(`${API_URL}/orders/${order.id}/mark-paid`, {
-      method: "PUT",
-    });
-    if (!response.ok) {
-      alert("Erro ao marcar como pago");
-      return;
-    }
-    await loadOrders();
-    setSelectedOrder((prev) =>
-      prev?.id === order.id ? { ...prev, paymentStatus: "paid" } : prev,
-    );
-  };
-
   const markDelivered = async (order: EmployeeOrder) => {
     const response = await employeeFetch(
       `${API_URL}/orders/${order.id}/mark-delivered`,
@@ -181,13 +161,12 @@ const EmployeePage: React.FC = () => {
       return;
     }
     await loadOrders();
-    setSelectedOrder((prev) =>
-      prev?.id === order.id ? { ...prev, entregueCliente: true } : prev,
+    setOrders((prev) =>
+      prev.map((item) =>
+        item.id === order.id ? { ...item, entregueCliente: true } : item,
+      ),
     );
-  };
-
-  const openPdf = (order: EmployeeOrder) => {
-    window.open(`${API_URL}/orders/${order.id}/receipt-pdf`, "_blank");
+    setSelectedOrder(null);
   };
 
   const selectTab = (tab: EmployeeTab) => {
@@ -371,10 +350,6 @@ const EmployeePage: React.FC = () => {
                           {itemSummary}
                         </div>
                         <div>
-                          <span className="font-black">Total:</span>{" "}
-                          {formatMoney(order.total)}
-                        </div>
-                        <div>
                           <span className="font-black">Data:</span>{" "}
                           {formatDate(date)}
                         </div>
@@ -401,7 +376,6 @@ const EmployeePage: React.FC = () => {
                     <th className="px-4 py-3 text-left">Cliente</th>
                     <th className="px-4 py-3 text-left">Data</th>
                     <th className="px-4 py-3 text-left">Itens</th>
-                    <th className="px-4 py-3 text-left">Total</th>
                     <th className="px-4 py-3 text-left">Separacao</th>
                     <th className="px-4 py-3 text-left">Pagamento</th>
                     <th className="px-4 py-3 text-left">Entrega</th>
@@ -411,14 +385,14 @@ const EmployeePage: React.FC = () => {
                 <tbody className="divide-y divide-stone-100">
                   {loadingOrders ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center">
+                      <td colSpan={8} className="px-4 py-8 text-center">
                         Carregando...
                       </td>
                     </tr>
                   ) : filteredOrders.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={9}
+                        colSpan={8}
                         className="px-4 py-8 text-center text-stone-500"
                       >
                         Nenhum pedido encontrado.
@@ -454,9 +428,6 @@ const EmployeePage: React.FC = () => {
                                   )
                                   .join(", ")
                               : "-"}
-                          </td>
-                          <td className="px-4 py-3 font-bold">
-                            {formatMoney(order.total)}
                           </td>
                           <td className="px-4 py-3">
                             <span
@@ -590,37 +561,18 @@ const EmployeePage: React.FC = () => {
                     </div>
                   )}
 
-                  <div className="mt-5 grid gap-2 sm:grid-cols-3">
-                    <button
-                      type="button"
-                      onClick={() => openPdf(selectedOrder)}
-                      className="rounded-xl bg-stone-800 px-4 py-3 font-black text-white hover:bg-stone-900"
-                    >
-                      Gerar PDF
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => markPaid(selectedOrder)}
-                      disabled={["paid", "authorized"].includes(
-                        selectedOrder.paymentStatus || "",
-                      )}
-                      className="rounded-xl bg-green-600 px-4 py-3 font-black text-white hover:bg-green-700 disabled:bg-green-200 disabled:text-green-800"
-                    >
-                      {["paid", "authorized"].includes(
-                        selectedOrder.paymentStatus || "",
-                      )
-                        ? "Pedido pago"
-                        : "Marcar como pago"}
-                    </button>
+                  <div className="mt-5 grid gap-2">
                     <button
                       type="button"
                       onClick={() => markDelivered(selectedOrder)}
-                      disabled={selectedOrder.entregueCliente}
+                      disabled={selectedOrder.entregueCliente || !progress.complete}
                       className="rounded-xl bg-purple-700 px-4 py-3 font-black text-white hover:bg-purple-800 disabled:bg-purple-200 disabled:text-purple-900"
                     >
                       {selectedOrder.entregueCliente
-                        ? "Entregue ao cliente"
-                        : "Entregar ao cliente"}
+                        ? "Pedido pronto"
+                        : progress.complete
+                          ? "Pedido pronto"
+                          : "Marque todos os itens"}
                     </button>
                   </div>
                 </>
