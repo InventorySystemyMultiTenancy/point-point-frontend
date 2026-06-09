@@ -237,6 +237,7 @@ const PaymentPage: React.FC = () => {
   const buildOrderItems = () =>
     cartItems.map((i) => ({
       id: i.id,
+      productId: i.id,
       name: i.name,
       quantity: i.quantity,
       price: toMoneyNumber(i.price),
