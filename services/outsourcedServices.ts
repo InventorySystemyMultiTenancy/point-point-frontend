@@ -25,9 +25,32 @@ export interface OutsourcedCompany {
 
 export interface OutsourcedDelivery {
   id: string;
-  quantity: number;
+  quantity?: number;
+  items?: OutsourcedProductQuantity[];
   delivered_at: string;
   observation?: string | null;
+}
+
+export interface OutsourcedProduct {
+  id: string;
+  name: string;
+  category?: string | null;
+  stock?: number | null;
+  imageUrl?: string | null;
+  image_url?: string | null;
+  images?: string[] | null;
+}
+
+export interface OutsourcedProductQuantity {
+  productId: string;
+  product_id?: string;
+  quantity: number;
+  productName?: string;
+  name?: string;
+  category?: string | null;
+  stock?: number | null;
+  imageUrl?: string | null;
+  image_url?: string | null;
 }
 
 export interface OutsourcedService {
@@ -39,10 +62,12 @@ export interface OutsourcedService {
   status: "pendente" | "concluido" | string;
   input_quantity: number;
   input_unit: string;
+  input_items?: OutsourcedProductQuantity[];
   fabric_paid_amount?: number | null;
   service_cost_amount?: number | null;
-  expected_return_quantity: number;
-  expected_return_unit: string;
+  expected_return_quantity?: number;
+  expected_return_unit?: string;
+  expected_return_items?: OutsourcedProductQuantity[];
   total_delivered_quantity: number;
   remaining_quantity: number;
   due_date: string;
@@ -87,14 +112,15 @@ export interface OutsourcedServicePayload {
   input_quantity: number;
   fabric_paid_amount?: number;
   service_cost_amount?: number;
-  expected_return_quantity: number;
+  input_items?: OutsourcedProductQuantity[];
+  expected_return_items: OutsourcedProductQuantity[];
   due_date: string;
   started_at?: string;
   notes?: string;
 }
 
 export interface OutsourcedDeliveryPayload {
-  quantity: number;
+  items: OutsourcedProductQuantity[];
   delivered_at: string;
   observation?: string;
 }
@@ -148,6 +174,14 @@ export async function getOutsourcedServiceTypes() {
   );
   const data = await readJson<unknown>(response);
   return unwrapArray<OutsourcedServiceType>(data, ["types", "data"]);
+}
+
+export async function getOutsourcedProducts() {
+  const response = await outsourcedFetch(
+    `${API_URL}/admin/outsourced-services/products`,
+  );
+  const data = await readJson<unknown>(response);
+  return unwrapArray<OutsourcedProduct>(data, ["products", "data"]);
 }
 
 export async function getOutsourcedCompanies() {
@@ -260,7 +294,10 @@ export async function addOutsourcedServiceDelivery(
       body: JSON.stringify(payload),
     },
   );
-  return readJson<unknown>(response);
+  return unwrapObject<OutsourcedService>(
+    await readJson<unknown>(response),
+    ["service", "data"],
+  );
 }
 
 export async function finalizeOutsourcedService(id: string) {

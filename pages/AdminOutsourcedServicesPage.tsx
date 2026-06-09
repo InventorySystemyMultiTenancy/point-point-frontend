@@ -5,12 +5,15 @@ import {
   createOutsourcedService,
   finalizeOutsourcedService,
   getOutsourcedCompanies,
+  getOutsourcedProducts,
   getOutsourcedService,
   getOutsourcedServices,
   getOutsourcedServiceTypes,
   type OutsourcedCompany,
   type OutsourcedCompanyPayload,
   type OutsourcedDeliveryPayload,
+  type OutsourcedProduct,
+  type OutsourcedProductQuantity,
   type OutsourcedService,
   type OutsourcedServicePayload,
   type OutsourcedServiceType,
@@ -23,24 +26,40 @@ const SERVICE_FALLBACKS: Required<OutsourcedServiceType>[] = [
     key: "fabric_cutting",
     value: "fabric_cutting",
     label: "Retirada de tecido para corte",
-    input_unit: "tecido",
-    expected_return_unit: "pecas_cortadas",
+    input_unit: "metros",
+    expected_return_unit: "unidades",
   },
   {
-    id: "embroidery_sewing",
-    key: "embroidery_sewing",
-    value: "embroidery_sewing",
-    label: "Bordagem e costura",
-    input_unit: "tecido",
-    expected_return_unit: "peles_costuradas",
+    id: "embroidery",
+    key: "embroidery",
+    value: "embroidery",
+    label: "Bordagem",
+    input_unit: "unidades",
+    expected_return_unit: "unidades",
   },
   {
-    id: "stuffing_closing",
-    key: "stuffing_closing",
-    value: "stuffing_closing",
-    label: "Enchimento e fechamento",
-    input_unit: "peles",
-    expected_return_unit: "pelucias_prontas",
+    id: "sewing",
+    key: "sewing",
+    value: "sewing",
+    label: "Costura",
+    input_unit: "unidades",
+    expected_return_unit: "unidades",
+  },
+  {
+    id: "stuffing",
+    key: "stuffing",
+    value: "stuffing",
+    label: "Enchimento",
+    input_unit: "unidades",
+    expected_return_unit: "unidades",
+  },
+  {
+    id: "closing",
+    key: "closing",
+    value: "closing",
+    label: "Fechamento",
+    input_unit: "unidades",
+    expected_return_unit: "unidades",
   },
 ];
 
@@ -61,14 +80,14 @@ const emptyService = {
   input_quantity: "",
   fabric_paid_amount: "",
   service_cost_amount: "",
-  expected_return_quantity: "",
+  expected_return_items: [{ productId: "", quantity: "" }],
   due_date: "",
   started_at: "",
   notes: "",
 };
 
 const emptyDelivery = {
-  quantity: "",
+  items: [{ productId: "", quantity: "" }],
   delivered_at: "",
   observation: "",
 };
@@ -106,6 +125,22 @@ const money = (value?: number | null) =>
 const serviceTypeValue = (type: OutsourcedServiceType) =>
   type.value || type.key || type.id || "";
 
+const allowedServiceTypes = new Set(SERVICE_FALLBACKS.map(serviceTypeValue));
+
+const normalizeServiceTypes = (items: Array<OutsourcedServiceType | string>) => {
+  const normalized = items
+    .map((item) => {
+      if (typeof item === "string") {
+        return SERVICE_FALLBACKS.find((type) => serviceTypeValue(type) === item);
+      }
+      return item;
+    })
+    .filter((item): item is OutsourcedServiceType => Boolean(item))
+    .filter((item) => allowedServiceTypes.has(serviceTypeValue(item)));
+
+  return normalized.length > 0 ? normalized : SERVICE_FALLBACKS;
+};
+
 const getTypeLabel = (
   value: string,
   types: OutsourcedServiceType[],
@@ -123,8 +158,54 @@ const statusClasses = (service: OutsourcedService) => {
   return "outsourced-status-pill is-pending";
 };
 
+const getInputUnit = (serviceType: string) =>
+  serviceType === "fabric_cutting" ? "metros" : "unidades";
+
+const totalItemsQuantity = (items?: Array<{ quantity?: number | string }>) =>
+  (items || []).reduce((total, item) => total + (Number(item.quantity) || 0), 0);
+
+const productImage = (
+  product?: OutsourcedProduct | OutsourcedProductQuantity,
+) => {
+  if (!product) return "";
+  return (
+    product.imageUrl ||
+    product.image_url ||
+    (Array.isArray(product.images) ? product.images[0] : "") ||
+    ""
+  );
+};
+
+const productName = (
+  productId: string,
+  products: OutsourcedProduct[],
+  item?: OutsourcedProductQuantity,
+) =>
+  item?.productName ||
+  item?.name ||
+  products.find((product) => product.id === productId)?.name ||
+  productId;
+
+const itemProductId = (item: OutsourcedProductQuantity) =>
+  item.productId || item.product_id || "";
+
+const formatProductItems = (
+  items: OutsourcedProductQuantity[] | undefined,
+  products: OutsourcedProduct[],
+) => {
+  if (!items?.length) return "-";
+  return items
+    .map((item) => {
+      const productId = itemProductId(item);
+      return `${productName(productId, products, item)}: ${item.quantity}`;
+    })
+    .join(", ");
+};
+
 const ProgressBar: React.FC<{ service: OutsourcedService }> = ({ service }) => {
-  const expected = Number(service.expected_return_quantity) || 0;
+  const expected =
+    Number(service.expected_return_quantity) ||
+    totalItemsQuantity(service.expected_return_items);
   const delivered = Number(service.total_delivered_quantity) || 0;
   const percent = expected > 0 ? Math.min((delivered / expected) * 100, 100) : 0;
 
@@ -166,6 +247,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
   const [companies, setCompanies] = useState<OutsourcedCompany[]>([]);
   const [services, setServices] = useState<OutsourcedService[]>([]);
   const [types, setTypes] = useState<OutsourcedServiceType[]>(SERVICE_FALLBACKS);
+  const [products, setProducts] = useState<OutsourcedProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -189,12 +271,14 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     setError("");
     setLoading(true);
     try {
-      const [companyList, typeList] = await Promise.all([
+      const [companyList, typeList, productList] = await Promise.all([
         getOutsourcedCompanies(),
         getOutsourcedServiceTypes().catch(() => SERVICE_FALLBACKS),
+        getOutsourcedProducts().catch(() => []),
       ]);
       setCompanies(companyList);
-      setTypes(typeList.length > 0 ? typeList : SERVICE_FALLBACKS);
+      setTypes(normalizeServiceTypes(typeList));
+      setProducts(productList);
       await loadServices(statusFilter);
     } catch (err) {
       console.error("Erro ao carregar servicos terceirizados:", err);
@@ -256,6 +340,11 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     setCompanyModal(true);
   };
 
+  const openNewService = () => {
+    setServiceForm({ ...emptyService, expected_return_items: [{ productId: "", quantity: "" }] });
+    setServiceModal(true);
+  };
+
   const openEditCompany = (company: OutsourcedCompany) => {
     setEditingCompany(company);
     setCompanyForm({
@@ -291,13 +380,89 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     }
   };
 
+  const updateServiceReturnItem = (
+    index: number,
+    field: "productId" | "quantity",
+    value: string,
+  ) => {
+    setServiceForm((prev) => ({
+      ...prev,
+      expected_return_items: prev.expected_return_items.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item,
+      ),
+    }));
+  };
+
+  const addServiceReturnItem = () => {
+    setServiceForm((prev) => ({
+      ...prev,
+      expected_return_items: [
+        ...prev.expected_return_items,
+        { productId: "", quantity: "" },
+      ],
+    }));
+  };
+
+  const removeServiceReturnItem = (index: number) => {
+    setServiceForm((prev) => ({
+      ...prev,
+      expected_return_items:
+        prev.expected_return_items.length === 1
+          ? prev.expected_return_items
+          : prev.expected_return_items.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
+  const updateDeliveryItem = (
+    index: number,
+    field: "productId" | "quantity",
+    value: string,
+  ) => {
+    setDeliveryForm((prev) => ({
+      ...prev,
+      items: prev.items.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item,
+      ),
+    }));
+  };
+
+  const addDeliveryItem = () => {
+    setDeliveryForm((prev) => ({
+      ...prev,
+      items: [...prev.items, { productId: "", quantity: "" }],
+    }));
+  };
+
+  const removeDeliveryItem = (index: number) => {
+    setDeliveryForm((prev) => ({
+      ...prev,
+      items:
+        prev.items.length === 1
+          ? prev.items
+          : prev.items.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
+  const parseItemRows = (items: typeof serviceForm.expected_return_items) =>
+    items
+      .map((item) => ({
+        productId: item.productId,
+        quantity: Number(item.quantity),
+      }))
+      .filter((item) => item.productId && item.quantity > 0);
+
   const saveService = async (event: React.FormEvent) => {
     event.preventDefault();
+    const expectedReturnItems = parseItemRows(serviceForm.expected_return_items);
+    if (expectedReturnItems.length === 0) {
+      alert("Informe pelo menos um produto no retorno previsto.");
+      return;
+    }
     const payload: OutsourcedServicePayload = {
       company_id: serviceForm.company_id,
       service_type: serviceForm.service_type,
       input_quantity: Number(serviceForm.input_quantity),
-      expected_return_quantity: Number(serviceForm.expected_return_quantity),
+      expected_return_items: expectedReturnItems,
       due_date: new Date(serviceForm.due_date).toISOString(),
       started_at: toIsoOrUndefined(serviceForm.started_at),
       notes: serviceForm.notes.trim() || undefined,
@@ -349,19 +514,36 @@ const AdminOutsourcedServicesPage: React.FC = () => {
   const saveDelivery = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selectedService) return;
+    const deliveryItems = parseItemRows(deliveryForm.items);
+    if (deliveryItems.length === 0) {
+      alert("Informe pelo menos um produto entregue.");
+      return;
+    }
     const payload: OutsourcedDeliveryPayload = {
-      quantity: Number(deliveryForm.quantity),
+      items: deliveryItems,
       delivered_at: new Date(deliveryForm.delivered_at).toISOString(),
       observation: deliveryForm.observation.trim() || undefined,
     };
     setSaving(true);
     try {
-      await addOutsourcedServiceDelivery(selectedService.id, payload);
+      const updatedService = await addOutsourcedServiceDelivery(
+        selectedService.id,
+        payload,
+      );
       setDeliveryForm({
         ...emptyDelivery,
         delivered_at: toDateTimeLocal(new Date().toISOString()),
       });
-      await refreshSelectedService(selectedService.id);
+      if (updatedService?.id) {
+        setSelectedService(updatedService);
+        setServices((prev) =>
+          prev.map((service) =>
+            service.id === updatedService.id ? updatedService : service,
+          ),
+        );
+      } else {
+        await refreshSelectedService(selectedService.id);
+      }
     } catch (err) {
       console.error("Erro ao lancar entrega:", err);
       alert("Erro ao lancar entrega.");
@@ -386,6 +568,9 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     }
   };
 
+  const serviceInputUnit = getInputUnit(serviceForm.service_type);
+  const expectedReturnTotal = totalItemsQuantity(serviceForm.expected_return_items);
+
   return (
     <div className="container mx-auto p-2 sm:p-4 md:p-6">
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -399,7 +584,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
         </div>
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => setServiceModal(true)}
+            onClick={openNewService}
             className="rounded-lg bg-purple-700 px-5 py-2 font-bold text-white shadow hover:bg-purple-800"
           >
             Novo servico
@@ -577,11 +762,18 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                       </td>
                       <td className="px-4 py-3">{formatDate(service.due_date)}</td>
                       <td className="px-4 py-3">
-                        {service.input_quantity} {service.input_unit}
+                        {service.input_quantity}{" "}
+                        {service.input_unit || getInputUnit(service.service_type)}
                       </td>
-                      <td className="px-4 py-3">
-                        {service.expected_return_quantity}{" "}
-                        {service.expected_return_unit}
+                      <td className="max-w-[260px] px-4 py-3">
+                        <span className="block font-bold">
+                          {Number(service.expected_return_quantity) ||
+                            totalItemsQuantity(service.expected_return_items)}{" "}
+                          unidades
+                        </span>
+                        <span className="block truncate text-xs text-stone-500">
+                          {formatProductItems(service.expected_return_items, products)}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         {service.total_delivered_quantity}
@@ -815,7 +1007,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                 </select>
               </label>
               <FormInput
-                label="Quantidade retirada"
+                label={`Quantidade retirada (${serviceInputUnit})`}
                 type="number"
                 min="0.01"
                 step="0.01"
@@ -854,20 +1046,37 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   }))
                 }
               />
-              <FormInput
-                label="Quantidade prevista de retorno"
-                type="number"
-                min="0.01"
-                step="0.01"
-                required
-                value={serviceForm.expected_return_quantity}
-                onChange={(value) =>
-                  setServiceForm((prev) => ({
-                    ...prev,
-                    expected_return_quantity: value,
-                  }))
-                }
-              />
+              <div className="space-y-3 rounded-lg border border-stone-200 p-4 sm:col-span-2">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold uppercase text-stone-700">
+                      Retorno previsto
+                    </h3>
+                    <p className="text-xs text-stone-500">
+                      Total calculado: {expectedReturnTotal} unidades
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addServiceReturnItem}
+                    className="rounded-lg bg-purple-100 px-3 py-2 text-sm font-bold text-purple-800 hover:bg-purple-200"
+                  >
+                    Adicionar produto
+                  </button>
+                </div>
+                {serviceForm.expected_return_items.map((item, index) => (
+                  <ProductQuantityRow
+                    key={`expected-${index}`}
+                    item={item}
+                    products={products}
+                    onChange={(field, value) =>
+                      updateServiceReturnItem(index, field, value)
+                    }
+                    onRemove={() => removeServiceReturnItem(index)}
+                    canRemove={serviceForm.expected_return_items.length > 1}
+                  />
+                ))}
+              </div>
               <FormInput
                 label="Prazo"
                 type="datetime-local"
@@ -967,8 +1176,10 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                 </div>
 
                 <div className="mb-6 grid gap-4 rounded-lg border border-stone-200 p-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <Info label="Retirada" value={`${selectedService.input_quantity} ${selectedService.input_unit}`} />
-                  <Info label="Retorno previsto" value={`${selectedService.expected_return_quantity} ${selectedService.expected_return_unit}`} />
+                  <Info label="Retirada" value={`${selectedService.input_quantity} ${selectedService.input_unit || getInputUnit(selectedService.service_type)}`} />
+                  <Info label="Itens retirados" value={formatProductItems(selectedService.input_items, products)} />
+                  <Info label="Retorno previsto" value={`${Number(selectedService.expected_return_quantity) || totalItemsQuantity(selectedService.expected_return_items)} unidades`} />
+                  <Info label="Itens previstos" value={formatProductItems(selectedService.expected_return_items, products)} />
                   <Info label="Ja entregue" value={String(selectedService.total_delivered_quantity)} />
                   <Info label="Faltante" value={String(selectedService.remaining_quantity)} />
                   <Info label="Valor tecido" value={money(selectedService.fabric_paid_amount)} />
@@ -986,7 +1197,8 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                       <thead className="bg-stone-50">
                         <tr>
                           <th className="px-4 py-3 text-left">Data</th>
-                          <th className="px-4 py-3 text-left">Quantidade</th>
+                          <th className="px-4 py-3 text-left">Produtos</th>
+                          <th className="px-4 py-3 text-left">Total</th>
                           <th className="px-4 py-3 text-left">Observacao</th>
                         </tr>
                       </thead>
@@ -994,7 +1206,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                         {(selectedService.deliveries || []).length === 0 ? (
                           <tr>
                             <td
-                              colSpan={3}
+                              colSpan={4}
                               className="px-4 py-5 text-center text-stone-500"
                             >
                               Nenhuma entrega lancada.
@@ -1006,8 +1218,12 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                               <td className="px-4 py-3">
                                 {formatDate(delivery.delivered_at)}
                               </td>
+                              <td className="px-4 py-3">
+                                {formatProductItems(delivery.items, products)}
+                              </td>
                               <td className="px-4 py-3 font-bold">
-                                {delivery.quantity}
+                                {delivery.quantity ||
+                                  totalItemsQuantity(delivery.items)}
                               </td>
                               <td className="px-4 py-3">
                                 {delivery.observation || "-"}
@@ -1024,20 +1240,37 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   onSubmit={saveDelivery}
                   className="grid gap-4 rounded-lg bg-purple-50 p-4 sm:grid-cols-3"
                 >
-                  <FormInput
-                    label="Quantidade"
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    required
-                    value={deliveryForm.quantity}
-                    onChange={(value) =>
-                      setDeliveryForm((prev) => ({
-                        ...prev,
-                        quantity: value,
-                      }))
-                    }
-                  />
+                  <div className="space-y-3 sm:col-span-3">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h3 className="text-sm font-bold uppercase text-purple-900">
+                          Produtos retornados
+                        </h3>
+                        <p className="text-xs text-purple-800">
+                          Total: {totalItemsQuantity(deliveryForm.items)} unidades
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addDeliveryItem}
+                        className="rounded-lg bg-white px-3 py-2 text-sm font-bold text-purple-800 hover:bg-purple-100"
+                      >
+                        Adicionar produto
+                      </button>
+                    </div>
+                    {deliveryForm.items.map((item, index) => (
+                      <ProductQuantityRow
+                        key={`delivery-${index}`}
+                        item={item}
+                        products={products}
+                        onChange={(field, value) =>
+                          updateDeliveryItem(index, field, value)
+                        }
+                        onRemove={() => removeDeliveryItem(index)}
+                        canRemove={deliveryForm.items.length > 1}
+                      />
+                    ))}
+                  </div>
                   <FormInput
                     label="Data da entrega"
                     type="datetime-local"
@@ -1113,6 +1346,82 @@ const FormInput: React.FC<{
     />
   </label>
 );
+
+const ProductQuantityRow: React.FC<{
+  item: { productId: string; quantity: string };
+  products: OutsourcedProduct[];
+  onChange: (field: "productId" | "quantity", value: string) => void;
+  onRemove: () => void;
+  canRemove: boolean;
+}> = ({ item, products, onChange, onRemove, canRemove }) => {
+  const selectedProduct = products.find((product) => product.id === item.productId);
+  const image = productImage(selectedProduct);
+
+  return (
+    <div className="grid gap-3 rounded-lg bg-white p-3 shadow-sm sm:grid-cols-[1fr_140px_auto] sm:items-end">
+      <label>
+        <span className="mb-1 block text-sm font-semibold text-stone-600">
+          Produto
+        </span>
+        <select
+          required
+          value={item.productId}
+          onChange={(event) => onChange("productId", event.target.value)}
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 focus:border-purple-600 focus:outline-none"
+        >
+          <option value="">Selecione</option>
+          {products.map((product) => (
+            <option key={product.id} value={product.id}>
+              {product.name} - {product.category || "Sem categoria"} - estoque{" "}
+              {product.stock ?? 0}
+            </option>
+          ))}
+        </select>
+        {selectedProduct && (
+          <div className="mt-2 flex items-center gap-3 rounded-lg bg-stone-50 p-2">
+            {image ? (
+              <img
+                src={image}
+                alt={selectedProduct.name}
+                className="h-12 w-12 rounded object-cover"
+              />
+            ) : (
+              <div className="flex h-12 w-12 items-center justify-center rounded bg-stone-200 text-xs font-bold text-stone-500">
+                Sem imagem
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold text-stone-800">
+                {selectedProduct.name}
+              </p>
+              <p className="text-xs text-stone-500">
+                {selectedProduct.category || "Sem categoria"} - estoque atual:{" "}
+                {selectedProduct.stock ?? 0}
+              </p>
+            </div>
+          </div>
+        )}
+      </label>
+      <FormInput
+        label="Quantidade"
+        type="number"
+        min="0.01"
+        step="0.01"
+        required
+        value={item.quantity}
+        onChange={(value) => onChange("quantity", value)}
+      />
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={!canRemove}
+        className="rounded-lg bg-stone-200 px-3 py-2 font-bold text-stone-700 hover:bg-stone-300 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Remover
+      </button>
+    </div>
+  );
+};
 
 const ModalActions: React.FC<{ saving: boolean; onCancel: () => void }> = ({
   saving,
