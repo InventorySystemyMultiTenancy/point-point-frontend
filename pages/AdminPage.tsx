@@ -598,12 +598,15 @@ const AdminPage: React.FC = () => {
         const product = menu.find((p) => p.id === move.productId);
         if (!product) continue;
 
-        await authenticatedFetch(`${API_URL}/api/products/${move.productId}`, {
+        const response = await authenticatedFetch(`${API_URL}/api/products/${move.productId}`, {
           method: "PUT",
           body: JSON.stringify({
             stock: (product.stock || 0) + move.quantity,
           }),
         });
+        if (!response.ok) {
+          throw new Error(`Erro ao atualizar estoque de ${product.name}`);
+        }
         addStockMovement({
           id: `${move.productId}-${Date.now()}-${Math.random()}`,
           productId: move.productId,
@@ -613,6 +616,7 @@ const AdminPage: React.FC = () => {
         });
       }
       await loadProducts();
+      await loadBackorderedProducts();
       await loadStockMovements();
       setIsStockModalOpen(false);
     } catch (err) {
