@@ -17,6 +17,9 @@ export interface Product {
   name: string;
   price: number;
   priceRaw: number; // Preço bruto
+  basePrice?: number;
+  customPrice?: number | null;
+  hasCustomPrice?: boolean;
   category: "Pastel" | "Bebida" | "Doce";
   imageUrl?: string;
   images?: string[];

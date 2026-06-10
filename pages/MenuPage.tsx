@@ -604,7 +604,7 @@ const MenuPage: React.FC = () => {
 
   const fetchMenuData = async () => {
     try {
-      const data = await getProducts();
+      const data = await getProducts(currentUser?.id);
       // ✅ Valida se é array antes de setar
       if (Array.isArray(data)) {
         setMenu(filterPrivateCatalog(data, currentUser?.fullAccess));
@@ -645,7 +645,7 @@ const MenuPage: React.FC = () => {
   useEffect(() => {
     fetchMenuData();
     fetchCategories(); // 🆕 Carrega categorias
-  }, [currentUser?.fullAccess]);
+  }, [currentUser?.id, currentUser?.fullAccess]);
 
   useEffect(() => {
     refreshCartItemProducts(menu);

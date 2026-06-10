@@ -134,8 +134,11 @@ import type { Product } from "../types";
 import type { User } from "../types";
 import {
   authenticatedFetch,
+  deleteUserProductPrice,
   getBackorderedProducts,
+  getUserProductPrices,
   getUsers,
+  updateUserProductPrices,
   updateUserFullAccess,
   updateUserMonthlyPayment,
 } from "../services/apiService";
@@ -160,6 +163,17 @@ type BackorderedProduct = {
 type BackorderedProductsData = {
   totalBackorderedUnits: number;
   products: BackorderedProduct[];
+};
+
+type UserProductPriceProduct = Product & {
+  basePrice?: number;
+  customPrice?: number | null;
+  hasCustomPrice?: boolean;
+};
+
+type UserProductPricesState = {
+  user?: User;
+  products: UserProductPriceProduct[];
 };
 
 // --- Componente de formulario de produto (Modal) ---
@@ -636,6 +650,27 @@ const AdminPage: React.FC = () => {
   const [updatingMonthlyPaymentId, setUpdatingMonthlyPaymentId] = useState<
     string | null
   >(null);
+  const [expandedPriceUserId, setExpandedPriceUserId] = useState<string | null>(
+    null,
+  );
+  const [productPricesByUser, setProductPricesByUser] = useState<
+    Record<string, UserProductPricesState>
+  >({});
+  const [priceInputsByUser, setPriceInputsByUser] = useState<
+    Record<string, Record<string, string>>
+  >({});
+  const [initialPriceInputsByUser, setInitialPriceInputsByUser] = useState<
+    Record<string, Record<string, string>>
+  >({});
+  const [loadingProductPricesUserId, setLoadingProductPricesUserId] = useState<
+    string | null
+  >(null);
+  const [savingProductPricesUserId, setSavingProductPricesUserId] = useState<
+    string | null
+  >(null);
+  const [removingProductPriceKey, setRemovingProductPriceKey] = useState<
+    string | null
+  >(null);
 
   // Carrega os dados iniciais do backend
 
@@ -730,6 +765,137 @@ const AdminPage: React.FC = () => {
       alert("Erro ao atualizar pagamento mensal do usuario.");
     } finally {
       setUpdatingMonthlyPaymentId(null);
+    }
+  };
+
+  const normalizePriceInput = (value: unknown) => {
+    if (value === null || value === undefined || value === "") return "";
+    const numberValue = Number(value);
+    return Number.isFinite(numberValue) ? String(numberValue) : "";
+  };
+
+  const applyProductPricesPayload = (
+    userId: string,
+    data: any,
+  ) => {
+    const products = Array.isArray(data.products) ? data.products : [];
+    const user = data.user;
+    const inputs = products.reduce(
+      (acc: Record<string, string>, product: UserProductPriceProduct) => {
+        acc[product.id] = normalizePriceInput(product.customPrice);
+        return acc;
+      },
+      {},
+    );
+
+    setProductPricesByUser((prev) => ({
+      ...prev,
+      [userId]: { user, products },
+    }));
+    setPriceInputsByUser((prev) => ({ ...prev, [userId]: inputs }));
+    setInitialPriceInputsByUser((prev) => ({ ...prev, [userId]: inputs }));
+
+    if (user) {
+      setUsers((prev) =>
+        prev.map((item) => (item.id === userId ? { ...item, ...user } : item)),
+      );
+    }
+  };
+
+  const loadUserProductPrices = async (user: User) => {
+    setLoadingProductPricesUserId(user.id);
+    try {
+      const data = await getUserProductPrices(user.id);
+      applyProductPricesPayload(user.id, data);
+    } catch (err) {
+      console.error("Erro ao carregar precos personalizados:", err);
+      alert("Erro ao carregar precos personalizados do usuario.");
+    } finally {
+      setLoadingProductPricesUserId(null);
+    }
+  };
+
+  const handleToggleProductPricesPanel = async (user: User) => {
+    const nextUserId = expandedPriceUserId === user.id ? null : user.id;
+    setExpandedPriceUserId(nextUserId);
+    if (nextUserId && !productPricesByUser[user.id]) {
+      await loadUserProductPrices(user);
+    }
+  };
+
+  const handleProductPriceInput = (
+    userId: string,
+    productId: string,
+    value: string,
+  ) => {
+    const normalizedValue = value.replace(",", ".");
+    setPriceInputsByUser((prev) => ({
+      ...prev,
+      [userId]: {
+        ...(prev[userId] || {}),
+        [productId]: normalizedValue,
+      },
+    }));
+  };
+
+  const parseCustomPriceInput = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      throw new Error("Informe apenas valores numericos maiores ou iguais a zero.");
+    }
+    return parsed;
+  };
+
+  const handleSaveUserProductPrices = async (user: User) => {
+    setSavingProductPricesUserId(user.id);
+    try {
+      const products = productPricesByUser[user.id]?.products || [];
+      const currentInputs = priceInputsByUser[user.id] || {};
+      const initialInputs = initialPriceInputsByUser[user.id] || {};
+
+      const prices = products
+        .filter(
+          (product) =>
+            (currentInputs[product.id] || "") !==
+            (initialInputs[product.id] || ""),
+        )
+        .map((product) => ({
+          productId: product.id,
+          price: parseCustomPriceInput(currentInputs[product.id] || ""),
+        }));
+
+      if (prices.length === 0) {
+        alert("Nenhum preco personalizado foi alterado.");
+        return;
+      }
+
+      const data = await updateUserProductPrices(user.id, prices);
+      applyProductPricesPayload(user.id, data);
+      alert("Precos personalizados salvos.");
+    } catch (err: any) {
+      console.error("Erro ao salvar precos personalizados:", err);
+      alert(err.message || "Erro ao salvar precos personalizados.");
+    } finally {
+      setSavingProductPricesUserId(null);
+    }
+  };
+
+  const handleRemoveUserProductPrice = async (
+    user: User,
+    product: UserProductPriceProduct,
+  ) => {
+    const key = `${user.id}:${product.id}`;
+    setRemovingProductPriceKey(key);
+    try {
+      const data = await deleteUserProductPrice(user.id, product.id);
+      applyProductPricesPayload(user.id, data);
+    } catch (err) {
+      console.error("Erro ao remover preco personalizado:", err);
+      alert("Erro ao remover preco personalizado.");
+    } finally {
+      setRemovingProductPriceKey(null);
     }
   };
 
@@ -1177,49 +1343,191 @@ const AdminPage: React.FC = () => {
             {searchedUsers.map((user) => (
               <div
                 key={user.id}
-                className="flex flex-col gap-3 rounded-lg border border-blue-500/20 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-4 rounded-lg border border-blue-500/20 bg-white p-4"
               >
-                <div className="min-w-0">
-                  <div className="font-black text-white">{user.name}</div>
-                  <div className="truncate text-xs font-semibold text-blue-100">
-                    {user.email || user.cpf || user.id}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="font-black text-white">{user.name}</div>
+                    <div className="truncate text-xs font-semibold text-blue-100">
+                      {user.email || user.cpf || user.id}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleProductPricesPanel(user)}
+                      disabled={loadingProductPricesUserId === user.id}
+                      className="rounded-full bg-purple-700 px-4 py-2 text-xs font-black text-white transition hover:bg-purple-800 disabled:opacity-60"
+                    >
+                      {loadingProductPricesUserId === user.id
+                        ? "Carregando..."
+                        : expandedPriceUserId === user.id
+                          ? "Ocultar precos"
+                          : "Precos personalizados"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleMonthlyPayment(user)}
+                      disabled={updatingMonthlyPaymentId === user.id}
+                      aria-pressed={Boolean(user.monthlyPayment)}
+                      className={`rounded-full px-4 py-2 text-xs font-black transition disabled:opacity-60 ${
+                        user.monthlyPayment
+                          ? "bg-blue-600 text-white hover:bg-blue-700"
+                          : "bg-stone-700 text-white hover:bg-stone-800"
+                      }`}
+                    >
+                      {updatingMonthlyPaymentId === user.id
+                        ? "Salvando..."
+                        : user.monthlyPayment
+                          ? "Pagamento mensal"
+                          : "Sem pagamento mensal"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleFullAccess(user)}
+                      disabled={updatingFullAccessId === user.id}
+                      className={`rounded-full px-4 py-2 text-xs font-black transition disabled:opacity-60 ${
+                        user.fullAccess
+                          ? "bg-green-600 text-white hover:bg-green-700"
+                          : "bg-stone-700 text-white hover:bg-stone-800"
+                      }`}
+                    >
+                      {updatingFullAccessId === user.id
+                        ? "Salvando..."
+                        : user.fullAccess
+                          ? "Acesso completo"
+                          : "Sem acesso completo"}
+                    </button>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2 sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={() => handleToggleMonthlyPayment(user)}
-                    disabled={updatingMonthlyPaymentId === user.id}
-                    aria-pressed={Boolean(user.monthlyPayment)}
-                    className={`rounded-full px-4 py-2 text-xs font-black transition disabled:opacity-60 ${
-                      user.monthlyPayment
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                        : "bg-stone-700 text-white hover:bg-stone-800"
-                    }`}
-                  >
-                    {updatingMonthlyPaymentId === user.id
-                      ? "Salvando..."
-                      : user.monthlyPayment
-                        ? "Pagamento mensal"
-                        : "Sem pagamento mensal"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleToggleFullAccess(user)}
-                    disabled={updatingFullAccessId === user.id}
-                    className={`rounded-full px-4 py-2 text-xs font-black transition disabled:opacity-60 ${
-                      user.fullAccess
-                        ? "bg-green-600 text-white hover:bg-green-700"
-                        : "bg-stone-700 text-white hover:bg-stone-800"
-                    }`}
-                  >
-                    {updatingFullAccessId === user.id
-                      ? "Salvando..."
-                      : user.fullAccess
-                        ? "Acesso completo"
-                        : "Sem acesso completo"}
-                  </button>
-                </div>
+                {expandedPriceUserId === user.id && (
+                  <div className="rounded-lg border border-stone-200 bg-stone-50 p-3">
+                    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <h3 className="text-sm font-black text-stone-800">
+                        Precos personalizados
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveUserProductPrices(user)}
+                        disabled={savingProductPricesUserId === user.id}
+                        className="rounded-lg bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800 disabled:opacity-60"
+                      >
+                        {savingProductPricesUserId === user.id
+                          ? "Salvando..."
+                          : "Salvar alteracoes"}
+                      </button>
+                    </div>
+                    {loadingProductPricesUserId === user.id ? (
+                      <p className="rounded-lg bg-white p-3 text-sm font-semibold text-stone-600">
+                        Carregando produtos...
+                      </p>
+                    ) : (productPricesByUser[user.id]?.products || []).length === 0 ? (
+                      <p className="rounded-lg bg-white p-3 text-sm font-semibold text-stone-600">
+                        Nenhum produto encontrado.
+                      </p>
+                    ) : (
+                      <div className="max-h-96 overflow-auto rounded-lg border border-stone-200 bg-white">
+                        <table className="min-w-full divide-y divide-stone-200 text-sm">
+                          <thead className="bg-stone-100">
+                            <tr>
+                              <th className="px-3 py-2 text-left font-black text-stone-700">
+                                Produto
+                              </th>
+                              <th className="px-3 py-2 text-left font-black text-stone-700">
+                                Categoria
+                              </th>
+                              <th className="px-3 py-2 text-left font-black text-stone-700">
+                                Padrao
+                              </th>
+                              <th className="px-3 py-2 text-left font-black text-stone-700">
+                                Personalizado
+                              </th>
+                              <th className="px-3 py-2 text-left font-black text-stone-700">
+                                Status
+                              </th>
+                              <th className="px-3 py-2 text-right font-black text-stone-700">
+                                Acoes
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-stone-100">
+                            {(productPricesByUser[user.id]?.products || []).map(
+                              (product) => {
+                                const removingKey = `${user.id}:${product.id}`;
+                                return (
+                                  <tr key={product.id}>
+                                    <td className="px-3 py-2 font-semibold text-stone-800">
+                                      {product.name}
+                                    </td>
+                                    <td className="px-3 py-2 text-stone-600">
+                                      {product.category || "-"}
+                                    </td>
+                                    <td className="px-3 py-2 text-stone-700">
+                                      R${" "}
+                                      {Number(
+                                        product.basePrice ?? product.price ?? 0,
+                                      ).toFixed(2)}
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <input
+                                        value={
+                                          priceInputsByUser[user.id]?.[
+                                            product.id
+                                          ] ?? ""
+                                        }
+                                        onChange={(event) =>
+                                          handleProductPriceInput(
+                                            user.id,
+                                            product.id,
+                                            event.target.value,
+                                          )
+                                        }
+                                        inputMode="decimal"
+                                        placeholder="Padrao"
+                                        className="w-28 rounded-lg border border-stone-300 px-2 py-1 text-stone-900 focus:border-blue-600 focus:outline-none"
+                                      />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      {product.hasCustomPrice ? (
+                                        <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-black text-blue-800">
+                                          Personalizado
+                                        </span>
+                                      ) : (
+                                        <span className="rounded-full bg-stone-100 px-2 py-1 text-xs font-black text-stone-600">
+                                          Padrao
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="px-3 py-2 text-right">
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleRemoveUserProductPrice(
+                                            user,
+                                            product,
+                                          )
+                                        }
+                                        disabled={
+                                          removingProductPriceKey === removingKey ||
+                                          !product.hasCustomPrice
+                                        }
+                                        className="rounded-lg bg-stone-700 px-3 py-1 text-xs font-black text-white hover:bg-stone-800 disabled:bg-stone-300 disabled:text-stone-500"
+                                      >
+                                        {removingProductPriceKey === removingKey
+                                          ? "Removendo..."
+                                          : "Remover"}
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              },
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
             </div>

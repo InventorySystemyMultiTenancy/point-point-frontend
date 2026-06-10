@@ -330,9 +330,14 @@ export async function catalogFetch(
  */
 
 // Produtos (Admin)
-export async function getProducts() {
+export async function getProducts(userId?: string) {
   try {
-    const response = await catalogFetch(`${API_URL}/products`);
+    const url = userId
+      ? `${API_URL}/products?userId=${encodeURIComponent(userId)}`
+      : `${API_URL}/products`;
+    const response = await catalogFetch(url, {
+      headers: userId ? { "x-user-id": userId } : undefined,
+    });
 
     // âœ… Verifica se a resposta foi bem-sucedida
     if (!response.ok) {
@@ -423,6 +428,50 @@ export async function getUsers() {
 
 export async function getUserById(userId: string) {
   const response = await catalogFetch(`${API_URL}/users/${userId}`);
+  return response.json();
+}
+
+export async function getUserProductPrices(userId: string) {
+  const response = await authenticatedFetch(
+    `${API_URL}/users/${userId}/product-prices`,
+  );
+  return response.json();
+}
+
+export async function updateUserProductPrices(
+  userId: string,
+  prices: Array<{ productId: string; price: number | null }>,
+) {
+  const response = await authenticatedFetch(
+    `${API_URL}/users/${userId}/product-prices`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ prices }),
+    },
+  );
+  return response.json();
+}
+
+export async function updateUserProductPrice(
+  userId: string,
+  productId: string,
+  price: number | null,
+) {
+  const response = await authenticatedFetch(
+    `${API_URL}/users/${userId}/product-prices/${productId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ price }),
+    },
+  );
+  return response.json();
+}
+
+export async function deleteUserProductPrice(userId: string, productId: string) {
+  const response = await authenticatedFetch(
+    `${API_URL}/users/${userId}/product-prices/${productId}`,
+    { method: "DELETE" },
+  );
   return response.json();
 }
 
