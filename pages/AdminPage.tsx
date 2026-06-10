@@ -917,16 +917,38 @@ const AdminPage: React.FC = () => {
         throw new Error(`Erro ao carregar produtos: ${res.status}`);
       }
       const data = await res.json();
-      setMenu(data);
+      const products = Array.isArray(data)
+        ? data
+        : Array.isArray(data.products)
+          ? data.products
+          : Array.isArray(data.data)
+            ? data.data
+            : [];
+      const adminProducts = products.map((product: Product) => {
+        const basePrice =
+          product.basePrice !== undefined && product.basePrice !== null
+            ? Number(product.basePrice)
+            : Number(product.price);
+
+        return {
+          ...product,
+          price: Number.isFinite(basePrice)
+            ? basePrice
+            : Number(product.price) || 0,
+          customPrice: null,
+          hasCustomPrice: false,
+        };
+      });
+      setMenu(adminProducts);
 
       // Calcula estatisticas
       setStats({
-        totalProducts: data.length,
+        totalProducts: adminProducts.length,
         totalOrders: 0, // Sera atualizado pela analise de IA
-        lowStock: data.filter(
+        lowStock: adminProducts.filter(
           (p: Product) => p.stock !== null && p.stock > 0 && p.stock <= 5,
         ).length,
-        outOfStock: data.filter((p: Product) => p.stock === 0).length,
+        outOfStock: adminProducts.filter((p: Product) => p.stock === 0).length,
       });
     } catch (err) {
       console.error("Erro ao carregar catalogo:", err);
@@ -1646,7 +1668,10 @@ const AdminPage: React.FC = () => {
                 </td>
                 <td className="px-2 sm:px-4 py-2 whitespace-nowrap">
                   <div className="text-xs sm:text-sm text-stone-900">
-                    R${Number(product.price)?.toFixed(2) ?? "-"}
+                    R$
+                    {Number(
+                      product.basePrice ?? product.price,
+                    )?.toFixed(2) ?? "-"}
                   </div>
                   <div className="text-[10px] sm:text-xs text-stone-500">
                     Bruto: R${Number(product.priceRaw)?.toFixed(2) ?? "-"}
