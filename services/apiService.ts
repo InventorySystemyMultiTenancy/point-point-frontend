@@ -313,7 +313,7 @@ export async function catalogFetch(
   } else {
     try {
       const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
-      if (currentUser?.id) {
+      if (currentUser?.id && !requestUrl.includes("userId=")) {
         const separator = requestUrl.includes("?") ? "&" : "?";
         requestUrl = `${requestUrl}${separator}userId=${encodeURIComponent(currentUser.id)}`;
       }
@@ -335,9 +335,7 @@ export async function getProducts(userId?: string) {
     const url = userId
       ? `${API_URL}/products?userId=${encodeURIComponent(userId)}`
       : `${API_URL}/products`;
-    const response = await catalogFetch(url, {
-      headers: userId ? { "x-user-id": userId } : undefined,
-    });
+    const response = await catalogFetch(url);
 
     // âœ… Verifica se a resposta foi bem-sucedida
     if (!response.ok) {
