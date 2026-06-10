@@ -37,6 +37,25 @@ export interface Product {
   active?: boolean; // Produto ativo ou inativo
 }
 
+export type DeliveryMethodValue =
+  | "carrier"
+  | "pickup"
+  | "in_person"
+  | "contact";
+
+export interface DeliveryMethod {
+  value: DeliveryMethodValue;
+  label: string;
+  requiresCarrier: boolean;
+}
+
+export interface ShippingCarrier {
+  id: string;
+  name: string;
+  trackingUrl?: string;
+  active?: boolean;
+}
+
 export interface OrderItem {
   productId: string;
   name: string;
@@ -72,6 +91,13 @@ export interface Order {
   monthlyBillingMonth?: string;
   monthlyClosedAt?: string;
   monthlyClosedBy?: string;
+  deliveryMethod?: DeliveryMethodValue;
+  deliveryMethodLabel?: string;
+  deliveryRequiresCarrier?: boolean;
+  carrierId?: string | null;
+  shippingCarrier?: ShippingCarrier | null;
+  trackingUrl?: string | null;
+  trackingMessage?: string;
 }
 
 export type UserRole =

@@ -11,8 +11,8 @@ import {
   cancelPayment,
   clearPaymentQueue,
 } from "../services/paymentService";
-import { getUserById } from "../services/apiService";
-import type { Order } from "../types";
+import { getDeliveryMethods, getUserById } from "../services/apiService";
+import type { DeliveryMethod, DeliveryMethodValue, Order } from "../types";
 import PaymentOnline from "../components/PaymentOnline";
 import {
   BACKORDER_NOTICE,
@@ -27,6 +27,13 @@ import {
 } from "../utils/privateCatalog";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
+const DEFAULT_DELIVERY_METHODS: DeliveryMethod[] = [
+  { value: "carrier", label: "Transportadora", requiresCarrier: true },
+  { value: "pickup", label: "Retirada no local", requiresCarrier: false },
+  { value: "in_person", label: "Presencial", requiresCarrier: false },
+  { value: "contact", label: "Entrar em contato", requiresCarrier: false },
+];
 
 // Helper para requisiÃ§Ãµes padrÃ£o (single-tenant)
 const fetchStandard = async (url: string, options: RequestInit = {}) => {
@@ -63,6 +70,11 @@ const PaymentPage: React.FC = () => {
   const [paymentType, setPaymentType] = useState<
     "online" | "presencial" | null
   >(null);
+  const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>(
+    DEFAULT_DELIVERY_METHODS,
+  );
+  const [deliveryMethod, setDeliveryMethod] =
+    useState<DeliveryMethodValue | null>(null);
 
   // --- CORREÃ‡ÃƒO: ADICIONADO O ESTADO QUE FALTAVA ---
   const [presencialStep, setPresencialStep] = useState<
@@ -170,6 +182,22 @@ const PaymentPage: React.FC = () => {
   useEffect(() => {
     paymentIdRef.current = activePayment?.id || null;
   }, [activePayment]);
+
+  useEffect(() => {
+    const loadDeliveryMethods = async () => {
+      try {
+        const data = await getDeliveryMethods();
+        if (Array.isArray(data) && data.length > 0) {
+          setDeliveryMethods(data);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar formas de entrega:", err);
+        setDeliveryMethods(DEFAULT_DELIVERY_METHODS);
+      }
+    };
+
+    loadDeliveryMethods();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -319,6 +347,17 @@ const PaymentPage: React.FC = () => {
       ? { userId: currentUser.id, userName: currentUser.name }
       : { userName: guestName.trim() };
 
+  const ensureDeliveryMethod = () => {
+    if (deliveryMethod) return true;
+    Swal.fire({
+      icon: "warning",
+      title: "Forma de entrega",
+      text: "Escolha a forma de entrega para finalizar o pedido.",
+      confirmButtonText: "OK",
+    });
+    return false;
+  };
+
   const finalizeOrder = async (
     orderId: string,
     paymentId: string,
@@ -417,6 +456,9 @@ const PaymentPage: React.FC = () => {
   };
 
   const createOrder = async () => {
+    if (!ensureDeliveryMethod()) {
+      throw new Error("Forma de entrega obrigatoria");
+    }
     const confirmed = await confirmBackorderIfNeeded();
     if (!confirmed) throw new Error("Pedido sob encomenda nao confirmado");
 
@@ -437,6 +479,7 @@ const PaymentPage: React.FC = () => {
         paymentMethod: paymentMethod,
         installments: paymentMethod === "credit" ? selectedInstallments : 1,
         fee: paymentMethod === "credit" ? taxaSelecionada : 0,
+        deliveryMethod,
       }),
     });
     const data = await orderResp.json().catch(() => ({}));
@@ -633,6 +676,27 @@ const PaymentPage: React.FC = () => {
 
         {/* COLUNA DIREITA - AÃ‡Ã•ES */}
         <div className="flex flex-col gap-4">
+          <div className="rounded-xl border border-stone-200 bg-white p-4">
+            <h2 className="mb-3 text-lg font-bold text-stone-800">
+              Forma de entrega
+            </h2>
+            <div className="grid gap-2">
+              {deliveryMethods.map((method) => (
+                <button
+                  key={method.value}
+                  type="button"
+                  onClick={() => setDeliveryMethod(method.value)}
+                  className={`rounded-lg border px-4 py-3 text-left font-bold transition ${
+                    deliveryMethod === method.value
+                      ? "border-blue-600 bg-blue-50 text-blue-800"
+                      : "border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
+                  }`}
+                >
+                  {method.label}
+                </button>
+              ))}
+            </div>
+          </div>
           {!paymentType && (
             <>
               <h2 className="text-xl font-bold text-stone-800 mb-2">
@@ -664,6 +728,7 @@ const PaymentPage: React.FC = () => {
                     await runWithGuestName(async () => {
                       const confirmed = await confirmBackorderIfNeeded();
                       if (!confirmed) return;
+                      if (!ensureDeliveryMethod()) return;
                       setCreatingOnlineOrder(true);
                       try {
                         const orderResp = await fetchStandard(
@@ -676,6 +741,7 @@ const PaymentPage: React.FC = () => {
                               total: cartTotal,
                               observation,
                               status: "pending",
+                              deliveryMethod,
                             }),
                           },
                         );
@@ -890,6 +956,7 @@ const PaymentPage: React.FC = () => {
                     await runWithGuestName(async () => {
                       const confirmed = await confirmBackorderIfNeeded();
                       if (!confirmed) return;
+                      if (!ensureDeliveryMethod()) return;
                       setStatus("processing");
                       setErrorMessage("");
                       try {
@@ -914,6 +981,7 @@ const PaymentPage: React.FC = () => {
                                   : cartTotal,
                               paymentStatus: "pending",
                               observation,
+                              deliveryMethod,
                             }),
                           },
                         );

@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Order } from "../types";
+import type {
+  DeliveryMethod,
+  DeliveryMethodValue,
+  Order,
+  ShippingCarrier,
+} from "../types";
 import Swal from "sweetalert2";
 import {
   authenticatedFetch,
   deleteOrderFromHistory,
+  getDeliveryMethods,
+  getShippingCarriers,
   getToken,
+  updateOrderDelivery,
 } from "../services/apiService";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -20,6 +28,20 @@ type MonthlyAlert = {
   total: number;
   orderIds: string[];
   message?: string;
+};
+
+const DEFAULT_DELIVERY_METHODS: DeliveryMethod[] = [
+  { value: "carrier", label: "Transportadora", requiresCarrier: true },
+  { value: "pickup", label: "Retirada no local", requiresCarrier: false },
+  { value: "in_person", label: "Presencial", requiresCarrier: false },
+  { value: "contact", label: "Entrar em contato", requiresCarrier: false },
+];
+
+const DEFAULT_CARRIER: ShippingCarrier = {
+  id: "carrier_uniao_express",
+  name: "Uniao Express",
+  trackingUrl: "https://www.uniaoexpress.com.br/rastreamento",
+  active: true,
 };
 
 const OrderHistoryPage: React.FC = () => {
@@ -37,6 +59,18 @@ const OrderHistoryPage: React.FC = () => {
   const [closingMonthlyUserId, setClosingMonthlyUserId] = useState<string | null>(
     null,
   );
+  const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>(
+    DEFAULT_DELIVERY_METHODS,
+  );
+  const [shippingCarriers, setShippingCarriers] = useState<ShippingCarrier[]>([
+    DEFAULT_CARRIER,
+  ]);
+  const [deliveryDrafts, setDeliveryDrafts] = useState<
+    Record<string, { deliveryMethod: DeliveryMethodValue; carrierId: string }>
+  >({});
+  const [savingDeliveryOrderId, setSavingDeliveryOrderId] = useState<
+    string | null
+  >(null);
 
   const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
   const isAdmin = currentUser?.role === "admin";
@@ -145,8 +179,88 @@ const OrderHistoryPage: React.FC = () => {
     }
   };
 
+  const normalizeCarriers = (data: any): ShippingCarrier[] => {
+    const list = Array.isArray(data)
+      ? data
+      : Array.isArray(data.carriers)
+        ? data.carriers
+        : Array.isArray(data.data)
+          ? data.data
+          : [];
+    const hasDefault = list.some(
+      (carrier: ShippingCarrier) => carrier.id === DEFAULT_CARRIER.id,
+    );
+    return hasDefault ? list : [DEFAULT_CARRIER, ...list];
+  };
+
+  const fetchDeliveryOptions = async () => {
+    try {
+      const [methodsData, carriersData] = await Promise.all([
+        getDeliveryMethods().catch(() => DEFAULT_DELIVERY_METHODS),
+        getShippingCarriers().catch(() => [DEFAULT_CARRIER]),
+      ]);
+      if (Array.isArray(methodsData) && methodsData.length > 0) {
+        setDeliveryMethods(methodsData);
+      }
+      setShippingCarriers(normalizeCarriers(carriersData));
+    } catch (err) {
+      console.error("Erro ao buscar opcoes de entrega:", err);
+      setDeliveryMethods(DEFAULT_DELIVERY_METHODS);
+      setShippingCarriers([DEFAULT_CARRIER]);
+    }
+  };
+
   const reloadHistory = async () => {
     await Promise.all([fetchOrders(), fetchMonthlyAlerts()]);
+  };
+
+  const getDeliveryDraft = (order: Order) =>
+    deliveryDrafts[order.id] || {
+      deliveryMethod: order.deliveryMethod || "contact",
+      carrierId: order.carrierId || order.shippingCarrier?.id || "",
+    };
+
+  const setDeliveryDraft = (
+    order: Order,
+    draft: Partial<{ deliveryMethod: DeliveryMethodValue; carrierId: string }>,
+  ) => {
+    const current = getDeliveryDraft(order);
+    const next = {
+      ...current,
+      ...draft,
+    };
+    if (next.deliveryMethod !== "carrier") {
+      next.carrierId = "";
+    }
+    setDeliveryDrafts((prev) => ({ ...prev, [order.id]: next }));
+  };
+
+  const handleSaveDelivery = async (order: Order, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const draft = getDeliveryDraft(order);
+    setSavingDeliveryOrderId(order.id);
+    try {
+      const data = await updateOrderDelivery(order.id, {
+        deliveryMethod: draft.deliveryMethod,
+        carrierId: draft.deliveryMethod === "carrier" ? draft.carrierId || null : null,
+      });
+      const updatedOrder = data.order || data;
+      setOrders((prev) =>
+        prev.map((item) =>
+          item.id === order.id ? { ...item, ...updatedOrder } : item,
+        ),
+      );
+      setDeliveryDrafts((prev) => {
+        const next = { ...prev };
+        delete next[order.id];
+        return next;
+      });
+    } catch (err) {
+      console.error("Erro ao atualizar entrega:", err);
+      alert("Erro ao atualizar entrega do pedido.");
+    } finally {
+      setSavingDeliveryOrderId(null);
+    }
   };
 
   const handleMonthlyClosing = async (order: Order, e: React.MouseEvent) => {
@@ -196,6 +310,10 @@ const OrderHistoryPage: React.FC = () => {
     reloadHistory();
     // eslint-disable-next-line
   }, [startDate, endDate]);
+
+  useEffect(() => {
+    fetchDeliveryOptions();
+  }, []);
 
   const filteredOrders = orders.filter((order) => {
     const isUndelivered = !order.entregueCliente;
@@ -365,6 +483,76 @@ const OrderHistoryPage: React.FC = () => {
                   {order.observation}
                 </div>
               )}
+              <div
+                className="mb-3 rounded-lg border border-stone-200 bg-stone-50 p-3"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="mb-2 text-sm text-stone-700">
+                  <span className="font-semibold">Entrega:</span>{" "}
+                  {order.deliveryMethodLabel ||
+                    deliveryMethods.find(
+                      (method) => method.value === order.deliveryMethod,
+                    )?.label ||
+                    "Entrar em contato"}
+                  {order.deliveryMethod === "carrier" && (
+                    <span className="ml-3">
+                      <span className="font-semibold">Transportadora:</span>{" "}
+                      {order.shippingCarrier?.name || "Nao definida"}
+                    </span>
+                  )}
+                </div>
+                <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+                  <select
+                    value={getDeliveryDraft(order).deliveryMethod}
+                    onChange={(event) =>
+                      setDeliveryDraft(order, {
+                        deliveryMethod: event.target.value as DeliveryMethodValue,
+                      })
+                    }
+                    className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-800 focus:border-blue-600 focus:outline-none"
+                  >
+                    {deliveryMethods.map((method) => (
+                      <option key={method.value} value={method.value}>
+                        {method.label}
+                      </option>
+                    ))}
+                  </select>
+                  {getDeliveryDraft(order).deliveryMethod === "carrier" ? (
+                    <select
+                      value={getDeliveryDraft(order).carrierId}
+                      onChange={(event) =>
+                        setDeliveryDraft(order, {
+                          carrierId: event.target.value,
+                        })
+                      }
+                      className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-800 focus:border-blue-600 focus:outline-none"
+                    >
+                      <option value="">Transportadora nao definida</option>
+                      {shippingCarriers
+                        .filter((carrier) => carrier.active !== false)
+                        .map((carrier) => (
+                          <option key={carrier.id} value={carrier.id}>
+                            {carrier.name}
+                          </option>
+                        ))}
+                    </select>
+                  ) : (
+                    <div className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-stone-500">
+                      Sem transportadora
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(event) => handleSaveDelivery(order, event)}
+                    disabled={savingDeliveryOrderId === order.id}
+                    className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800 disabled:opacity-60"
+                  >
+                    {savingDeliveryOrderId === order.id
+                      ? "Salvando..."
+                      : "Salvar entrega"}
+                  </button>
+                </div>
+              </div>
               <div className="flex flex-wrap justify-between items-end mt-2 gap-2">
                 <div className="text-stone-500 text-xs">
                   Total: R${Number(order.total)?.toFixed(2) ?? "-"}

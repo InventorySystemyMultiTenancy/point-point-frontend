@@ -130,13 +130,17 @@ const StockMovementModal: React.FC<{
   );
 };
 import { useNavigate } from "react-router-dom";
-import type { Order, Product, User } from "../types";
+import type { Order, Product, ShippingCarrier, User } from "../types";
 import {
   authenticatedFetch,
+  createShippingCarrier,
   deleteUserProductPrice,
+  deleteShippingCarrier,
   getBackorderedProducts,
+  getShippingCarriers,
   getUserProductPrices,
   getUsers,
+  updateShippingCarrier,
   updateUserProductPrices,
   updateUserFullAccess,
   updateUserMonthlyPayment,
@@ -173,6 +177,13 @@ type UserProductPriceProduct = Product & {
 type UserProductPricesState = {
   user?: User;
   products: UserProductPriceProduct[];
+};
+
+const DEFAULT_CARRIER: ShippingCarrier = {
+  id: "carrier_uniao_express",
+  name: "Uniao Express",
+  trackingUrl: "https://www.uniaoexpress.com.br/rastreamento",
+  active: true,
 };
 
 // --- Componente de formulario de produto (Modal) ---
@@ -674,6 +685,17 @@ const AdminPage: React.FC = () => {
   const [removingProductPriceKey, setRemovingProductPriceKey] = useState<
     string | null
   >(null);
+  const [shippingCarriers, setShippingCarriers] = useState<ShippingCarrier[]>([]);
+  const [carrierForm, setCarrierForm] = useState({
+    id: "",
+    name: "",
+    trackingUrl: "",
+    active: true,
+  });
+  const [savingCarrier, setSavingCarrier] = useState(false);
+  const [deactivatingCarrierId, setDeactivatingCarrierId] = useState<
+    string | null
+  >(null);
 
   // Carrega os dados iniciais do backend
 
@@ -682,6 +704,7 @@ const AdminPage: React.FC = () => {
     loadOrdersCount();
     loadOutsourcedAlerts();
     loadBackorderedProducts();
+    loadShippingCarriers();
     loadUsers();
   }, []);
 
@@ -1016,6 +1039,86 @@ const AdminPage: React.FC = () => {
       alert("Erro ao remover preco personalizado.");
     } finally {
       setRemovingProductPriceKey(null);
+    }
+  };
+
+  const normalizeCarriers = (data: any): ShippingCarrier[] => {
+    const list = Array.isArray(data)
+      ? data
+      : Array.isArray(data.carriers)
+        ? data.carriers
+        : Array.isArray(data.data)
+          ? data.data
+          : [];
+    const hasDefault = list.some(
+      (carrier: ShippingCarrier) => carrier.id === DEFAULT_CARRIER.id,
+    );
+    return hasDefault ? list : [DEFAULT_CARRIER, ...list];
+  };
+
+  const loadShippingCarriers = async () => {
+    try {
+      const data = await getShippingCarriers();
+      setShippingCarriers(normalizeCarriers(data));
+    } catch (err) {
+      console.error("Erro ao carregar transportadoras:", err);
+      setShippingCarriers([DEFAULT_CARRIER]);
+    }
+  };
+
+  const resetCarrierForm = () => {
+    setCarrierForm({ id: "", name: "", trackingUrl: "", active: true });
+  };
+
+  const handleSaveCarrier = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!carrierForm.name.trim()) {
+      alert("Informe o nome da transportadora.");
+      return;
+    }
+
+    setSavingCarrier(true);
+    try {
+      const payload = {
+        name: carrierForm.name.trim(),
+        trackingUrl: carrierForm.trackingUrl.trim(),
+        active: carrierForm.active,
+      };
+      if (carrierForm.id) {
+        await updateShippingCarrier(carrierForm.id, payload);
+      } else {
+        await createShippingCarrier(payload);
+      }
+      resetCarrierForm();
+      await loadShippingCarriers();
+    } catch (err) {
+      console.error("Erro ao salvar transportadora:", err);
+      alert("Erro ao salvar transportadora.");
+    } finally {
+      setSavingCarrier(false);
+    }
+  };
+
+  const handleEditCarrier = (carrier: ShippingCarrier) => {
+    setCarrierForm({
+      id: carrier.id,
+      name: carrier.name,
+      trackingUrl: carrier.trackingUrl || "",
+      active: carrier.active !== false,
+    });
+  };
+
+  const handleDeactivateCarrier = async (carrier: ShippingCarrier) => {
+    if (!window.confirm(`Deseja desativar ${carrier.name}?`)) return;
+    setDeactivatingCarrierId(carrier.id);
+    try {
+      await deleteShippingCarrier(carrier.id);
+      await loadShippingCarriers();
+    } catch (err) {
+      console.error("Erro ao desativar transportadora:", err);
+      alert("Erro ao desativar transportadora.");
+    } finally {
+      setDeactivatingCarrierId(null);
     }
   };
 
@@ -1432,6 +1535,152 @@ const AdminPage: React.FC = () => {
           <div className="text-3xl font-bold text-blue-700">
             {stats.outOfStock}
           </div>
+        </div>
+      </div>
+
+      <div className="mb-6 rounded-xl border-l-4 border-blue-500 bg-white p-5 shadow-lg">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-white">Transportadoras</h2>
+            <p className="text-sm font-semibold text-blue-100">
+              Cadastre links de rastreio usados nos pedidos com transportadora.
+            </p>
+          </div>
+        </div>
+        <form
+          onSubmit={handleSaveCarrier}
+          className="mb-4 grid gap-3 rounded-lg bg-stone-50 p-3 md:grid-cols-[1fr_1.5fr_auto_auto]"
+        >
+          <input
+            value={carrierForm.name}
+            onChange={(event) =>
+              setCarrierForm((prev) => ({ ...prev, name: event.target.value }))
+            }
+            placeholder="Nome da transportadora"
+            className="rounded-lg border border-stone-300 px-3 py-2 text-stone-900 focus:border-blue-600 focus:outline-none"
+          />
+          <input
+            value={carrierForm.trackingUrl}
+            onChange={(event) =>
+              setCarrierForm((prev) => ({
+                ...prev,
+                trackingUrl: event.target.value,
+              }))
+            }
+            placeholder="Link de rastreamento"
+            className="rounded-lg border border-stone-300 px-3 py-2 text-stone-900 focus:border-blue-600 focus:outline-none"
+          />
+          <label className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-bold text-stone-700">
+            <input
+              type="checkbox"
+              checked={carrierForm.active}
+              onChange={(event) =>
+                setCarrierForm((prev) => ({
+                  ...prev,
+                  active: event.target.checked,
+                }))
+              }
+            />
+            Ativa
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={savingCarrier}
+              className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800 disabled:opacity-60"
+            >
+              {savingCarrier
+                ? "Salvando..."
+                : carrierForm.id
+                  ? "Atualizar"
+                  : "Cadastrar"}
+            </button>
+            {carrierForm.id && (
+              <button
+                type="button"
+                onClick={resetCarrierForm}
+                className="rounded-lg bg-stone-200 px-4 py-2 text-sm font-black text-stone-700 hover:bg-stone-300"
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
+        </form>
+        <div className="overflow-x-auto rounded-lg bg-white">
+          <table className="min-w-full divide-y divide-stone-200 text-sm">
+            <thead className="bg-stone-100">
+              <tr>
+                <th className="px-4 py-3 text-left font-black text-stone-700">
+                  Nome
+                </th>
+                <th className="px-4 py-3 text-left font-black text-stone-700">
+                  Link
+                </th>
+                <th className="px-4 py-3 text-left font-black text-stone-700">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-right font-black text-stone-700">
+                  Acoes
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100">
+              {shippingCarriers.map((carrier) => (
+                <tr key={carrier.id}>
+                  <td className="px-4 py-3 font-bold text-stone-900">
+                    {carrier.name}
+                  </td>
+                  <td className="px-4 py-3 text-stone-700">
+                    {carrier.trackingUrl ? (
+                      <a
+                        href={carrier.trackingUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-semibold text-blue-700 hover:underline"
+                      >
+                        {carrier.trackingUrl}
+                      </a>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs font-black ${
+                        carrier.active === false
+                          ? "bg-stone-200 text-stone-600"
+                          : "bg-green-100 text-green-800"
+                      }`}
+                    >
+                      {carrier.active === false ? "Inativa" : "Ativa"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => handleEditCarrier(carrier)}
+                      className="mr-2 rounded-lg bg-blue-700 px-3 py-1 text-xs font-black text-white hover:bg-blue-800"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeactivateCarrier(carrier)}
+                      disabled={
+                        carrier.active === false ||
+                        deactivatingCarrierId === carrier.id
+                      }
+                      className="rounded-lg bg-stone-700 px-3 py-1 text-xs font-black text-white hover:bg-stone-800 disabled:bg-stone-300 disabled:text-stone-500"
+                    >
+                      {deactivatingCarrierId === carrier.id
+                        ? "Desativando..."
+                        : "Desativar"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

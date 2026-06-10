@@ -28,6 +28,16 @@ const getDisplayOrderTotal = (order: Order) => {
 const getPreparationStatus = (order: Order) =>
   order.entregueCliente ? "Pronto para retirada" : "Em montagem";
 
+const getDeliveryLabel = (order: Order) =>
+  order.deliveryMethodLabel ||
+  (order.deliveryMethod === "carrier"
+    ? "Transportadora"
+    : order.deliveryMethod === "pickup"
+      ? "Retirada no local"
+      : order.deliveryMethod === "in_person"
+        ? "Presencial"
+        : "Entrar em contato");
+
 const CustomerOrdersPage: React.FC = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -97,6 +107,31 @@ const CustomerOrdersPage: React.FC = () => {
                 >
                   {getPreparationStatus(order)}
                 </span>
+              </div>
+              <div className="mb-2">
+                <span className="font-semibold">Entrega:</span>{" "}
+                {getDeliveryLabel(order)}
+                {order.deliveryMethod === "carrier" && order.shippingCarrier?.name && (
+                  <span className="ml-2 text-sm text-stone-500">
+                    ({order.shippingCarrier.name})
+                  </span>
+                )}
+              </div>
+              <div className="mb-2">
+                {order.deliveryMethod === "carrier" && order.trackingUrl ? (
+                  <a
+                    href={order.trackingUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex rounded-lg bg-blue-700 px-3 py-2 text-sm font-bold text-white hover:bg-blue-800"
+                  >
+                    {order.trackingMessage || "Acompanhar entrega"}
+                  </a>
+                ) : (
+                  <span className="text-sm font-semibold text-stone-600">
+                    Entrar em contato para rastrear
+                  </span>
+                )}
               </div>
               <ul className="text-sm text-stone-700">
                 {order.items.map((item, idx) => (

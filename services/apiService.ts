@@ -9,6 +9,7 @@ export async function updateUser(userId: string, userData: any) {
 // ServiÃ§o de API com autenticaÃ§Ã£o JWT e Multi-tenant
 
 import api from "./api";
+import type { DeliveryMethodValue } from "../types";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const API_URL = `${BASE_URL}/api`;
@@ -469,6 +470,71 @@ export async function deleteUserProductPrice(userId: string, productId: string) 
   const response = await authenticatedFetch(
     `${API_URL}/users/${userId}/product-prices/${productId}`,
     { method: "DELETE" },
+  );
+  return response.json();
+}
+
+export async function getDeliveryMethods() {
+  const response = await publicFetch(`${API_URL}/delivery-methods`);
+  return response.json();
+}
+
+export async function getShippingCarriers() {
+  const response = await authenticatedFetch(`${API_URL}/shipping-carriers`);
+  return response.json();
+}
+
+export async function createShippingCarrier(carrierData: {
+  name: string;
+  trackingUrl?: string;
+  active?: boolean;
+}) {
+  const response = await authenticatedFetch(`${API_URL}/shipping-carriers`, {
+    method: "POST",
+    body: JSON.stringify(carrierData),
+  });
+  return response.json();
+}
+
+export async function updateShippingCarrier(
+  carrierId: string,
+  carrierData: {
+    name: string;
+    trackingUrl?: string;
+    active?: boolean;
+  },
+) {
+  const response = await authenticatedFetch(
+    `${API_URL}/shipping-carriers/${carrierId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(carrierData),
+    },
+  );
+  return response.json();
+}
+
+export async function deleteShippingCarrier(carrierId: string) {
+  const response = await authenticatedFetch(
+    `${API_URL}/shipping-carriers/${carrierId}`,
+    { method: "DELETE" },
+  );
+  return response.json();
+}
+
+export async function updateOrderDelivery(
+  orderId: string,
+  deliveryData: {
+    deliveryMethod: DeliveryMethodValue;
+    carrierId?: string | null;
+  },
+) {
+  const response = await authenticatedFetch(
+    `${API_URL}/orders/${orderId}/delivery`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(deliveryData),
+    },
   );
   return response.json();
 }
