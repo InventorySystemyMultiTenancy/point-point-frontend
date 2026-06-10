@@ -1061,7 +1061,7 @@ const AdminPage: React.FC = () => {
       const data = await getShippingCarriers();
       setShippingCarriers(normalizeCarriers(data));
     } catch (err) {
-      console.error("Erro ao carregar transportadoras:", err);
+      console.error("Erros ao carregar transportadoras:", err);
       setShippingCarriers([DEFAULT_CARRIER]);
     }
   };
