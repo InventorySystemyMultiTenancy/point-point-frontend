@@ -130,8 +130,7 @@ const StockMovementModal: React.FC<{
   );
 };
 import { useNavigate } from "react-router-dom";
-import type { Product } from "../types";
-import type { User } from "../types";
+import type { Order, Product, User } from "../types";
 import {
   authenticatedFetch,
   deleteUserProductPrice,
@@ -709,19 +708,136 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const getBackorderedQuantity = (product: BackorderedProduct) => {
+    const stock = Number(product.stock || 0);
+    return Number(
+      product.backorderQuantity ||
+        product.quantityBackordered ||
+        product.orderedQuantity ||
+        Math.abs(Math.min(stock, 0)),
+    );
+  };
+
+  const extractOrdersList = (data: any): Order[] => {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.orders)) return data.orders;
+    if (Array.isArray(data?.history)) return data.history;
+    if (Array.isArray(data?.data)) return data.data;
+    return [];
+  };
+
+  const buildUndeliveredBackorderedProducts = (
+    orders: Order[],
+    endpointProducts: BackorderedProduct[],
+  ) => {
+    const endpointByKey = new Map<string, BackorderedProduct>();
+
+    endpointProducts.forEach((product) => {
+      const key = String(product.productId || product.id || product.name || "");
+      if (key) endpointByKey.set(key, product);
+    });
+
+    const aggregated = new Map<string, BackorderedProduct>();
+
+    orders
+      .filter((order) => !order.entregueCliente)
+      .forEach((order) => {
+        order.items.forEach((item) => {
+          const record = item as typeof item & { id?: string; category?: string };
+          const quantity = Number(
+            item.backorderQuantity || (item.isBackorder ? item.quantity : 0),
+          );
+          if (!quantity || quantity <= 0) return;
+
+          const key = String(item.productId || record.id || item.name || "");
+          if (!key) return;
+
+          const current = aggregated.get(key);
+          aggregated.set(key, {
+            id: record.id || item.productId,
+            productId: item.productId || record.id,
+            name: item.name,
+            productName: item.name,
+            category: record.category,
+            orderedQuantity: Number(current?.orderedQuantity || 0) + quantity,
+          });
+        });
+      });
+
+    return Array.from(aggregated.entries())
+      .map(([key, product]) => {
+        const endpointProduct = endpointByKey.get(key);
+        const remainingFromStock = endpointProduct
+          ? getBackorderedQuantity(endpointProduct)
+          : 0;
+        const orderedQuantity = endpointProducts.length
+          ? Math.min(Number(product.orderedQuantity || 0), remainingFromStock)
+          : Number(product.orderedQuantity || 0);
+
+        return {
+          ...product,
+          category: endpointProduct?.category || product.category,
+          stock: endpointProduct?.stock ?? product.stock,
+          orderedQuantity,
+          backorderQuantity: orderedQuantity,
+          quantityBackordered: orderedQuantity,
+        };
+      })
+      .filter((product) => Number(product.orderedQuantity || 0) > 0);
+  };
+
   const loadBackorderedProducts = async () => {
     try {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
       const data = await getBackorderedProducts();
       const payload = data.data || data;
+      const endpointProducts = Array.isArray(payload.products)
+        ? payload.products
+        : [];
+      let products = endpointProducts;
+
+      const historyResp = await authenticatedFetch(`${API_URL}/api/orders/history`);
+      if (historyResp.ok) {
+        const historyData = await historyResp.json().catch(() => []);
+        products = buildUndeliveredBackorderedProducts(
+          extractOrdersList(historyData),
+          endpointProducts,
+        );
+      }
+
       setBackorderedData({
-        totalBackorderedUnits: Number(payload.totalBackorderedUnits || 0),
-        products: Array.isArray(payload.products) ? payload.products : [],
+        totalBackorderedUnits: products.reduce(
+          (total: number, product: BackorderedProduct) =>
+            total + getBackorderedQuantity(product),
+          0,
+        ),
+        products,
       });
     } catch (err) {
       console.error("Erro ao buscar produtos sob encomenda:", err);
       setBackorderedData({ totalBackorderedUnits: 0, products: [] });
     }
   };
+
+  useEffect(() => {
+    const refreshBackorderedProducts = () => {
+      loadBackorderedProducts();
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === "backorderedProductsUpdatedAt") {
+        refreshBackorderedProducts();
+      }
+    };
+
+    window.addEventListener("focus", refreshBackorderedProducts);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener("focus", refreshBackorderedProducts);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
   const loadUsers = async () => {
     try {
@@ -1227,7 +1343,7 @@ const AdminPage: React.FC = () => {
               Produtos encomendados
             </h2>
             <p className="text-sm font-semibold text-blue-100">
-              Estoque negativo significa unidades ja vendidas sob encomenda.
+              Unidades sob encomenda de pedidos ainda nao entregues.
             </p>
           </div>
           <div className="rounded-lg bg-amber-600 px-4 py-3 text-center text-white">

@@ -429,7 +429,11 @@ const OrderHistoryPage: React.FC = () => {
                       { method: "PUT" },
                     );
                     if (resp.ok) {
-                      fetchOrders();
+                      localStorage.setItem(
+                        "backorderedProductsUpdatedAt",
+                        String(Date.now()),
+                      );
+                      reloadHistory();
                     } else {
                       alert("Erro ao marcar como entregue");
                     }
