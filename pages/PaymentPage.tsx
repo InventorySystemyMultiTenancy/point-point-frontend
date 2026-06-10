@@ -69,7 +69,7 @@ const PaymentPage: React.FC = () => {
   >(null);
 
   const [paymentMethod, setPaymentMethod] = useState<
-    "credit" | "debit" | "pix" | null
+    "credit" | "debit" | "pix" | "a_prazo" | "cheque" | "boleto" | null
   >(null);
 
   const [status, setStatus] = useState<
@@ -93,6 +93,7 @@ const PaymentPage: React.FC = () => {
   const totalComTaxa = Number(
     (cartTotal * (1 + (taxaSelecionada || 0) / 100)).toFixed(2),
   );
+  const canUseMonthlyPayment = Boolean(currentUser?.monthlyPayment);
 
   // Estados para PIX
   const [qrCodeBase64, setQrCodeBase64] = useState<string | null>(null);
@@ -763,6 +764,21 @@ const PaymentPage: React.FC = () => {
                   >
                     PIX
                   </button>
+                  {canUseMonthlyPayment && (
+                    <button
+                      className={`px-6 py-3 rounded font-bold text-lg transition-all ${
+                        paymentMethod === "a_prazo"
+                          ? "bg-slate-700 text-white"
+                          : "bg-white text-slate-700 border border-slate-600"
+                      }`}
+                      onClick={() => {
+                        setPaymentMethod("a_prazo");
+                        setPresencialStep("finalize");
+                      }}
+                    >
+                      À prazo
+                    </button>
+                  )}
                   {/* OpÃ§Ãµes extras para admin */}
                   {currentUser?.role === "admincustomer" && (
                     <>

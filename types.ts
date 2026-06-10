@@ -56,13 +56,19 @@ export interface Order {
   observation?: string;
   // Novos campos para pagamento
   paymentType?: "online" | "presencial";
-  paymentMethod?: "credit" | "debit" | "pix";
+  paymentMethod?: "credit" | "debit" | "pix" | "a_prazo" | "cheque" | "boleto";
   installments?: number;
   fee?: number;
   paymentStatus?: "pending" | "paid" | "authorized" | "canceled";
   entregueCliente?: boolean; // Indica se o pedido foi entregue ao cliente
   hasBackorder?: boolean;
   backorderNotice?: string;
+  userMonthlyPayment?: boolean;
+  monthlyBilling?: boolean;
+  canMonthlyClose?: boolean;
+  monthlyBillingMonth?: string;
+  monthlyClosedAt?: string;
+  monthlyClosedBy?: string;
 }
 
 export type UserRole =
@@ -82,6 +88,7 @@ export interface User {
   pontos?: number;
   role?: UserRole; // Tipo de usuário: customer (padrão), kitchen ou admin
   fullAccess?: boolean;
+  monthlyPayment?: boolean;
 }
 
 export interface CartItem extends Product {

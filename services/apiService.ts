@@ -432,3 +432,17 @@ export async function updateUserFullAccess(userId: string, fullAccess: boolean) 
   return response.json();
 }
 
+export async function updateUserMonthlyPayment(
+  userId: string,
+  monthlyPayment: boolean,
+) {
+  const response = await authenticatedFetch(
+    `${API_URL}/users/${userId}/monthly-payment`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ monthlyPayment }),
+    },
+  );
+  return response.json();
+}
+

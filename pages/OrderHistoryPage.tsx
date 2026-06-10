@@ -12,6 +12,16 @@ import { useAuth } from "../contexts/AuthContext";
 // Página de Histórico de Pedidos com filtro por data
 // (OrderHistoryPage)
 
+type MonthlyAlert = {
+  userId: string;
+  userName: string;
+  month: string;
+  orderCount: number;
+  total: number;
+  orderIds: string[];
+  message?: string;
+};
+
 const OrderHistoryPage: React.FC = () => {
   const navigate = useNavigate();
   const { logout, currentUser } = useAuth();
@@ -23,6 +33,10 @@ const OrderHistoryPage: React.FC = () => {
   const [showUndeliveredOnly, setShowUndeliveredOnly] = useState(false);
   const [showUnpaidOnly, setShowUnpaidOnly] = useState(false);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
+  const [monthlyAlerts, setMonthlyAlerts] = useState<MonthlyAlert[]>([]);
+  const [closingMonthlyUserId, setClosingMonthlyUserId] = useState<string | null>(
+    null,
+  );
 
   const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
   const isAdmin = currentUser?.role === "admin";
@@ -109,8 +123,69 @@ const OrderHistoryPage: React.FC = () => {
     }
   };
 
+  const fetchMonthlyAlerts = async () => {
+    try {
+      const resp = await authenticatedFetch(
+        `${BACKEND_URL}/api/orders/history/monthly-alerts`,
+      );
+      if (!resp.ok) throw new Error("Erro ao buscar alertas mensais");
+      const data = await resp.json();
+      setMonthlyAlerts(Array.isArray(data.alerts) ? data.alerts : []);
+    } catch (err) {
+      console.error("Erro ao buscar alertas mensais:", err);
+      setMonthlyAlerts([]);
+    }
+  };
+
+  const reloadHistory = async () => {
+    await Promise.all([fetchOrders(), fetchMonthlyAlerts()]);
+  };
+
+  const handleMonthlyClosing = async (order: Order, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!order.userId || closingMonthlyUserId === order.userId) return;
+
+    setClosingMonthlyUserId(order.userId);
+    try {
+      const resp = await authenticatedFetch(
+        `${BACKEND_URL}/api/users/${order.userId}/monthly-closing`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            closedBy: currentUser?.name || currentUser?.email || "Admin",
+          }),
+        },
+      );
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(data.error || data.message || "Erro ao fazer fechamento");
+      }
+
+      await reloadHistory();
+      await Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: `Fechamento mensal feito: ${data.updatedCount ?? 0} pedido(s) atualizado(s).`,
+        showConfirmButton: false,
+        timer: 2600,
+        timerProgressBar: true,
+      });
+    } catch (err: any) {
+      await Swal.fire({
+        icon: "error",
+        title: "Falha no fechamento mensal",
+        text: err.message || "Não foi possível fazer o fechamento mensal.",
+        confirmButtonText: "Tentar novamente",
+      });
+    } finally {
+      setClosingMonthlyUserId(null);
+    }
+  };
+
   useEffect(() => {
-    fetchOrders();
+    reloadHistory();
     // eslint-disable-next-line
   }, [startDate, endDate]);
 
@@ -208,6 +283,29 @@ const OrderHistoryPage: React.FC = () => {
           Limpar Filtros
         </button>
       </div>
+      {monthlyAlerts.length > 0 && (
+        <div className="mb-6 rounded-xl border-l-4 border-amber-500 bg-amber-50 p-4 shadow-sm">
+          <h2 className="mb-3 text-lg font-bold text-amber-900">
+            Alertas de débito mensal
+          </h2>
+          <div className="space-y-3">
+            {monthlyAlerts.map((alert) => (
+              <div
+                key={`${alert.userId}-${alert.month}`}
+                className="rounded-lg border border-amber-200 bg-white p-3"
+              >
+                <div className="font-semibold text-amber-950">
+                  {alert.userName} está devendo todos os pedidos do mês passado.
+                </div>
+                <div className="mt-1 text-sm text-amber-800">
+                  {alert.orderCount} pedido(s) em aberto · Total: R${" "}
+                  {Number(alert.total || 0).toFixed(2)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mb-4"></div>
@@ -288,6 +386,17 @@ const OrderHistoryPage: React.FC = () => {
                       </button>
                     </>
                   )}
+                {order.canMonthlyClose && (
+                  <button
+                    className="px-3 py-1 rounded bg-blue-700 text-white text-xs font-bold hover:bg-blue-800 transition disabled:bg-blue-300 disabled:cursor-not-allowed"
+                    onClick={(e) => handleMonthlyClosing(order, e)}
+                    disabled={closingMonthlyUserId === order.userId}
+                  >
+                    {closingMonthlyUserId === order.userId
+                      ? "Fechando..."
+                      : "Fazer fechamento mensal"}
+                  </button>
+                )}
                 {/* Botão entregar ao cliente */}
                 <button
                   className={`px-3 py-1 rounded text-xs font-bold transition ${order.entregueCliente ? "bg-green-500 text-white" : "bg-yellow-400 text-stone-800 hover:bg-yellow-500"}`}

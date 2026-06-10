@@ -137,6 +137,7 @@ import {
   getBackorderedProducts,
   getUsers,
   updateUserFullAccess,
+  updateUserMonthlyPayment,
 } from "../services/apiService";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -632,6 +633,9 @@ const AdminPage: React.FC = () => {
   const [updatingFullAccessId, setUpdatingFullAccessId] = useState<string | null>(
     null,
   );
+  const [updatingMonthlyPaymentId, setUpdatingMonthlyPaymentId] = useState<
+    string | null
+  >(null);
 
   // Carrega os dados iniciais do backend
 
@@ -710,6 +714,22 @@ const AdminPage: React.FC = () => {
       alert("Erro ao atualizar acesso completo do usuario.");
     } finally {
       setUpdatingFullAccessId(null);
+    }
+  };
+
+  const handleToggleMonthlyPayment = async (user: User) => {
+    setUpdatingMonthlyPaymentId(user.id);
+    try {
+      const data = await updateUserMonthlyPayment(user.id, !user.monthlyPayment);
+      const updatedUser = data.user || data;
+      setUsers((prev) =>
+        prev.map((item) => (item.id === user.id ? { ...item, ...updatedUser } : item)),
+      );
+    } catch (err) {
+      console.error("Erro ao atualizar pagamento mensal:", err);
+      alert("Erro ao atualizar pagamento mensal do usuario.");
+    } finally {
+      setUpdatingMonthlyPaymentId(null);
     }
   };
 
@@ -1165,22 +1185,41 @@ const AdminPage: React.FC = () => {
                     {user.email || user.cpf || user.id}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleToggleFullAccess(user)}
-                  disabled={updatingFullAccessId === user.id}
-                  className={`rounded-full px-4 py-2 text-xs font-black transition disabled:opacity-60 ${
-                    user.fullAccess
-                      ? "bg-green-600 text-white hover:bg-green-700"
-                      : "bg-stone-700 text-white hover:bg-stone-800"
-                  }`}
-                >
-                  {updatingFullAccessId === user.id
-                    ? "Salvando..."
-                    : user.fullAccess
-                      ? "Acesso completo"
-                      : "Sem acesso completo"}
-                </button>
+                <div className="flex flex-wrap gap-2 sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleMonthlyPayment(user)}
+                    disabled={updatingMonthlyPaymentId === user.id}
+                    aria-pressed={Boolean(user.monthlyPayment)}
+                    className={`rounded-full px-4 py-2 text-xs font-black transition disabled:opacity-60 ${
+                      user.monthlyPayment
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-stone-700 text-white hover:bg-stone-800"
+                    }`}
+                  >
+                    {updatingMonthlyPaymentId === user.id
+                      ? "Salvando..."
+                      : user.monthlyPayment
+                        ? "Pagamento mensal"
+                        : "Sem pagamento mensal"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleFullAccess(user)}
+                    disabled={updatingFullAccessId === user.id}
+                    className={`rounded-full px-4 py-2 text-xs font-black transition disabled:opacity-60 ${
+                      user.fullAccess
+                        ? "bg-green-600 text-white hover:bg-green-700"
+                        : "bg-stone-700 text-white hover:bg-stone-800"
+                    }`}
+                  >
+                    {updatingFullAccessId === user.id
+                      ? "Salvando..."
+                      : user.fullAccess
+                        ? "Acesso completo"
+                        : "Sem acesso completo"}
+                  </button>
+                </div>
               </div>
             ))}
             </div>
