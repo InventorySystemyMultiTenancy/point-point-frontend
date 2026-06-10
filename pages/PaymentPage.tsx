@@ -11,6 +11,7 @@ import {
   cancelPayment,
   clearPaymentQueue,
 } from "../services/paymentService";
+import { getUserById } from "../services/apiService";
 import type { Order } from "../types";
 import PaymentOnline from "../components/PaymentOnline";
 import {
@@ -81,6 +82,9 @@ const PaymentPage: React.FC = () => {
   // Estados para taxa e parcelas (usados em ambos os fluxos)
   const [selectedInstallments, setSelectedInstallments] = useState<number>(1);
   const [taxaSelecionada, setTaxaSelecionada] = useState<number>(0); // Corrigido valor inicial para 0 se nÃ£o tiver taxa padrÃ£o
+  const [currentUserMonthlyPayment, setCurrentUserMonthlyPayment] = useState(
+    Boolean(currentUser?.monthlyPayment),
+  );
 
   useEffect(() => {
     if (paymentType === "presencial" && paymentMethod === "credit") {
@@ -93,7 +97,7 @@ const PaymentPage: React.FC = () => {
   const totalComTaxa = Number(
     (cartTotal * (1 + (taxaSelecionada || 0) / 100)).toFixed(2),
   );
-  const canUseMonthlyPayment = Boolean(currentUser?.monthlyPayment);
+  const canUseMonthlyPayment = currentUserMonthlyPayment;
 
   // Estados para PIX
   const [qrCodeBase64, setQrCodeBase64] = useState<string | null>(null);
@@ -166,6 +170,41 @@ const PaymentPage: React.FC = () => {
   useEffect(() => {
     paymentIdRef.current = activePayment?.id || null;
   }, [activePayment]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const refreshMonthlyPayment = async () => {
+      if (!currentUser?.id) {
+        setCurrentUserMonthlyPayment(false);
+        return;
+      }
+
+      setCurrentUserMonthlyPayment(Boolean(currentUser.monthlyPayment));
+
+      try {
+        const data = await getUserById(currentUser.id);
+        const updatedUser = data.user || data;
+        if (!isMounted || typeof updatedUser?.monthlyPayment !== "boolean") {
+          return;
+        }
+
+        setCurrentUserMonthlyPayment(updatedUser.monthlyPayment);
+        localStorage.setItem(
+          "currentUser",
+          JSON.stringify({ ...currentUser, ...updatedUser }),
+        );
+      } catch (err) {
+        console.error("Erro ao atualizar pagamento mensal do usuario:", err);
+      }
+    };
+
+    refreshMonthlyPayment();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.id, currentUser?.monthlyPayment]);
 
   useEffect(() => {
     return () => {

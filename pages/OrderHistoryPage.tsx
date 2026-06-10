@@ -41,6 +41,14 @@ const OrderHistoryPage: React.FC = () => {
   const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
   const isAdmin = currentUser?.role === "admin";
 
+  const isMonthlyOrder = (order: Order) =>
+    Boolean(
+      order.canMonthlyClose ||
+        order.monthlyBilling ||
+        order.userMonthlyPayment ||
+        order.paymentMethod === "a_prazo",
+    );
+
   const getErrorMessageByStatus = (status?: number) => {
     if (status === 401 || status === 403) {
       return "Permissão negada ou sessão expirada. Faça login novamente.";
@@ -365,28 +373,42 @@ const OrderHistoryPage: React.FC = () => {
                 {order.paymentType === "presencial" &&
                   order.paymentStatus === "pending" && (
                     <>
-                      <span className="text-blue-600 font-bold">A PAGAR</span>
-                      <button
-                        className="px-3 py-1 rounded bg-green-600 text-white text-xs font-bold hover:bg-green-700 transition"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          // Chama endpoint para marcar como pago
-                          const resp = await authenticatedFetch(
-                            `${BACKEND_URL}/api/orders/${order.id}/mark-paid`,
-                            { method: "PUT" },
-                          );
-                          if (resp.ok) {
-                            fetchOrders();
-                          } else {
-                            alert("Erro ao marcar como pago");
-                          }
-                        }}
-                      >
-                        Marcar como pago
-                      </button>
+                      <span className="text-blue-600 font-bold">
+                        {isMonthlyOrder(order) ? "A PRAZO" : "A PAGAR"}
+                      </span>
+                      {isMonthlyOrder(order) ? (
+                        <button
+                          className="px-3 py-1 rounded bg-blue-700 text-white text-xs font-bold hover:bg-blue-800 transition disabled:bg-blue-300 disabled:cursor-not-allowed"
+                          onClick={(e) => handleMonthlyClosing(order, e)}
+                          disabled={closingMonthlyUserId === order.userId}
+                        >
+                          {closingMonthlyUserId === order.userId
+                            ? "Baixando..."
+                            : "Dar baixa mensal"}
+                        </button>
+                      ) : (
+                        <button
+                          className="px-3 py-1 rounded bg-green-600 text-white text-xs font-bold hover:bg-green-700 transition"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            // Chama endpoint para marcar como pago
+                            const resp = await authenticatedFetch(
+                              `${BACKEND_URL}/api/orders/${order.id}/mark-paid`,
+                              { method: "PUT" },
+                            );
+                            if (resp.ok) {
+                              reloadHistory();
+                            } else {
+                              alert("Erro ao marcar como pago");
+                            }
+                          }}
+                        >
+                          Marcar como pago
+                        </button>
+                      )}
                     </>
                   )}
-                {order.canMonthlyClose && (
+                {order.canMonthlyClose && order.paymentStatus !== "pending" && (
                   <button
                     className="px-3 py-1 rounded bg-blue-700 text-white text-xs font-bold hover:bg-blue-800 transition disabled:bg-blue-300 disabled:cursor-not-allowed"
                     onClick={(e) => handleMonthlyClosing(order, e)}
@@ -394,7 +416,7 @@ const OrderHistoryPage: React.FC = () => {
                   >
                     {closingMonthlyUserId === order.userId
                       ? "Fechando..."
-                      : "Fazer fechamento mensal"}
+                      : "Dar baixa mensal"}
                   </button>
                 )}
                 {/* Botão entregar ao cliente */}

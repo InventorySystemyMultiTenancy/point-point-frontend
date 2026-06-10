@@ -421,6 +421,11 @@ export async function getUsers() {
   return response.json();
 }
 
+export async function getUserById(userId: string) {
+  const response = await catalogFetch(`${API_URL}/users/${userId}`);
+  return response.json();
+}
+
 export async function updateUserFullAccess(userId: string, fullAccess: boolean) {
   const response = await authenticatedFetch(
     `${API_URL}/users/${userId}/full-access`,
