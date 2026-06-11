@@ -36,6 +36,8 @@ interface EmployeeOrder {
   paymentType?: string;
   entregueCliente?: boolean;
   observation?: string;
+  separationChecklist?: unknown;
+  separationChecklistUpdatedAt?: string | null;
   items?: EmployeeOrderItem[];
 }
 
@@ -56,6 +58,64 @@ const formatDate = (value?: string) => {
   return date.toLocaleString("pt-BR");
 };
 
+const normalizeChecklist = (checklist: unknown): string[] => {
+  if (!checklist) return [];
+
+  if (Array.isArray(checklist)) {
+    return checklist
+      .map((item) => {
+        if (typeof item === "string" || typeof item === "number") {
+          return String(item);
+        }
+        if (item && typeof item === "object") {
+          const record = item as Record<string, unknown>;
+          if (record.checked === false || record.done === false) return "";
+          return String(
+            record.itemKey ||
+              record.key ||
+              record.id ||
+              record.productId ||
+              record.productName ||
+              record.name ||
+              "",
+          );
+        }
+        return "";
+      })
+      .filter(Boolean);
+  }
+
+  if (typeof checklist === "object") {
+    return Object.entries(checklist as Record<string, unknown>)
+      .filter(([, value]) => {
+        if (value && typeof value === "object") {
+          const record = value as Record<string, unknown>;
+          return record.checked !== false && record.done !== false;
+        }
+        return Boolean(value);
+      })
+      .map(([key]) => key);
+  }
+
+  return [];
+};
+
+const unwrapOrder = (
+  data: unknown,
+  fallback: EmployeeOrder,
+): EmployeeOrder => {
+  if (!data || typeof data !== "object") return fallback;
+  const record = data as Record<string, unknown>;
+  const candidate =
+    record.order && typeof record.order === "object"
+      ? record.order
+      : record.data && typeof record.data === "object"
+        ? record.data
+        : record;
+
+  return { ...fallback, ...(candidate as EmployeeOrder) };
+};
+
 const EmployeePage: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<EmployeeTab>("orders");
@@ -65,14 +125,9 @@ const EmployeePage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<EmployeeOrder | null>(null);
-  const [checkedItems, setCheckedItems] = useState<Record<string, Record<string, boolean>>>(() => {
-    try {
-      const saved = localStorage.getItem("employee_order_checklist");
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
+  const [savingChecklistOrderId, setSavingChecklistOrderId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     if (!isEmployeeAuthenticated()) {
@@ -101,10 +156,6 @@ const EmployeePage: React.FC = () => {
     }
   }, [activeTab]);
 
-  useEffect(() => {
-    localStorage.setItem("employee_order_checklist", JSON.stringify(checkedItems));
-  }, [checkedItems]);
-
   const filteredOrders = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return orders;
@@ -126,47 +177,110 @@ const EmployeePage: React.FC = () => {
   const getItemKey = (item: EmployeeOrderItem, index: number) =>
     item.id || item.productId || `${item.name || item.productName || "item"}-${index}`;
 
-  const getOrderCheckedItems = (orderId: string) => checkedItems[orderId] || {};
+  const getOrderChecklist = (order: EmployeeOrder) =>
+    normalizeChecklist(order.separationChecklist);
 
-  const toggleItemChecked = (
-    orderId: string,
+  const getOrderCheckedItems = (order: EmployeeOrder) =>
+    getOrderChecklist(order).reduce<Record<string, boolean>>((checks, key) => {
+      checks[key] = true;
+      return checks;
+    }, {});
+
+  const applyOrderUpdate = (updatedOrder: EmployeeOrder) => {
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === updatedOrder.id ? { ...order, ...updatedOrder } : order,
+      ),
+    );
+    setSelectedOrder((current) =>
+      current?.id === updatedOrder.id
+        ? { ...current, ...updatedOrder }
+        : current,
+    );
+  };
+
+  const saveOrderUpdate = async (
+    order: EmployeeOrder,
+    payload: Partial<EmployeeOrder>,
+  ) => {
+    const response = await employeeFetch(`${API_URL}/orders/${order.id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        String(
+          (data as Record<string, unknown>).error ||
+            (data as Record<string, unknown>).message ||
+            "Erro ao atualizar pedido",
+        ),
+      );
+    }
+
+    const updatedOrder = unwrapOrder(data, { ...order, ...payload });
+    applyOrderUpdate(updatedOrder);
+    return updatedOrder;
+  };
+
+  const toggleItemChecked = async (
+    order: EmployeeOrder,
     item: EmployeeOrderItem,
     index: number,
   ) => {
     const itemKey = getItemKey(item, index);
-    setCheckedItems((prev) => ({
-      ...prev,
-      [orderId]: {
-        ...(prev[orderId] || {}),
-        [itemKey]: !prev[orderId]?.[itemKey],
-      },
-    }));
+    const currentChecklist = getOrderChecklist(order);
+    const nextChecklist = currentChecklist.includes(itemKey)
+      ? currentChecklist.filter((key) => key !== itemKey)
+      : [...currentChecklist, itemKey];
+    const optimisticOrder = {
+      ...order,
+      separationChecklist: nextChecklist,
+    };
+
+    setSavingChecklistOrderId(order.id);
+    applyOrderUpdate(optimisticOrder);
+
+    try {
+      await saveOrderUpdate(order, {
+        separationChecklist: nextChecklist,
+      });
+    } catch (err) {
+      applyOrderUpdate(order);
+      alert(
+        err instanceof Error
+          ? err.message
+          : "Erro ao salvar checklist de separacao",
+      );
+    } finally {
+      setSavingChecklistOrderId(null);
+    }
   };
 
   const checklistProgress = (order: EmployeeOrder) => {
     const items = order.items || [];
     if (items.length === 0) return { done: 0, total: 0, complete: false };
-    const orderChecks = getOrderCheckedItems(order.id);
+    const orderChecks = getOrderCheckedItems(order);
     const done = items.filter((item, index) => orderChecks[getItemKey(item, index)]).length;
     return { done, total: items.length, complete: done === items.length };
   };
 
   const markDelivered = async (order: EmployeeOrder) => {
-    const response = await employeeFetch(
-      `${API_URL}/orders/${order.id}/mark-delivered`,
-      { method: "PUT" },
-    );
-    if (!response.ok) {
-      alert("Erro ao marcar como entregue");
-      return;
+    const checklist = getOrderChecklist(order);
+    setSavingChecklistOrderId(order.id);
+    try {
+      await saveOrderUpdate(order, {
+        separationChecklist: checklist,
+        status: "delivered",
+        entregueCliente: true,
+      });
+      setSelectedOrder(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erro ao marcar como entregue");
+    } finally {
+      setSavingChecklistOrderId(null);
     }
-    await loadOrders();
-    setOrders((prev) =>
-      prev.map((item) =>
-        item.id === order.id ? { ...item, entregueCliente: true } : item,
-      ),
-    );
-    setSelectedOrder(null);
   };
 
   const selectTab = (tab: EmployeeTab) => {
@@ -494,7 +608,9 @@ const EmployeePage: React.FC = () => {
 
             {(() => {
               const progress = checklistProgress(selectedOrder);
-              const orderChecks = getOrderCheckedItems(selectedOrder.id);
+              const orderChecks = getOrderCheckedItems(selectedOrder);
+              const isSavingChecklist =
+                savingChecklistOrderId === selectedOrder.id;
               return (
                 <>
                   <div className="mb-4 rounded-xl border border-purple-100 bg-purple-50 p-4">
@@ -536,7 +652,10 @@ const EmployeePage: React.FC = () => {
                             type="checkbox"
                             checked={checked}
                             onChange={() =>
-                              toggleItemChecked(selectedOrder.id, item, index)
+                              toggleItemChecked(selectedOrder, item, index)
+                            }
+                            disabled={
+                              selectedOrder.entregueCliente || isSavingChecklist
                             }
                             className="mt-1 h-5 w-5 rounded border-stone-300 text-purple-700 focus:ring-purple-600"
                           />
@@ -565,10 +684,16 @@ const EmployeePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => markDelivered(selectedOrder)}
-                      disabled={selectedOrder.entregueCliente || !progress.complete}
+                      disabled={
+                        selectedOrder.entregueCliente ||
+                        !progress.complete ||
+                        isSavingChecklist
+                      }
                       className="rounded-xl bg-purple-700 px-4 py-3 font-black text-white hover:bg-purple-800 disabled:bg-purple-200 disabled:text-purple-900"
                     >
-                      {selectedOrder.entregueCliente
+                      {isSavingChecklist
+                        ? "Salvando..."
+                        : selectedOrder.entregueCliente
                         ? "Pedido pronto"
                         : progress.complete
                           ? "Pedido pronto"
