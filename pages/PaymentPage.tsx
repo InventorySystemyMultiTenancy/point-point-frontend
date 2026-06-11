@@ -122,6 +122,7 @@ const PaymentPage: React.FC = () => {
   const [creatingOnlineOrder, setCreatingOnlineOrder] = useState(false);
   const [orderHasBackorder, setOrderHasBackorder] = useState(false);
   const [guestName, setGuestName] = useState("");
+  const guestNameRef = useRef("");
   const [showGuestNameModal, setShowGuestNameModal] = useState(false);
   const [pendingGuestAction, setPendingGuestAction] = useState<null | (() => Promise<void>)>(null);
   const [guestNameError, setGuestNameError] = useState("");
@@ -316,7 +317,14 @@ const PaymentPage: React.FC = () => {
         : undefined,
     }));
 
-  const getBuyerName = () => currentUser?.name || guestName.trim();
+  const getGuestName = () => guestNameRef.current.trim();
+
+  const updateGuestName = (name: string) => {
+    guestNameRef.current = name;
+    setGuestName(name);
+  };
+
+  const getBuyerName = () => currentUser?.name || getGuestName();
 
   const ensurePrivateCatalogAllowed = () => {
     if (canSeeImportedCatalog(currentUser?.fullAccess)) return true;
@@ -333,7 +341,7 @@ const PaymentPage: React.FC = () => {
 
   const runWithGuestName = async (action: () => Promise<void>) => {
     if (!ensurePrivateCatalogAllowed()) return;
-    if (!currentUser && !guestName.trim()) {
+    if (!currentUser && !getGuestName()) {
       setGuestNameError("");
       setPendingGuestAction(() => action);
       setShowGuestNameModal(true);
@@ -345,7 +353,7 @@ const PaymentPage: React.FC = () => {
   const buildBuyerPayload = () =>
     currentUser
       ? { userId: currentUser.id, userName: currentUser.name }
-      : { userName: guestName.trim() };
+      : { userName: getGuestName() };
 
   const ensureDeliveryMethod = () => {
     if (deliveryMethod) return true;
@@ -688,7 +696,7 @@ const PaymentPage: React.FC = () => {
                   onClick={() => setDeliveryMethod(method.value)}
                   className={`rounded-lg border px-4 py-3 text-left font-bold transition ${
                     deliveryMethod === method.value
-                      ? "border-blue-600 bg-blue-50 text-blue-800"
+                      ? "border-blue-700 bg-blue-600 text-white shadow-md ring-2 ring-blue-200"
                       : "border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
                   }`}
                 >
@@ -1063,7 +1071,7 @@ const PaymentPage: React.FC = () => {
               <input
                 value={guestName}
                 onChange={(event) => {
-                  setGuestName(event.target.value);
+                  updateGuestName(event.target.value);
                   setGuestNameError("");
                 }}
                 className="w-full rounded-lg border border-stone-300 px-3 py-3 text-stone-900 focus:border-blue-600 focus:outline-none"
@@ -1091,7 +1099,7 @@ const PaymentPage: React.FC = () => {
               <button
                 type="button"
                 onClick={async () => {
-                  if (!guestName.trim()) {
+                  if (!getGuestName()) {
                     setGuestNameError("Nome obrigatório para comprar sem cadastro");
                     return;
                   }
