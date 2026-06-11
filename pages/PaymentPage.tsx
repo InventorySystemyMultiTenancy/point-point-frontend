@@ -35,6 +35,68 @@ const DEFAULT_DELIVERY_METHODS: DeliveryMethod[] = [
   { value: "contact", label: "Entrar em contato", requiresCarrier: false },
 ];
 
+const DELIVERY_METHOD_VALUES: DeliveryMethodValue[] = [
+  "carrier",
+  "pickup",
+  "in_person",
+  "contact",
+];
+
+const isDeliveryMethodValue = (value: unknown): value is DeliveryMethodValue =>
+  typeof value === "string" &&
+  DELIVERY_METHOD_VALUES.includes(value as DeliveryMethodValue);
+
+const getDeliveryMethodValueFromLabel = (
+  label: string,
+): DeliveryMethodValue | null => {
+  const normalizedLabel = label
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (normalizedLabel.includes("transport")) return "carrier";
+  if (normalizedLabel.includes("retirada")) return "pickup";
+  if (normalizedLabel.includes("presencial")) return "in_person";
+  if (normalizedLabel.includes("contato")) return "contact";
+
+  return null;
+};
+
+const normalizeDeliveryMethods = (methods: unknown): DeliveryMethod[] => {
+  if (!Array.isArray(methods)) return DEFAULT_DELIVERY_METHODS;
+
+  const normalizedMethods = methods
+    .map((method): DeliveryMethod | null => {
+      if (!method || typeof method !== "object") return null;
+      const rawMethod = method as Record<string, unknown>;
+      const label = String(rawMethod.label || rawMethod.name || "").trim();
+      const value =
+        isDeliveryMethodValue(rawMethod.value) ? rawMethod.value
+        : isDeliveryMethodValue(rawMethod.id) ? rawMethod.id
+        : getDeliveryMethodValueFromLabel(label);
+
+      if (!value) return null;
+
+      return {
+        value,
+        label:
+          label ||
+          DEFAULT_DELIVERY_METHODS.find(
+            (defaultMethod) => defaultMethod.value === value,
+          )?.label ||
+          value,
+        requiresCarrier:
+          Boolean(rawMethod.requiresCarrier ?? rawMethod.requires_carrier) ||
+          value === "carrier",
+      };
+    })
+    .filter((method): method is DeliveryMethod => Boolean(method));
+
+  return normalizedMethods.length > 0
+    ? normalizedMethods
+    : DEFAULT_DELIVERY_METHODS;
+};
+
 // Helper para requisiÃ§Ãµes padrÃ£o (single-tenant)
 const fetchStandard = async (url: string, options: RequestInit = {}) => {
   const headers = {
@@ -188,9 +250,7 @@ const PaymentPage: React.FC = () => {
     const loadDeliveryMethods = async () => {
       try {
         const data = await getDeliveryMethods();
-        if (Array.isArray(data) && data.length > 0) {
-          setDeliveryMethods(data);
-        }
+        setDeliveryMethods(normalizeDeliveryMethods(data));
       } catch (err) {
         console.error("Erro ao carregar formas de entrega:", err);
         setDeliveryMethods(DEFAULT_DELIVERY_METHODS);
@@ -199,6 +259,15 @@ const PaymentPage: React.FC = () => {
 
     loadDeliveryMethods();
   }, []);
+
+  useEffect(() => {
+    if (
+      deliveryMethod &&
+      !deliveryMethods.some((method) => method.value === deliveryMethod)
+    ) {
+      setDeliveryMethod(null);
+    }
+  }, [deliveryMethod, deliveryMethods]);
 
   useEffect(() => {
     let isMounted = true;
