@@ -758,20 +758,30 @@ const PaymentPage: React.FC = () => {
               Forma de entrega
             </h2>
             <div className="grid gap-2">
-              {deliveryMethods.map((method) => (
-                <button
-                  key={method.value}
-                  type="button"
-                  onClick={() => setDeliveryMethod(method.value)}
-                  className={`rounded-lg border px-4 py-3 text-left font-bold transition ${
-                    deliveryMethod === method.value
-                      ? "border-blue-700 bg-blue-600 text-white shadow-md ring-2 ring-blue-200"
-                      : "border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
-                  }`}
-                >
-                  {method.label}
-                </button>
-              ))}
+              {deliveryMethods.map((method) => {
+                const isSelected = deliveryMethod === method.value;
+
+                return (
+                  <button
+                    key={method.value}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => setDeliveryMethod(method.value)}
+                    className={`flex items-center justify-between gap-3 rounded-lg border-2 px-4 py-3 text-left font-bold transition-all ${
+                      isSelected
+                        ? "animate-pulse border-green-700 bg-green-600 text-white shadow-lg ring-4 ring-green-200"
+                        : "border-stone-300 bg-white text-stone-700 hover:border-blue-400 hover:bg-blue-50"
+                    }`}
+                  >
+                    <span>{method.label}</span>
+                    {isSelected && (
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-black uppercase text-green-700">
+                        Selecionado
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
           {!paymentType && (
