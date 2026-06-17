@@ -351,13 +351,15 @@ const ProductForm: React.FC<ProductFormProps> = ({
     }));
   };
 
-  const handleVisibleUsersChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    const selectedIds = Array.from(event.target.selectedOptions).map(
-      (option) => option.value,
-    );
-    setFormData((prev) => ({ ...prev, visibleUserIds: selectedIds }));
+  const handleVisibleUserToggle = (userId: string, checked: boolean) => {
+    setFormData((prev) => {
+      const currentIds = prev.visibleUserIds || [];
+      const visibleUserIds = checked
+        ? Array.from(new Set([...currentIds, userId]))
+        : currentIds.filter((id) => id !== userId);
+
+      return { ...prev, visibleUserIds };
+    });
   };
 
   // Ao submeter, cria um objeto Product final e chama onSave.
@@ -624,20 +626,45 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 >
                   Clientes com acesso
                 </label>
-                <select
+                <div
                   id="visibleUserIds"
-                  multiple
-                  required
-                  value={formData.visibleUserIds || []}
-                  onChange={handleVisibleUsersChange}
-                  className="mt-1 block min-h-36 w-full rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
+                  className="mt-1 max-h-48 space-y-2 overflow-y-auto rounded-md border border-stone-300 bg-white p-3"
                 >
-                  {clientUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} {user.email ? `- ${user.email}` : ""}
-                    </option>
-                  ))}
-                </select>
+                  {clientUsers.length === 0 ? (
+                    <p className="text-sm text-stone-500">
+                      Nenhum cliente encontrado.
+                    </p>
+                  ) : (
+                    clientUsers.map((user) => (
+                      <label
+                        key={user.id}
+                        className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1 text-sm text-stone-700 hover:bg-stone-50"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={(formData.visibleUserIds || []).includes(
+                            user.id,
+                          )}
+                          onChange={(event) =>
+                            handleVisibleUserToggle(
+                              user.id,
+                              event.target.checked,
+                            )
+                          }
+                          className="mt-1"
+                        />
+                        <span>
+                          <span className="font-semibold">{user.name}</span>
+                          {user.email && (
+                            <span className="block text-xs text-stone-500">
+                              {user.email}
+                            </span>
+                          )}
+                        </span>
+                      </label>
+                    ))
+                  )}
+                </div>
                 <p className="mt-1 text-xs text-stone-500">
                   Produto oculto aparece somente para os clientes selecionados.
                 </p>
