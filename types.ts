@@ -35,6 +35,8 @@ export interface Product {
   minStock?: number; // Estoque mínimo
   quantidadeVenda?: number; // Quantidade mínima de venda
   active?: boolean; // Produto ativo ou inativo
+  hidden?: boolean;
+  visibleUserIds?: string[];
 }
 
 export type DeliveryMethodValue =
@@ -105,6 +107,7 @@ export type UserRole =
   | "kitchen"
   | "admin"
   | "superadmin"
+  | "employee"
   | "admincustomer";
 
 export interface User {

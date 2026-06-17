@@ -93,6 +93,21 @@ export interface OutsourcedServiceType {
   label: string;
   input_unit?: string;
   expected_return_unit?: string;
+  inputUnit?: string;
+  outputUnit?: string;
+  inputMode?: "products" | "measure";
+  outputMode?: "products" | "measure";
+  active?: boolean;
+  builtIn?: boolean;
+}
+
+export interface OutsourcedServiceTypePayload {
+  label?: string;
+  inputUnit?: string;
+  outputUnit?: string;
+  inputMode?: "products" | "measure";
+  outputMode?: "products" | "measure";
+  active?: boolean;
 }
 
 export interface OutsourcedCompanyPayload {
@@ -141,7 +156,9 @@ const readJson = async <T>(response: Response): Promise<T> => {
       typeof (data as { message?: unknown }).message === "string"
         ? (data as { message: string }).message
         : `Erro na API (${response.status})`;
-    throw new Error(message);
+    const error = new Error(message) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
 
   return data as T;
@@ -174,6 +191,49 @@ export async function getOutsourcedServiceTypes() {
   );
   const data = await readJson<unknown>(response);
   return unwrapArray<OutsourcedServiceType>(data, ["types", "data"]);
+}
+
+export async function createOutsourcedServiceType(
+  payload: Required<OutsourcedServiceTypePayload>,
+) {
+  const response = await outsourcedFetch(
+    `${API_URL}/admin/outsourced-services/types`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+  return unwrapObject<OutsourcedServiceType>(
+    await readJson<unknown>(response),
+    ["type", "data"],
+  );
+}
+
+export async function updateOutsourcedServiceType(
+  id: string,
+  payload: OutsourcedServiceTypePayload,
+) {
+  const response = await outsourcedFetch(
+    `${API_URL}/admin/outsourced-services/types/${id}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+  );
+  return unwrapObject<OutsourcedServiceType>(
+    await readJson<unknown>(response),
+    ["type", "data"],
+  );
+}
+
+export async function deleteOutsourcedServiceType(id: string) {
+  const response = await outsourcedFetch(
+    `${API_URL}/admin/outsourced-services/types/${id}`,
+    {
+      method: "DELETE",
+    },
+  );
+  return readJson<unknown>(response);
 }
 
 export async function getOutsourcedProducts() {

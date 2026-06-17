@@ -212,8 +212,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
     stock: 0,
     minStock: 0,
     quantidadeVenda: 1,
+    hidden: false,
+    visibleUserIds: [],
   });
   const [imageUrls, setImageUrls] = useState<string[]>([""]);
+  const [clientUsers, setClientUsers] = useState<User[]>([]);
 
   // ðŸ†• Estado para categorias dinÃ¢micas
   const [categories, setCategories] = useState<Array<{ name: string }>>([]);
@@ -271,6 +274,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
       setFormData({
         ...product,
         quantidadeVenda: product.quantidadeVenda ?? 1,
+        hidden: Boolean(product.hidden),
+        visibleUserIds:
+          product.visibleUserIds ||
+          (product as Product & { visible_user_ids?: string[] }).visible_user_ids ||
+          [],
       }); // preenche com dados existentes
       setImageUrls(existingImages);
     } else {
@@ -284,10 +292,35 @@ const ProductForm: React.FC<ProductFormProps> = ({
         stock: 0,
         minStock: 0,
         quantidadeVenda: 1,
+        hidden: false,
+        visibleUserIds: [],
       });
       setImageUrls([""]);
     }
   }, [product, categories]);
+
+  useEffect(() => {
+    const loadClientUsers = async () => {
+      try {
+        const data = await getUsers();
+        const userList = Array.isArray(data)
+          ? data
+          : Array.isArray(data.users)
+            ? data.users
+            : Array.isArray(data.data)
+              ? data.data
+              : [];
+        setClientUsers(
+          userList.filter((user: User) =>
+            !user.role || user.role === "customer" || user.role === "admincustomer",
+          ),
+        );
+      } catch (error) {
+        console.error("Erro ao carregar clientes:", error);
+      }
+    };
+    loadClientUsers();
+  }, []);
 
   // Atualiza campos do formulario. Convertendo price para n?mero quando necess?rio.
   const handleChange = (
@@ -310,6 +343,23 @@ const ProductForm: React.FC<ProductFormProps> = ({
     }));
   };
 
+  const handleHiddenChange = (checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      hidden: checked,
+      visibleUserIds: checked ? prev.visibleUserIds || [] : [],
+    }));
+  };
+
+  const handleVisibleUsersChange = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    const selectedIds = Array.from(event.target.selectedOptions).map(
+      (option) => option.value,
+    );
+    setFormData((prev) => ({ ...prev, visibleUserIds: selectedIds }));
+  };
+
   // Ao submeter, cria um objeto Product final e chama onSave.
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -320,10 +370,20 @@ const ProductForm: React.FC<ProductFormProps> = ({
       normalizedImages[0] ||
       formData.imageUrl ||
       "https://picsum.photos/400/300";
+    const visibleUserIds = formData.hidden
+      ? formData.visibleUserIds || []
+      : [];
+
+    if (formData.hidden && visibleUserIds.length === 0) {
+      alert("Selecione ao menos um cliente para produto oculto.");
+      return;
+    }
 
     const finalProduct: Product = {
       ...formData,
       id: formData.id || "",
+      hidden: Boolean(formData.hidden),
+      visibleUserIds,
       imageUrl: primaryImage,
       images: normalizedImages.length > 0 ? normalizedImages : [primaryImage],
     };
@@ -546,6 +606,43 @@ const ProductForm: React.FC<ProductFormProps> = ({
               Exemplo: venda de 30 em 30, 15 em 15, etc. O cliente so pode
               comprar multiplos dessa quantidade.
             </p>
+          </div>
+          <div className="rounded-lg border border-stone-200 bg-stone-50 p-4">
+            <label className="flex items-center gap-2 text-sm font-semibold text-stone-700">
+              <input
+                type="checkbox"
+                checked={Boolean(formData.hidden)}
+                onChange={(event) => handleHiddenChange(event.target.checked)}
+              />
+              Produto oculto
+            </label>
+            {formData.hidden && (
+              <div className="mt-3">
+                <label
+                  htmlFor="visibleUserIds"
+                  className="block text-sm font-medium text-stone-700"
+                >
+                  Clientes com acesso
+                </label>
+                <select
+                  id="visibleUserIds"
+                  multiple
+                  required
+                  value={formData.visibleUserIds || []}
+                  onChange={handleVisibleUsersChange}
+                  className="mt-1 block min-h-36 w-full rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
+                >
+                  {clientUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name} {user.email ? `- ${user.email}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-stone-500">
+                  Produto oculto aparece somente para os clientes selecionados.
+                </p>
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-4 pt-4">
             {/* Botao cancelar fecha o modal sem salvar */}
@@ -1158,6 +1255,11 @@ const AdminPage: React.FC = () => {
           price: Number.isFinite(basePrice)
             ? basePrice
             : Number(product.price) || 0,
+          hidden: Boolean(product.hidden),
+          visibleUserIds:
+            product.visibleUserIds ||
+            (product as Product & { visible_user_ids?: string[] }).visible_user_ids ||
+            [],
           customPrice: null,
           hasCustomPrice: false,
         };
@@ -2026,7 +2128,17 @@ const AdminPage: React.FC = () => {
                             (Inativo)
                           </span>
                         )}
+                        {product.hidden && (
+                          <span className="ml-2 rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-800">
+                            Oculto
+                          </span>
+                        )}
                       </div>
+                      {product.hidden && (
+                        <div className="text-[10px] sm:text-xs text-stone-500">
+                          {product.visibleUserIds?.length || 0} cliente(s)
+                        </div>
+                      )}
                     </div>
                   </div>
                 </td>
@@ -2236,4 +2348,3 @@ const AdminPage: React.FC = () => {
 };
 
 export default AdminPage;
-

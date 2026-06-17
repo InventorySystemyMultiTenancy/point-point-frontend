@@ -3,6 +3,8 @@ import {
   addOutsourcedServiceDelivery,
   createOutsourcedCompany,
   createOutsourcedService,
+  createOutsourcedServiceType,
+  deleteOutsourcedServiceType,
   finalizeOutsourcedService,
   getOutsourcedCompanies,
   getOutsourcedProducts,
@@ -17,6 +19,8 @@ import {
   type OutsourcedService,
   type OutsourcedServicePayload,
   type OutsourcedServiceType,
+  type OutsourcedServiceTypePayload,
+  updateOutsourcedServiceType,
   updateOutsourcedCompany,
 } from "../services/outsourcedServices";
 
@@ -28,6 +32,12 @@ const SERVICE_FALLBACKS: Required<OutsourcedServiceType>[] = [
     label: "Retirada de tecido para corte",
     input_unit: "metros",
     expected_return_unit: "unidades",
+    inputUnit: "metros",
+    outputUnit: "unidades",
+    inputMode: "measure",
+    outputMode: "products",
+    active: true,
+    builtIn: true,
   },
   {
     id: "embroidery",
@@ -36,6 +46,12 @@ const SERVICE_FALLBACKS: Required<OutsourcedServiceType>[] = [
     label: "Bordagem",
     input_unit: "unidades",
     expected_return_unit: "unidades",
+    inputUnit: "unidades",
+    outputUnit: "unidades",
+    inputMode: "products",
+    outputMode: "products",
+    active: true,
+    builtIn: true,
   },
   {
     id: "sewing",
@@ -44,6 +60,12 @@ const SERVICE_FALLBACKS: Required<OutsourcedServiceType>[] = [
     label: "Costura",
     input_unit: "unidades",
     expected_return_unit: "unidades",
+    inputUnit: "unidades",
+    outputUnit: "unidades",
+    inputMode: "products",
+    outputMode: "products",
+    active: true,
+    builtIn: true,
   },
   {
     id: "stuffing",
@@ -52,6 +74,12 @@ const SERVICE_FALLBACKS: Required<OutsourcedServiceType>[] = [
     label: "Enchimento",
     input_unit: "unidades",
     expected_return_unit: "unidades",
+    inputUnit: "unidades",
+    outputUnit: "unidades",
+    inputMode: "products",
+    outputMode: "products",
+    active: true,
+    builtIn: true,
   },
   {
     id: "closing",
@@ -60,6 +88,12 @@ const SERVICE_FALLBACKS: Required<OutsourcedServiceType>[] = [
     label: "Fechamento",
     input_unit: "unidades",
     expected_return_unit: "unidades",
+    inputUnit: "unidades",
+    outputUnit: "unidades",
+    inputMode: "products",
+    outputMode: "products",
+    active: true,
+    builtIn: true,
   },
 ];
 
@@ -90,6 +124,15 @@ const emptyDelivery = {
   items: [{ productId: "", quantity: "" }],
   delivered_at: "",
   observation: "",
+};
+
+const emptyTypeForm: Required<OutsourcedServiceTypePayload> = {
+  label: "",
+  inputUnit: "unidades",
+  outputUnit: "unidades",
+  inputMode: "products",
+  outputMode: "products",
+  active: true,
 };
 
 const toDateTimeLocal = (value?: string | null) => {
@@ -125,18 +168,38 @@ const money = (value?: number | null) =>
 const serviceTypeValue = (type: OutsourcedServiceType) =>
   type.value || type.key || type.id || "";
 
-const allowedServiceTypes = new Set(SERVICE_FALLBACKS.map(serviceTypeValue));
+const serviceTypeId = (type: OutsourcedServiceType) =>
+  type.id || serviceTypeValue(type);
 
 const normalizeServiceTypes = (items: Array<OutsourcedServiceType | string>) => {
   const normalized = items
     .map((item) => {
       if (typeof item === "string") {
-        return SERVICE_FALLBACKS.find((type) => serviceTypeValue(type) === item);
+        return (
+          SERVICE_FALLBACKS.find((type) => serviceTypeValue(type) === item) || {
+            id: item,
+            value: item,
+            label: item,
+            inputUnit: "unidades",
+            outputUnit: "unidades",
+            inputMode: "products" as const,
+            outputMode: "products" as const,
+            active: true,
+          }
+        );
       }
       return item;
     })
     .filter((item): item is OutsourcedServiceType => Boolean(item))
-    .filter((item) => allowedServiceTypes.has(serviceTypeValue(item)));
+    .map((item) => ({
+      ...item,
+      value: serviceTypeValue(item),
+      inputUnit: item.inputUnit || item.input_unit || "unidades",
+      outputUnit: item.outputUnit || item.expected_return_unit || "unidades",
+      inputMode: item.inputMode || "products",
+      outputMode: item.outputMode || "products",
+      active: item.active !== false,
+    }));
 
   return normalized.length > 0 ? normalized : SERVICE_FALLBACKS;
 };
@@ -158,8 +221,10 @@ const statusClasses = (service: OutsourcedService) => {
   return "outsourced-status-pill is-pending";
 };
 
-const getInputUnit = (serviceType: string) =>
-  serviceType === "fabric_cutting" ? "metros" : "unidades";
+const getInputUnit = (serviceType: string, types: OutsourcedServiceType[] = []) =>
+  types.find((type) => serviceTypeValue(type) === serviceType)?.inputUnit ||
+  types.find((type) => serviceTypeValue(type) === serviceType)?.input_unit ||
+  (serviceType === "fabric_cutting" ? "metros" : "unidades");
 
 const totalItemsQuantity = (items?: Array<{ quantity?: number | string }>) =>
   (items || []).reduce((total, item) => total + (Number(item.quantity) || 0), 0);
@@ -244,7 +309,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
   const isEmployeeView = `${window.location.pathname}${window.location.hash}`.includes(
     "/employee",
   );
-  const [activeTab, setActiveTab] = useState<"services" | "companies">(
+  const [activeTab, setActiveTab] = useState<"services" | "companies" | "types">(
     "services",
   );
   const [companies, setCompanies] = useState<OutsourcedCompany[]>([]);
@@ -269,6 +334,11 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     useState<OutsourcedService | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [deliveryForm, setDeliveryForm] = useState({ ...emptyDelivery });
+  const [editingType, setEditingType] = useState<OutsourcedServiceType | null>(
+    null,
+  );
+  const [typeForm, setTypeForm] =
+    useState<Required<OutsourcedServiceTypePayload>>(emptyTypeForm);
 
   const loadPageData = async () => {
     setError("");
@@ -344,8 +414,74 @@ const AdminOutsourcedServicesPage: React.FC = () => {
   };
 
   const openNewService = () => {
-    setServiceForm({ ...emptyService, expected_return_items: [{ productId: "", quantity: "" }] });
+    const firstActiveType =
+      types.find((type) => type.active !== false) || types[0] || SERVICE_FALLBACKS[0];
+    setServiceForm({
+      ...emptyService,
+      service_type: serviceTypeValue(firstActiveType),
+      expected_return_items: [{ productId: "", quantity: "" }],
+    });
     setServiceModal(true);
+  };
+
+  const resetTypeForm = () => {
+    setEditingType(null);
+    setTypeForm(emptyTypeForm);
+  };
+
+  const openEditType = (type: OutsourcedServiceType) => {
+    setEditingType(type);
+    setTypeForm({
+      label: type.label || "",
+      inputUnit: type.inputUnit || type.input_unit || "unidades",
+      outputUnit: type.outputUnit || type.expected_return_unit || "unidades",
+      inputMode: type.inputMode || "products",
+      outputMode: type.outputMode || "products",
+      active: type.active !== false,
+    });
+  };
+
+  const saveType = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      if (editingType) {
+        await updateOutsourcedServiceType(serviceTypeId(editingType), typeForm);
+      } else {
+        await createOutsourcedServiceType(typeForm);
+      }
+      const updatedTypes = await getOutsourcedServiceTypes();
+      setTypes(normalizeServiceTypes(updatedTypes));
+      resetTypeForm();
+    } catch (err) {
+      console.error("Erro ao salvar tipo de servico:", err);
+      alert("Erro ao salvar tipo de servico.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeType = async (type: OutsourcedServiceType) => {
+    if (!window.confirm("Deseja excluir este tipo de servico?")) return;
+    setSaving(true);
+    try {
+      await deleteOutsourcedServiceType(serviceTypeId(type));
+      const updatedTypes = await getOutsourcedServiceTypes();
+      setTypes(normalizeServiceTypes(updatedTypes));
+      if (editingType && serviceTypeValue(editingType) === serviceTypeValue(type)) {
+        resetTypeForm();
+      }
+    } catch (err) {
+      const status = (err as Error & { status?: number }).status;
+      if (status === 409) {
+        alert("Este tipo esta em uso e nao pode ser excluido.");
+      } else {
+        console.error("Erro ao excluir tipo de servico:", err);
+        alert("Erro ao excluir tipo de servico.");
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const openEditCompany = (company: OutsourcedCompany) => {
@@ -470,10 +606,10 @@ const AdminOutsourcedServicesPage: React.FC = () => {
       started_at: toIsoOrUndefined(serviceForm.started_at),
       notes: serviceForm.notes.trim() || undefined,
     };
-    if (serviceForm.fabric_paid_amount !== "") {
+    if (!isEmployeeView && serviceForm.fabric_paid_amount !== "") {
       payload.fabric_paid_amount = Number(serviceForm.fabric_paid_amount);
     }
-    if (serviceForm.service_cost_amount !== "") {
+    if (!isEmployeeView && serviceForm.service_cost_amount !== "") {
       payload.service_cost_amount = Number(serviceForm.service_cost_amount);
     }
 
@@ -571,7 +707,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     }
   };
 
-  const serviceInputUnit = getInputUnit(serviceForm.service_type);
+  const serviceInputUnit = getInputUnit(serviceForm.service_type, types);
   const expectedReturnTotal = totalItemsQuantity(serviceForm.expected_return_items);
   const selectedServiceExpectedProducts = selectedService?.expected_return_items
     ?.map(itemProductId)
@@ -662,6 +798,18 @@ const AdminOutsourcedServicesPage: React.FC = () => {
         >
           Empresas terceirizadas
         </button>
+        {!isEmployeeView && (
+          <button
+            onClick={() => setActiveTab("types")}
+            className={`px-4 py-3 text-sm font-bold ${
+              activeTab === "types"
+                ? "border-b-2 border-purple-700 text-purple-700"
+                : "text-stone-500"
+            }`}
+          >
+            Tipos de servico
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -722,25 +870,27 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                     "Retorno previsto",
                     "Entregue",
                     "Faltante",
-                    "Valor tecido",
-                    "Custo servico",
+                    !isEmployeeView ? "Valor tecido" : null,
+                    !isEmployeeView ? "Custo servico" : null,
                     "Progresso",
                     "Observacoes",
-                  ].map((header) => (
-                    <th
-                      key={header}
-                      className="px-4 py-3 text-left text-xs font-bold uppercase text-stone-500"
-                    >
-                      {header}
-                    </th>
-                  ))}
+                  ].map((header) =>
+                    header ? (
+                      <th
+                        key={header}
+                        className="px-4 py-3 text-left text-xs font-bold uppercase text-stone-500"
+                      >
+                        {header}
+                      </th>
+                    ) : null,
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {visibleServices.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={12}
+                      colSpan={isEmployeeView ? 10 : 12}
                       className="px-4 py-8 text-center text-stone-500"
                     >
                       Nenhum servico encontrado.
@@ -777,7 +927,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                       <td className="px-4 py-3">{formatDate(service.due_date)}</td>
                       <td className="px-4 py-3">
                         {service.input_quantity}{" "}
-                        {service.input_unit || getInputUnit(service.service_type)}
+                        {service.input_unit || getInputUnit(service.service_type, types)}
                       </td>
                       <td className="max-w-[260px] px-4 py-3">
                         <span className="block font-bold">
@@ -795,12 +945,16 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                       <td className="px-4 py-3 font-bold">
                         {service.remaining_quantity}
                       </td>
-                      <td className="px-4 py-3">
-                        {money(service.fabric_paid_amount)}
-                      </td>
-                      <td className="px-4 py-3">
-                        {money(service.service_cost_amount)}
-                      </td>
+                      {!isEmployeeView && (
+                        <>
+                          <td className="px-4 py-3">
+                            {money(service.fabric_paid_amount)}
+                          </td>
+                          <td className="px-4 py-3">
+                            {money(service.service_cost_amount)}
+                          </td>
+                        </>
+                      )}
                       <td className="px-4 py-3">
                         <ProgressBar service={service} />
                       </td>
@@ -814,7 +968,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
             </table>
           </div>
         </section>
-      ) : (
+      ) : activeTab === "companies" ? (
         <section className="overflow-x-auto rounded-lg bg-white shadow">
           <table className="min-w-[900px] w-full divide-y divide-stone-200 text-sm">
             <thead className="bg-stone-50">
@@ -879,6 +1033,151 @@ const AdminOutsourcedServicesPage: React.FC = () => {
               ))}
             </tbody>
           </table>
+        </section>
+      ) : (
+        <section className="space-y-4">
+          <form
+            onSubmit={saveType}
+            className="grid gap-3 rounded-lg bg-white p-4 shadow md:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto_auto]"
+          >
+            <FormInput
+              label="Nome do tipo"
+              required
+              value={typeForm.label}
+              onChange={(value) =>
+                setTypeForm((prev) => ({ ...prev, label: value }))
+              }
+            />
+            <FormInput
+              label="Unidade retirada"
+              required
+              value={typeForm.inputUnit}
+              onChange={(value) =>
+                setTypeForm((prev) => ({ ...prev, inputUnit: value }))
+              }
+            />
+            <FormInput
+              label="Unidade retorno"
+              required
+              value={typeForm.outputUnit}
+              onChange={(value) =>
+                setTypeForm((prev) => ({ ...prev, outputUnit: value }))
+              }
+            />
+            <ModeSelect
+              label="Modo retirada"
+              value={typeForm.inputMode}
+              onChange={(value) =>
+                setTypeForm((prev) => ({ ...prev, inputMode: value }))
+              }
+            />
+            <ModeSelect
+              label="Modo retorno"
+              value={typeForm.outputMode}
+              onChange={(value) =>
+                setTypeForm((prev) => ({ ...prev, outputMode: value }))
+              }
+            />
+            <label className="flex items-center gap-2 self-end rounded-lg bg-stone-50 px-3 py-2 text-sm font-bold text-stone-700">
+              <input
+                type="checkbox"
+                checked={typeForm.active}
+                onChange={(event) =>
+                  setTypeForm((prev) => ({
+                    ...prev,
+                    active: event.target.checked,
+                  }))
+                }
+              />
+              Ativo
+            </label>
+            <div className="flex gap-2 self-end">
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-lg bg-purple-700 px-4 py-2 text-sm font-bold text-white hover:bg-purple-800 disabled:opacity-60"
+              >
+                {editingType ? "Atualizar" : "Criar"}
+              </button>
+              {editingType && (
+                <button
+                  type="button"
+                  onClick={resetTypeForm}
+                  className="rounded-lg bg-stone-200 px-4 py-2 text-sm font-bold text-stone-700 hover:bg-stone-300"
+                >
+                  Cancelar
+                </button>
+              )}
+            </div>
+          </form>
+
+          <div className="overflow-x-auto rounded-lg bg-white shadow">
+            <table className="min-w-[920px] w-full divide-y divide-stone-200 text-sm">
+              <thead className="bg-stone-50">
+                <tr>
+                  {[
+                    "Tipo",
+                    "Retirada",
+                    "Retorno",
+                    "Modo retirada",
+                    "Modo retorno",
+                    "Status",
+                    "Acoes",
+                  ].map((header) => (
+                    <th
+                      key={header}
+                      className="px-4 py-3 text-left text-xs font-bold uppercase text-stone-500"
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {types.map((type) => (
+                  <tr key={serviceTypeValue(type)}>
+                    <td className="px-4 py-3 font-bold text-stone-900">
+                      {type.label}
+                      {type.builtIn && (
+                        <span className="ml-2 rounded-full bg-stone-100 px-2 py-1 text-xs font-bold text-stone-600">
+                          Padrao
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">{type.inputUnit || "-"}</td>
+                    <td className="px-4 py-3">{type.outputUnit || "-"}</td>
+                    <td className="px-4 py-3">{type.inputMode}</td>
+                    <td className="px-4 py-3">{type.outputMode}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`outsourced-status-pill ${
+                          type.active === false ? "is-inactive" : "is-complete"
+                        }`}
+                      >
+                        {type.active === false ? "Inativo" : "Ativo"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => openEditType(type)}
+                        className="mr-3 font-bold text-purple-700 hover:text-purple-900"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeType(type)}
+                        className="font-bold text-red-700 hover:text-red-900"
+                      >
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
 
@@ -1017,11 +1316,13 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   }
                   className="w-full rounded-lg border border-stone-300 px-3 py-2"
                 >
-                  {types.map((type) => (
-                    <option key={serviceTypeValue(type)} value={serviceTypeValue(type)}>
-                      {type.label}
-                    </option>
-                  ))}
+                  {types
+                    .filter((type) => type.active !== false)
+                    .map((type) => (
+                      <option key={serviceTypeValue(type)} value={serviceTypeValue(type)}>
+                        {type.label}
+                      </option>
+                    ))}
                 </select>
               </label>
               <FormInput
@@ -1038,32 +1339,36 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   }))
                 }
               />
-              <FormInput
-                label="Valor pago pelo tecido"
-                type="number"
-                min="0"
-                step="0.01"
-                value={serviceForm.fabric_paid_amount}
-                onChange={(value) =>
-                  setServiceForm((prev) => ({
-                    ...prev,
-                    fabric_paid_amount: value,
-                  }))
-                }
-              />
-              <FormInput
-                label="Valor cobrado pelo terceirizado pelo servico"
-                type="number"
-                min="0"
-                step="0.01"
-                value={serviceForm.service_cost_amount}
-                onChange={(value) =>
-                  setServiceForm((prev) => ({
-                    ...prev,
-                    service_cost_amount: value,
-                  }))
-                }
-              />
+              {!isEmployeeView && (
+                <>
+                  <FormInput
+                    label="Valor pago pelo tecido"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={serviceForm.fabric_paid_amount}
+                    onChange={(value) =>
+                      setServiceForm((prev) => ({
+                        ...prev,
+                        fabric_paid_amount: value,
+                      }))
+                    }
+                  />
+                  <FormInput
+                    label="Valor cobrado pelo terceirizado pelo servico"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={serviceForm.service_cost_amount}
+                    onChange={(value) =>
+                      setServiceForm((prev) => ({
+                        ...prev,
+                        service_cost_amount: value,
+                      }))
+                    }
+                  />
+                </>
+              )}
               <div className="space-y-3 rounded-lg border border-stone-200 p-4 sm:col-span-2">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -1194,14 +1499,18 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                 </div>
 
                 <div className="mb-6 grid gap-4 rounded-lg border border-stone-200 p-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <Info label="Retirada" value={`${selectedService.input_quantity} ${selectedService.input_unit || getInputUnit(selectedService.service_type)}`} />
+                  <Info label="Retirada" value={`${selectedService.input_quantity} ${selectedService.input_unit || getInputUnit(selectedService.service_type, types)}`} />
                   <Info label="Itens retirados" value={formatProductItems(selectedService.input_items, products)} />
                   <Info label="Retorno previsto" value={`${Number(selectedService.expected_return_quantity) || totalItemsQuantity(selectedService.expected_return_items)} unidades`} />
                   <Info label="Itens previstos" value={formatProductItems(selectedService.expected_return_items, products)} />
                   <Info label="Ja entregue" value={String(selectedService.total_delivered_quantity)} />
                   <Info label="Faltante" value={String(selectedService.remaining_quantity)} />
-                  <Info label="Valor tecido" value={money(selectedService.fabric_paid_amount)} />
-                  <Info label="Custo servico" value={money(selectedService.service_cost_amount)} />
+                  {!isEmployeeView && (
+                    <>
+                      <Info label="Valor tecido" value={money(selectedService.fabric_paid_amount)} />
+                      <Info label="Custo servico" value={money(selectedService.service_cost_amount)} />
+                    </>
+                  )}
                   <Info label="Inicio" value={formatDate(selectedService.started_at)} />
                   <Info label="Observacoes" value={selectedService.notes || "-"} />
                 </div>
@@ -1362,6 +1671,28 @@ const FormInput: React.FC<{
       step={step}
       className="w-full rounded-lg border border-stone-300 px-3 py-2 focus:border-purple-600 focus:outline-none"
     />
+  </label>
+);
+
+const ModeSelect: React.FC<{
+  label: string;
+  value: "products" | "measure";
+  onChange: (value: "products" | "measure") => void;
+}> = ({ label, value, onChange }) => (
+  <label>
+    <span className="mb-1 block text-sm font-semibold text-stone-600">
+      {label}
+    </span>
+    <select
+      value={value}
+      onChange={(event) =>
+        onChange(event.target.value as "products" | "measure")
+      }
+      className="w-full rounded-lg border border-stone-300 px-3 py-2 focus:border-purple-600 focus:outline-none"
+    >
+      <option value="products">Produtos</option>
+      <option value="measure">Medida</option>
+    </select>
   </label>
 );
 
