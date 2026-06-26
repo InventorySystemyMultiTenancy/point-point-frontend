@@ -1655,7 +1655,7 @@ const AdminPage: React.FC = () => {
         <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={() => setIsStockModalOpen(true)}
-            className="bg-amber-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-amber-600 transition-colors shadow-md"
+            className="bg-white border border-stone-300 text-stone-700 font-bold py-2 px-6 rounded-lg hover:bg-stone-50 transition-colors shadow-sm"
           >
             Movimentacao Estoque
           </button>
@@ -1671,26 +1671,26 @@ const AdminPage: React.FC = () => {
           <div className="mt-12"></div>
           <button
             onClick={() => navigate("/admin/categories")}
-            className="bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-colors shadow-md"
+            className="bg-white border border-stone-300 text-stone-700 font-bold py-2 px-6 rounded-lg hover:bg-stone-50 transition-colors shadow-sm"
           >
             Categorias
           </button>
           <button
             onClick={() => navigate("/admin/outsourced-services")}
-            className="bg-stone-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-stone-800 transition-colors shadow-md"
+            className="bg-white border border-stone-300 text-stone-700 font-bold py-2 px-6 rounded-lg hover:bg-stone-50 transition-colors shadow-sm"
           >
             Servicos Terceirizados
           </button>
           <button
             onClick={() => navigate("/historico")}
-            className="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-colors shadow-md"
+            className="bg-white border border-stone-300 text-stone-700 font-bold py-2 px-6 rounded-lg hover:bg-stone-50 transition-colors shadow-sm"
           >
             Historico de Pedidos
           </button>
           <button
             onClick={handleGenerateAnalysis}
             disabled={isLoadingAnalysis}
-            className="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors shadow-md disabled:bg-indigo-300 flex items-center gap-2"
+            className="bg-purple-50 border border-purple-200 text-purple-700 font-bold py-2 px-6 rounded-lg hover:bg-purple-100 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
           >
             {isLoadingAnalysis ? " Analisando..." : "Analise com IA"}
           </button>
@@ -1699,13 +1699,13 @@ const AdminPage: React.FC = () => {
               setEditingProduct(null);
               setIsFormOpen(true);
             }}
-            className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+            className="bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-colors shadow-md"
           >
             + Adicionar Produto
           </button>
           <button
             onClick={() => navigate("/admin/clients")}
-            className="bg-teal-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-700 transition-colors shadow-md"
+            className="bg-white border border-stone-300 text-stone-700 font-bold py-2 px-6 rounded-lg hover:bg-stone-50 transition-colors shadow-sm"
           >
             Clientes
           </button>
@@ -1716,7 +1716,7 @@ const AdminPage: React.FC = () => {
                 navigate("/admin/login");
               }
             }}
-            className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+            className="bg-white border border-red-200 text-red-600 font-bold py-2 px-6 rounded-lg hover:bg-red-50 transition-colors shadow-sm"
           >
             Sair
           </button>
