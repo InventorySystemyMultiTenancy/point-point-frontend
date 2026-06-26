@@ -129,6 +129,7 @@ export interface User {
   role?: UserRole; // Tipo de usuário: customer (padrão), kitchen ou admin
   fullAccess?: boolean;
   monthlyPayment?: boolean;
+  active?: boolean;
 }
 
 export interface CartItem extends Product {

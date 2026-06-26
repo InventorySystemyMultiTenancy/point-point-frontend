@@ -1704,6 +1704,12 @@ const AdminPage: React.FC = () => {
             + Adicionar Produto
           </button>
           <button
+            onClick={() => navigate("/admin/clients")}
+            className="bg-teal-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-700 transition-colors shadow-md"
+          >
+            Clientes
+          </button>
+          <button
             onClick={async () => {
               if (window.confirm("Deseja realmente sair?")) {
                 await logout();

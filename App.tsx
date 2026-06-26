@@ -23,6 +23,7 @@ import AdminReportsPage from "./pages/AdminReportsPage";
 import AdminManagementReportPage from "./pages/AdminManagementReportPage";
 import AdminOutsourcedServicesPage from "./pages/AdminOutsourcedServicesPage";
 import AdminCategoriesPage from "./pages/AdminCategoriesPage"; // 🆕
+import AdminClientsPage from "./pages/AdminClientsPage";
 import EmployeeLoginPage from "./pages/EmployeeLoginPage";
 import EmployeePage from "./pages/EmployeePage";
 import Header from "./components/Header";
@@ -262,6 +263,19 @@ const RouterBody: React.FC = () => {
                 redirectTo="/admin/login"
               >
                 <AdminCategoriesPage />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* Rota protegida para gerenciar clientes */}
+          <Route
+            path="/admin/clients"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={["admin"]}
+                redirectTo="/admin/login"
+              >
+                <AdminClientsPage />
               </RoleProtectedRoute>
             }
           />

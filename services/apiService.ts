@@ -564,3 +564,14 @@ export async function updateUserMonthlyPayment(
   return response.json();
 }
 
+export async function updateUserActive(userId: string, active: boolean) {
+  const response = await authenticatedFetch(
+    `${API_URL}/users/${userId}/active`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ active }),
+    },
+  );
+  return response.json();
+}
+
