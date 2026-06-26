@@ -127,7 +127,7 @@ const Header: React.FC = () => {
                       className="monster-header-action edit-btn bg-purple-700 text-white font-bold py-1 px-3 rounded-lg ml-2 hover:bg-purple-800 transition-colors shadow-md text-xs"
                       title="Editar meus dados"
                     >
-                      <span className="edit-btn-label">Editar meus dados</span>
+                      <span className="edit-btn-label rounded-lg">Editar meus dados</span>
                     </button>
                     <NavLink
                       to="/meus-pedidos"
@@ -138,7 +138,7 @@ const Header: React.FC = () => {
                     </NavLink>
                     <button
                       onClick={handleLogout}
-                      className="text-white hover:text-purple-700 hover:bg-[#fff6e5] p-2 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg"
+                      className="text-white hover:text-purple-700 hover:bg-[#fff6e5] p-2 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg rounded-lg"
                       title="Sair"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

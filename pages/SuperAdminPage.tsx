@@ -290,7 +290,7 @@ const SuperAdminPage: React.FC = () => {
           <div className="flex flex-col items-center gap-3">
             <img src={logo} alt="POIT&POIT Logo" className="w-24 h-24 mb-2" />
             <h2 className="text-3xl font-bold text-purple-600">Super Admin</h2>
-            <p className="text-gray-600 text-sm text-center">
+            <p className="text-gray-600 text-sm text-center rounded-lg">
               Controle Financeiro POIT&POIT
             </p>
           </div>
