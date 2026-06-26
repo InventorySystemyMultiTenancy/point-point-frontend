@@ -557,7 +557,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               />
             </div>
             <div className="flex-1">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <label
                   htmlFor="priceRaw"
                   className="block text-sm font-medium text-stone-700"
@@ -576,54 +576,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 </label>
               </div>
               {costBreakdownEnabled ? (
-                <div className="mt-1 rounded-lg border border-blue-100 bg-blue-50 p-3">
-                  <div className="space-y-2">
-                    {costSteps.map((item, index) => (
-                      <div
-                        key={`cost-step-${index}`}
-                        className="grid gap-2 sm:grid-cols-[1fr_110px_auto]"
-                      >
-                        <input
-                          type="text"
-                          value={item.step}
-                          onChange={(event) =>
-                            updateCostStep(index, "step", event.target.value)
-                          }
-                          placeholder="Nome da etapa"
-                          className="rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
-                        />
-                        <input
-                          type="number"
-                          value={item.cost}
-                          onChange={(event) =>
-                            updateCostStep(index, "cost", event.target.value)
-                          }
-                          min="0"
-                          step="0.01"
-                          placeholder="Custo"
-                          className="rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeCostStep(index)}
-                          className="rounded-md bg-stone-200 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-300"
-                        >
-                          Remover
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={addCostStep}
-                    className="mt-2 text-sm font-semibold text-blue-700 hover:text-blue-800"
-                  >
-                    + Adicionar etapa
-                  </button>
-                  <div className="mt-3 rounded-md bg-white px-3 py-2 text-sm font-bold text-stone-800">
-                    Custo total: R${costStepsTotal.toFixed(2)}
-                  </div>
-                </div>
+                <input
+                  type="number"
+                  value={costStepsTotal}
+                  disabled
+                  className="mt-1 block w-full rounded-md border-stone-300 bg-stone-100 text-stone-500 shadow-sm"
+                />
               ) : (
                 <input
                   type="number"
@@ -638,6 +596,56 @@ const ProductForm: React.FC<ProductFormProps> = ({
               )}
             </div>
           </div>
+          {costBreakdownEnabled && (
+            <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+              <div className="space-y-2">
+                {costSteps.map((item, index) => (
+                  <div
+                    key={`cost-step-${index}`}
+                    className="grid gap-2 grid-cols-1 sm:grid-cols-[1fr_110px_auto]"
+                  >
+                    <input
+                      type="text"
+                      value={item.step}
+                      onChange={(event) =>
+                        updateCostStep(index, "step", event.target.value)
+                      }
+                      placeholder="Nome da etapa"
+                      className="w-full min-w-0 rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
+                    />
+                    <input
+                      type="number"
+                      value={item.cost}
+                      onChange={(event) =>
+                        updateCostStep(index, "cost", event.target.value)
+                      }
+                      min="0"
+                      step="0.01"
+                      placeholder="Custo"
+                      className="w-full min-w-0 rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeCostStep(index)}
+                      className="w-full sm:w-auto rounded-md bg-stone-200 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-300"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={addCostStep}
+                className="mt-2 text-sm font-semibold text-blue-700 hover:text-blue-800"
+              >
+                + Adicionar etapa
+              </button>
+              <div className="mt-3 rounded-md bg-white px-3 py-2 text-sm font-bold text-stone-800">
+                Custo total: R${costStepsTotal.toFixed(2)}
+              </div>
+            </div>
+          )}
           <div className="flex gap-4">
             <div className="flex-1">
               <label
@@ -1714,9 +1722,9 @@ const AdminPage: React.FC = () => {
         <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-5 shadow">
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-xl font-bold text-red-800">
+              <p className="text-xl font-bold text-red-800">
                 Servicos terceirizados atrasados
-              </h2>
+              </p>
               <p className="text-sm text-red-700">
                 Existem entregas fora do prazo aguardando retorno.
               </p>
