@@ -17,6 +17,9 @@ export interface Product {
   name: string;
   price: number;
   priceRaw: number; // Preço bruto
+  costBreakdownEnabled?: boolean;
+  hasCostBreakdown?: boolean;
+  costSteps?: CostStep[];
   basePrice?: number;
   customPrice?: number | null;
   hasCustomPrice?: boolean;
@@ -37,6 +40,11 @@ export interface Product {
   active?: boolean; // Produto ativo ou inativo
   hidden?: boolean;
   visibleUserIds?: string[];
+}
+
+export interface CostStep {
+  step: string;
+  cost: number;
 }
 
 export type DeliveryMethodValue =

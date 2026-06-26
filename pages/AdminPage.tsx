@@ -130,7 +130,7 @@ const StockMovementModal: React.FC<{
   );
 };
 import { useNavigate } from "react-router-dom";
-import type { Order, Product, ShippingCarrier, User } from "../types";
+import type { CostStep, Order, Product, ShippingCarrier, User } from "../types";
 import {
   authenticatedFetch,
   createShippingCarrier,
@@ -214,6 +214,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
     quantidadeVenda: 1,
     hidden: false,
     visibleUserIds: [],
+    costBreakdownEnabled: false,
+    hasCostBreakdown: false,
+    costSteps: [],
   });
   const [imageUrls, setImageUrls] = useState<string[]>([""]);
   const [clientUsers, setClientUsers] = useState<User[]>([]);
@@ -275,6 +278,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
         ...product,
         quantidadeVenda: product.quantidadeVenda ?? 1,
         hidden: Boolean(product.hidden),
+        costBreakdownEnabled: Boolean(
+          product.costBreakdownEnabled || product.hasCostBreakdown,
+        ),
+        hasCostBreakdown: Boolean(
+          product.costBreakdownEnabled || product.hasCostBreakdown,
+        ),
+        costSteps: Array.isArray(product.costSteps) ? product.costSteps : [],
         visibleUserIds:
           product.visibleUserIds ||
           (product as Product & { visible_user_ids?: string[] }).visible_user_ids ||
@@ -294,6 +304,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
         quantidadeVenda: 1,
         hidden: false,
         visibleUserIds: [],
+        costBreakdownEnabled: false,
+        hasCostBreakdown: false,
+        costSteps: [],
       });
       setImageUrls([""]);
     }
@@ -339,8 +352,70 @@ const ProductForm: React.FC<ProductFormProps> = ({
               name === "minStock" ||
               name === "quantidadeVenda"
             ? parseInt(value)
-            : value,
+        : value,
     }));
+  };
+
+  const costBreakdownEnabled = Boolean(formData.costBreakdownEnabled);
+  const costSteps =
+    formData.costSteps && formData.costSteps.length > 0
+      ? formData.costSteps
+      : [{ step: "", cost: 0 }];
+  const costStepsTotal = costSteps.reduce(
+    (total, step) => total + (Number(step.cost) || 0),
+    0,
+  );
+
+  const handleCostBreakdownToggle = (checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      costBreakdownEnabled: checked,
+      hasCostBreakdown: checked,
+      costSteps: checked
+        ? prev.costSteps && prev.costSteps.length > 0
+          ? prev.costSteps
+          : [{ step: "", cost: Number(prev.priceRaw) || 0 }]
+        : [],
+    }));
+  };
+
+  const updateCostStep = (
+    index: number,
+    field: keyof CostStep,
+    value: string,
+  ) => {
+    setFormData((prev) => {
+      const currentSteps =
+        prev.costSteps && prev.costSteps.length > 0
+          ? prev.costSteps
+          : [{ step: "", cost: 0 }];
+      const nextSteps = currentSteps.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              [field]: field === "cost" ? parseFloat(value) || 0 : value,
+            }
+          : item,
+      );
+      return { ...prev, costSteps: nextSteps };
+    });
+  };
+
+  const addCostStep = () => {
+    setFormData((prev) => ({
+      ...prev,
+      costSteps: [...costSteps, { step: "", cost: 0 }],
+    }));
+  };
+
+  const removeCostStep = (index: number) => {
+    setFormData((prev) => {
+      const nextSteps = costSteps.filter((_, itemIndex) => itemIndex !== index);
+      return {
+        ...prev,
+        costSteps: nextSteps.length > 0 ? nextSteps : [{ step: "", cost: 0 }],
+      };
+    });
   };
 
   const handleHiddenChange = (checked: boolean) => {
@@ -381,7 +456,20 @@ const ProductForm: React.FC<ProductFormProps> = ({
       return;
     }
 
-    const finalProduct: Product = {
+    const sanitizedCostSteps = costSteps.map((item) => ({
+      step: item.step.trim(),
+      cost: Number(item.cost) || 0,
+    }));
+
+    if (
+      costBreakdownEnabled &&
+      sanitizedCostSteps.some((item) => item.step.length === 0)
+    ) {
+      alert("Informe o nome de todas as etapas de custo.");
+      return;
+    }
+
+    const baseProduct: Product = {
       ...formData,
       id: formData.id || "",
       hidden: Boolean(formData.hidden),
@@ -389,6 +477,22 @@ const ProductForm: React.FC<ProductFormProps> = ({
       imageUrl: primaryImage,
       images: normalizedImages.length > 0 ? normalizedImages : [primaryImage],
     };
+
+    const finalProduct: Product = costBreakdownEnabled
+      ? {
+          ...baseProduct,
+          priceRaw: costStepsTotal,
+          costBreakdownEnabled: true,
+          hasCostBreakdown: true,
+          costSteps: sanitizedCostSteps,
+        }
+      : {
+          ...baseProduct,
+          priceRaw: Number(formData.priceRaw) || 0,
+          costBreakdownEnabled: false,
+          hasCostBreakdown: false,
+          costSteps: [],
+        };
     onSave(finalProduct); // informa o componente pai sobre o produto salvo
   };
 
@@ -453,22 +557,85 @@ const ProductForm: React.FC<ProductFormProps> = ({
               />
             </div>
             <div className="flex-1">
-              <label
-                htmlFor="priceRaw"
-                className="block text-sm font-medium text-stone-700"
-              >
-                Preco Bruto
-              </label>
-              <input
-                type="number"
-                name="priceRaw"
-                id="priceRaw"
-                value={formData.priceRaw}
-                onChange={handleChange}
-                required
-                step="0.01"
-                className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
-              />
+              <div className="flex items-center justify-between gap-2">
+                <label
+                  htmlFor="priceRaw"
+                  className="block text-sm font-medium text-stone-700"
+                >
+                  Preco Bruto
+                </label>
+                <label className="flex items-center gap-2 text-xs font-semibold text-stone-700">
+                  <input
+                    type="checkbox"
+                    checked={costBreakdownEnabled}
+                    onChange={(event) =>
+                      handleCostBreakdownToggle(event.target.checked)
+                    }
+                  />
+                  Destrinchar custo
+                </label>
+              </div>
+              {costBreakdownEnabled ? (
+                <div className="mt-1 rounded-lg border border-blue-100 bg-blue-50 p-3">
+                  <div className="space-y-2">
+                    {costSteps.map((item, index) => (
+                      <div
+                        key={`cost-step-${index}`}
+                        className="grid gap-2 sm:grid-cols-[1fr_110px_auto]"
+                      >
+                        <input
+                          type="text"
+                          value={item.step}
+                          onChange={(event) =>
+                            updateCostStep(index, "step", event.target.value)
+                          }
+                          placeholder="Nome da etapa"
+                          className="rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
+                        />
+                        <input
+                          type="number"
+                          value={item.cost}
+                          onChange={(event) =>
+                            updateCostStep(index, "cost", event.target.value)
+                          }
+                          min="0"
+                          step="0.01"
+                          placeholder="Custo"
+                          className="rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeCostStep(index)}
+                          className="rounded-md bg-stone-200 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-300"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addCostStep}
+                    className="mt-2 text-sm font-semibold text-blue-700 hover:text-blue-800"
+                  >
+                    + Adicionar etapa
+                  </button>
+                  <div className="mt-3 rounded-md bg-white px-3 py-2 text-sm font-bold text-stone-800">
+                    Custo total: R${costStepsTotal.toFixed(2)}
+                  </div>
+                </div>
+              ) : (
+                <input
+                  type="number"
+                  name="priceRaw"
+                  id="priceRaw"
+                  value={formData.priceRaw}
+                  onChange={handleChange}
+                  required
+                  step="0.01"
+                  className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
+                />
+              )}
             </div>
           </div>
           <div className="flex gap-4">
@@ -761,6 +928,9 @@ const AdminPage: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   // Produto atual sendo editado (ou null para criar novo)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [selectedCostProduct, setSelectedCostProduct] = useState<Product | null>(
+    null,
+  );
   // Estados para analise de IA
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
@@ -1256,6 +1426,16 @@ const AdminPage: React.FC = () => {
           .slice(0, 20)
       : [];
 
+  const productHasCostBreakdown = (product: Product) =>
+    Boolean(
+      (product.costBreakdownEnabled || product.hasCostBreakdown) &&
+        Array.isArray(product.costSteps) &&
+        product.costSteps.length > 0,
+    );
+
+  const getCostStepsTotal = (steps?: CostStep[]) =>
+    (steps || []).reduce((total, item) => total + (Number(item.cost) || 0), 0);
+
   const loadProducts = async () => {
     try {
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -1282,6 +1462,13 @@ const AdminPage: React.FC = () => {
           price: Number.isFinite(basePrice)
             ? basePrice
             : Number(product.price) || 0,
+          costBreakdownEnabled: Boolean(
+            product.costBreakdownEnabled || product.hasCostBreakdown,
+          ),
+          hasCostBreakdown: Boolean(
+            product.costBreakdownEnabled || product.hasCostBreakdown,
+          ),
+          costSteps: Array.isArray(product.costSteps) ? product.costSteps : [],
           hidden: Boolean(product.hidden),
           visibleUserIds:
             product.visibleUserIds ||
@@ -2095,6 +2282,52 @@ const AdminPage: React.FC = () => {
         />
       )}
 
+      {selectedCostProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-blue-800">
+                  Custos do produto
+                </h2>
+                <p className="text-sm font-semibold text-stone-600">
+                  {selectedCostProduct.name}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedCostProduct(null)}
+                className="rounded-lg bg-stone-100 px-3 py-1 text-sm font-bold text-stone-700 hover:bg-stone-200"
+              >
+                X
+              </button>
+            </div>
+            <div className="max-h-80 overflow-y-auto rounded-lg border border-stone-200">
+              {(selectedCostProduct.costSteps || []).map((item, index) => (
+                <div
+                  key={`${selectedCostProduct.id}-cost-${index}`}
+                  className="flex items-center justify-between gap-4 border-b border-stone-100 px-4 py-3 last:border-b-0"
+                >
+                  <span className="text-sm font-semibold text-stone-800">
+                    {item.step || "Etapa sem nome"}
+                  </span>
+                  <span className="text-sm font-bold text-stone-900">
+                    R${Number(item.cost || 0).toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 rounded-lg bg-blue-50 px-4 py-3 text-right text-base font-black text-blue-900">
+              Custo total: R$
+              {Number(
+                selectedCostProduct.priceRaw ||
+                  getCostStepsTotal(selectedCostProduct.costSteps),
+              ).toFixed(2)}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Secao de Gerenciamento de Produtos */}
       <h2 className="text-2xl font-bold text-stone-800 mb-4">
         Gerenciar Produtos
@@ -2184,6 +2417,15 @@ const AdminPage: React.FC = () => {
                   <div className="text-[10px] sm:text-xs text-stone-500">
                     Bruto: R${Number(product.priceRaw)?.toFixed(2) ?? "-"}
                   </div>
+                  {productHasCostBreakdown(product) && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCostProduct(product)}
+                      className="mt-1 text-[10px] sm:text-xs font-bold text-blue-700 hover:text-blue-900"
+                    >
+                      Ver custos
+                    </button>
+                  )}
                 </td>
                 <td className="px-2 sm:px-4 py-2 whitespace-nowrap">
                   <span
