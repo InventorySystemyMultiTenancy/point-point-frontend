@@ -1146,6 +1146,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+          )}
         </section>
       ) : activeTab === "companies" ? (
         <section className="overflow-x-auto rounded-lg bg-white shadow">
@@ -1160,16 +1161,16 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   "Email",
                   "Status",
                   !isEmployeeView ? "Acoes" : null,
-                ].map((header) => (
-                  header && (
-                  <th
-                    key={header}
-                    className="px-4 py-3 text-left text-xs font-bold uppercase text-stone-500"
-                  >
-                    {header}
-                  </th>
-                  )
-                ))}
+                ].map((header) =>
+                  header ? (
+                    <th
+                      key={header}
+                      className="px-4 py-3 text-left text-xs font-bold uppercase text-stone-500"
+                    >
+                      {header}
+                    </th>
+                  ) : null,
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
