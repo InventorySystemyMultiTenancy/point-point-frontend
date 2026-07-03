@@ -323,6 +323,9 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     "all" | "pendente" | "concluido" | "overdue"
   >("all");
   const [companyFilter, setCompanyFilter] = useState("all");
+  const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
+  const [calendarYear, setCalendarYear] = useState<number>(new Date().getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState<number>(new Date().getMonth());
   const [companyModal, setCompanyModal] = useState(false);
   const [editingCompany, setEditingCompany] =
     useState<OutsourcedCompany | null>(null);
@@ -406,6 +409,64 @@ const AdminOutsourcedServicesPage: React.FC = () => {
       activeCompanies,
     };
   }, [companies, services]);
+
+  const servicesByDate = useMemo(() => {
+    const map = new Map<string, OutsourcedService[]>();
+    visibleServices.forEach((service) => {
+      const date = new Date(service.due_date);
+      if (Number.isNaN(date.getTime())) return;
+      const key = date.toISOString().slice(0, 10);
+      const current = map.get(key) || [];
+      current.push(service);
+      map.set(key, current);
+    });
+    return map;
+  }, [visibleServices]);
+
+  const calendarWeeks = useMemo(() => {
+    const firstDayOfMonth = new Date(calendarYear, calendarMonth, 1).getDay();
+    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    const weeks: Array<Array<number | null>> = [];
+    let week: Array<number | null> = Array(firstDayOfMonth).fill(null);
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      week.push(day);
+      if (week.length === 7) {
+        weeks.push(week);
+        week = [];
+      }
+    }
+
+    if (week.length > 0) {
+      while (week.length < 7) {
+        week.push(null);
+      }
+      weeks.push(week);
+    }
+
+    return weeks;
+  }, [calendarYear, calendarMonth]);
+
+  const monthLabel = useMemo(
+    () =>
+      new Date(calendarYear, calendarMonth).toLocaleString("pt-BR", {
+        month: "long",
+        year: "numeric",
+      }),
+    [calendarMonth, calendarYear],
+  );
+
+  const goPrevMonth = () => {
+    const date = new Date(calendarYear, calendarMonth - 1, 1);
+    setCalendarYear(date.getFullYear());
+    setCalendarMonth(date.getMonth());
+  };
+
+  const goNextMonth = () => {
+    const date = new Date(calendarYear, calendarMonth + 1, 1);
+    setCalendarYear(date.getFullYear());
+    setCalendarMonth(date.getMonth());
+  };
 
   const openNewCompany = () => {
     setEditingCompany(null);
@@ -818,46 +879,164 @@ const AdminOutsourcedServicesPage: React.FC = () => {
         </div>
       ) : activeTab === "services" ? (
         <section className="space-y-4">
-          <div className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow lg:flex-row lg:items-end">
-            <label className="flex flex-col gap-1 text-sm font-semibold text-stone-600">
-              Status
-              <select
-                value={statusFilter}
-                onChange={(event) =>
-                  setStatusFilter(
-                    event.target.value as
-                      | "all"
-                      | "pendente"
-                      | "concluido"
-                      | "overdue",
-                  )
-                }
-                className="rounded-lg border border-stone-300 px-3 py-2"
+          <div className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <label className="flex flex-col gap-1 text-sm font-semibold text-stone-600">
+                Status
+                <select
+                  value={statusFilter}
+                  onChange={(event) =>
+                    setStatusFilter(
+                      event.target.value as
+                        | "all"
+                        | "pendente"
+                        | "concluido"
+                        | "overdue",
+                    )
+                  }
+                  className="rounded-lg border border-stone-300 px-3 py-2"
+                >
+                  <option value="all">Todos</option>
+                  <option value="pendente">Pendentes</option>
+                  <option value="concluido">Concluidos</option>
+                  <option value="overdue">Atrasados</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm font-semibold text-stone-600">
+                Empresa terceirizada
+                <select
+                  value={companyFilter}
+                  onChange={(event) => setCompanyFilter(event.target.value)}
+                  className="min-w-[260px] rounded-lg border border-stone-300 px-3 py-2"
+                >
+                  <option value="all">Todas</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                className={`rounded-lg px-4 py-2 text-sm font-bold ${
+                  viewMode === "table"
+                    ? "bg-purple-700 text-white"
+                    : "bg-stone-100 text-stone-700"
+                }`}
               >
-                <option value="all">Todos</option>
-                <option value="pendente">Pendentes</option>
-                <option value="concluido">Concluidos</option>
-                <option value="overdue">Atrasados</option>
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm font-semibold text-stone-600">
-              Empresa terceirizada
-              <select
-                value={companyFilter}
-                onChange={(event) => setCompanyFilter(event.target.value)}
-                className="min-w-[260px] rounded-lg border border-stone-300 px-3 py-2"
+                Tabela
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("calendar")}
+                className={`rounded-lg px-4 py-2 text-sm font-bold ${
+                  viewMode === "calendar"
+                    ? "bg-purple-700 text-white"
+                    : "bg-stone-100 text-stone-700"
+                }`}
               >
-                <option value="all">Todas</option>
-                {companies.map((company) => (
-                  <option key={company.id} value={company.id}>
-                    {company.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                Calendário
+              </button>
+            </div>
           </div>
 
-          <div className="overflow-x-auto rounded-lg bg-white shadow">
+          {viewMode === "calendar" ? (
+            <div className="space-y-4 rounded-lg bg-white shadow">
+              <div className="flex flex-col gap-3 border-b border-stone-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-stone-700">Calendário</p>
+                  <p className="text-xs text-stone-500">
+                    Mostrando serviços com prazo no mês selecionado.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={goPrevMonth}
+                    className="rounded-lg bg-stone-100 px-3 py-2 text-sm font-bold text-stone-700 hover:bg-stone-200"
+                  >
+                    Anterior
+                  </button>
+                  <div className="rounded-lg bg-stone-50 px-3 py-2 text-sm font-bold text-stone-900">
+                    {monthLabel}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={goNextMonth}
+                    className="rounded-lg bg-stone-100 px-3 py-2 text-sm font-bold text-stone-700 hover:bg-stone-200"
+                  >
+                    Próximo
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-7 gap-px bg-stone-200 px-0 text-center text-[11px] uppercase text-stone-500">
+                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'].map((weekDay) => (
+                  <div
+                    key={weekDay}
+                    className="bg-stone-50 px-2 py-2 font-bold"
+                  >
+                    {weekDay}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-px bg-stone-200 p-0">
+                {calendarWeeks.flat().map((day, index) => {
+                  const dayKey = day
+                    ? `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                    : "";
+                  const dayServices = day ? servicesByDate.get(dayKey) || [] : [];
+
+                  return (
+                    <div
+                      key={`${calendarYear}-${calendarMonth}-${index}`}
+                      className={`min-h-[140px] overflow-hidden bg-white p-3 text-[12px] ${
+                        day ? "" : "bg-stone-100"
+                      }`}
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className={`font-bold ${dayServices.length ? 'text-purple-700' : 'text-stone-500'}`}>
+                          {day || ""}
+                        </span>
+                        {dayServices.length > 0 && (
+                          <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-800">
+                            {dayServices.length}
+                          </span>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        {dayServices.slice(0, 3).map((service) => (
+                          <div
+                            key={service.id}
+                            className="rounded-lg border border-stone-200 bg-stone-50 p-2"
+                          >
+                            <p className="truncate font-semibold text-stone-900">
+                              {service.company_name}
+                            </p>
+                            <p className="truncate text-[11px] text-stone-600">
+                              {getTypeLabel(service.service_type, types, service.service_type_label)}
+                            </p>
+                          </div>
+                        ))}
+                        {dayServices.length > 3 && (
+                          <p className="text-[11px] text-stone-500">
+                            +{dayServices.length - 3} outros
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg bg-white shadow">
             <table className="min-w-[1180px] w-full divide-y divide-stone-200 text-sm">
               <thead className="bg-stone-50">
                 <tr>
