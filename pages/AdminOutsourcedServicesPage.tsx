@@ -1012,9 +1012,11 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                       </div>
                       <div className="space-y-2">
                         {dayServices.slice(0, 3).map((service) => (
-                          <div
+                          <button
+                            type="button"
                             key={service.id}
-                            className="rounded-lg border border-stone-200 bg-stone-50 p-2"
+                            onClick={() => openServiceDetail(service)}
+                            className="w-full rounded-lg border border-stone-200 bg-stone-50 p-2 text-left transition hover:border-purple-300 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-600"
                           >
                             <p className="truncate font-semibold text-stone-900">
                               {service.company_name}
@@ -1022,7 +1024,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                             <p className="truncate text-[11px] text-stone-600">
                               {getTypeLabel(service.service_type, types, service.service_type_label)}
                             </p>
-                          </div>
+                          </button>
                         ))}
                         {dayServices.length > 3 && (
                           <p className="text-[11px] text-stone-500">
