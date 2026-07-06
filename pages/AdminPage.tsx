@@ -872,44 +872,71 @@ const ProductForm: React.FC<ProductFormProps> = ({
               </p>
             ) : (
               <div className="mt-3 space-y-2">
-                {fabricUsageItems.map((item, index) => (
-                  <div
-                    key={`fabric-usage-${index}`}
-                    className="grid gap-2 grid-cols-1 sm:grid-cols-[1fr_120px_auto]"
-                  >
-                    <input
-                      type="text"
-                      value={item.color}
-                      onChange={(event) =>
-                        updateFabricUsageItem(index, "color", event.target.value)
-                      }
-                      placeholder="Cor do tecido"
-                      className="w-full min-w-0 rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
-                    />
-                    <input
-                      type="number"
-                      value={item.centimeters}
-                      onChange={(event) =>
-                        updateFabricUsageItem(
-                          index,
-                          "centimeters",
-                          event.target.value,
-                        )
-                      }
-                      min="0"
-                      step="0.01"
-                      placeholder="Cm/un."
-                      className="w-full min-w-0 rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeFabricUsageItem(index)}
-                      className="w-full sm:w-auto rounded-md bg-stone-200 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-300"
-                    >
-                      Remover
-                    </button>
-                  </div>
-                ))}
+                {fabricUsageItems.map((item, index) => {
+                  const piecesForPreview = Number(formData.stock) || 0;
+                  const centimetersPerPiece = Number(item.centimeters) || 0;
+                  const totalCentimeters = piecesForPreview * centimetersPerPiece;
+                  const showPreview = centimetersPerPiece > 0 && piecesForPreview > 0;
+                  return (
+                    <div key={`fabric-usage-${index}`} className="space-y-1">
+                      <div className="grid gap-2 grid-cols-1 sm:grid-cols-[1fr_140px_auto]">
+                        <input
+                          type="text"
+                          value={item.color}
+                          onChange={(event) =>
+                            updateFabricUsageItem(index, "color", event.target.value)
+                          }
+                          placeholder="Cor do tecido"
+                          className="w-full min-w-0 rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
+                        />
+                        <div className="relative w-full min-w-0">
+                          <input
+                            type="number"
+                            value={item.centimeters}
+                            onChange={(event) =>
+                              updateFabricUsageItem(
+                                index,
+                                "centimeters",
+                                event.target.value,
+                              )
+                            }
+                            min="0"
+                            step="0.01"
+                            placeholder="Qtd. por unidade"
+                            className="w-full min-w-0 rounded-md border-stone-300 pr-9 shadow-sm focus:border-blue-600 focus:ring-blue-200"
+                          />
+                          <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs font-semibold text-stone-400">
+                            cm
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFabricUsageItem(index)}
+                          className="w-full sm:w-auto rounded-md bg-stone-200 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-300"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                      {showPreview && (
+                        <p className="text-xs text-stone-500">
+                          Para {piecesForPreview} unidade
+                          {piecesForPreview === 1 ? "" : "s"} em estoque:{" "}
+                          <span className="font-semibold text-stone-700">
+                            {(totalCentimeters / 100).toLocaleString("pt-BR", {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            })}{" "}
+                            m
+                          </span>{" "}
+                          de tecido {item.color || "sem cor definida"} no total (
+                          {piecesForPreview} retalho
+                          {piecesForPreview === 1 ? "" : "s"} de {centimetersPerPiece}{" "}
+                          cm)
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

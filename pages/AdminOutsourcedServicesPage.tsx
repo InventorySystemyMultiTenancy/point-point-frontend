@@ -384,7 +384,9 @@ const FabricCuttingSummaryBox: React.FC<{
               <p key={`${item.productId}-${item.color}-${index}`} className="text-sm text-stone-700">
                 <span className="font-semibold">{item.productName}</span>: cortar{" "}
                 {item.pieces} peças de {item.centimeters_per_piece} cm de tecido{" "}
-                {item.color}, totalizando {formatMeters(item.total_meters)}
+                {item.color}, totalizando {formatMeters(item.total_meters)} ({item.pieces}{" "}
+                {item.pieces === 1 ? "retalho" : "retalhos"} de tecido {item.color} de{" "}
+                {item.centimeters_per_piece} cm)
               </p>
             ))}
           </div>
@@ -395,7 +397,8 @@ const FabricCuttingSummaryBox: React.FC<{
             <div className="space-y-1">
               {totals.map((total) => (
                 <p key={total.color} className="text-sm font-semibold text-stone-800">
-                  {total.color}: {formatMeters(total.total_meters)} no total
+                  {total.color}: {formatMeters(total.total_meters)} no total (
+                  {total.pieces} {total.pieces === 1 ? "retalho" : "retalhos"})
                 </p>
               ))}
             </div>
@@ -421,7 +424,10 @@ const FabricCuttingTotalsInline: React.FC<{
   return (
     <span className="block text-xs font-semibold text-pink-700">
       {totals
-        .map((total) => `${total.color}: ${formatMeters(total.total_meters)}`)
+        .map(
+          (total) =>
+            `${total.color}: ${formatMeters(total.total_meters)} (${total.pieces} retalho${total.pieces === 1 ? "" : "s"})`,
+        )
         .join(" | ")}
     </span>
   );
