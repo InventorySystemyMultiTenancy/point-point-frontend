@@ -52,6 +52,7 @@ const OrderHistoryPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [clientFilter, setClientFilter] = useState("");
   const [showUndeliveredOnly, setShowUndeliveredOnly] = useState(false);
   const [showUnpaidOnly, setShowUnpaidOnly] = useState(false);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
@@ -80,7 +81,26 @@ const OrderHistoryPage: React.FC = () => {
       order.canMonthlyClose ||
         order.monthlyBilling ||
         order.userMonthlyPayment ||
-        order.paymentMethod === "a_prazo",
+      order.paymentMethod === "a_prazo",
+    );
+
+  const formatMoney = (value: number) =>
+    Number(value || 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+
+  const escapeHtml = (value: string) =>
+    value.replace(
+      /[&<>"']/g,
+      (char) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[char] || char,
     );
 
   const getErrorMessageByStatus = (status?: number) => {
@@ -320,6 +340,12 @@ const OrderHistoryPage: React.FC = () => {
     const isUnpaid = !["paid", "authorized"].includes(
       order.paymentStatus ?? "pending",
     );
+    const clientName = (order.userName || "").toLowerCase();
+    const clientSearch = clientFilter.trim().toLowerCase();
+
+    if (clientSearch && !clientName.includes(clientSearch)) {
+      return false;
+    }
 
     if (showUndeliveredOnly && !isUndelivered) {
       return false;
@@ -331,6 +357,95 @@ const OrderHistoryPage: React.FC = () => {
 
     return true;
   });
+
+  const clientOptions = Array.from(
+    new Set(
+      orders
+        .map((order) => order.userName?.trim())
+        .filter((name): name is string => Boolean(name)),
+    ),
+  ).sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+  const generateClientOrdersPdf = () => {
+    const clientName = clientFilter.trim();
+    if (!clientName) {
+      alert("Filtre por cliente antes de gerar o PDF.");
+      return;
+    }
+    if (filteredOrders.length === 0) {
+      alert("Nenhum pedido encontrado para gerar PDF.");
+      return;
+    }
+
+    const rows = filteredOrders
+      .map(
+        (order) => `
+          <tr>
+            <td>${escapeHtml(order.userName || "-")}</td>
+            <td>#${escapeHtml(order.id.slice(-4))}</td>
+            <td>${escapeHtml(new Date(order.timestamp).toLocaleDateString("pt-BR"))}</td>
+            <td class="right">${escapeHtml(formatMoney(Number(order.total) || 0))}</td>
+          </tr>
+        `,
+      )
+      .join("");
+    const total = filteredOrders.reduce(
+      (sum, order) => sum + (Number(order.total) || 0),
+      0,
+    );
+    const printWindow = window.open("", "_blank", "width=900,height=700");
+    if (!printWindow) {
+      alert("Permita pop-ups para gerar o PDF.");
+      return;
+    }
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <title>Pedidos de ${escapeHtml(clientName)}</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #1c1917; padding: 32px; }
+            h1 { margin: 0 0 6px; font-size: 22px; }
+            p { margin: 0 0 24px; color: #57534e; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border-bottom: 1px solid #d6d3d1; padding: 10px 8px; text-align: left; font-size: 13px; }
+            th { background: #f5f5f4; font-size: 12px; text-transform: uppercase; }
+            .right { text-align: right; }
+            tfoot td { font-weight: 700; border-top: 2px solid #1c1917; }
+          </style>
+        </head>
+        <body>
+          <h1>Pedidos de ${escapeHtml(clientName)}</h1>
+          <p>${filteredOrders.length} pedido(s) filtrado(s)</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Pedido</th>
+                <th>Data</th>
+                <th class="right">Valor</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3">Total</td>
+                <td class="right">${escapeHtml(formatMoney(total))}</td>
+              </tr>
+            </tfoot>
+          </table>
+          <script>
+            window.onload = () => {
+              window.print();
+              window.onafterprint = () => window.close();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   return (
     <div className="container mx-auto px-4 py-6 min-h-screen bg-stone-100">
@@ -373,6 +488,23 @@ const OrderHistoryPage: React.FC = () => {
             className="border rounded px-2 py-1"
           />
         </div>
+        <div>
+          <label className="block text-sm font-medium text-stone-700 mb-1">
+            Cliente
+          </label>
+          <input
+            list="order-client-options"
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
+            placeholder="Nome do cliente"
+            className="border rounded px-2 py-1"
+          />
+          <datalist id="order-client-options">
+            {clientOptions.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+        </div>
         <label className="flex items-center gap-2 text-sm font-medium text-stone-700 pb-2">
           <input
             type="checkbox"
@@ -401,12 +533,20 @@ const OrderHistoryPage: React.FC = () => {
           onClick={() => {
             setStartDate("");
             setEndDate("");
+            setClientFilter("");
             setShowUndeliveredOnly(false);
             setShowUnpaidOnly(false);
           }}
           className="bg-stone-300 text-stone-700 font-bold py-2 px-4 rounded-lg hover:bg-stone-400 transition-colors shadow-md"
         >
           Limpar Filtros
+        </button>
+        <button
+          onClick={generateClientOrdersPdf}
+          disabled={!clientFilter.trim() || filteredOrders.length === 0}
+          className="bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors shadow-md disabled:bg-stone-300 disabled:text-stone-500 disabled:cursor-not-allowed"
+        >
+          PDF do Cliente
         </button>
       </div>
       {monthlyAlerts.length > 0 && (

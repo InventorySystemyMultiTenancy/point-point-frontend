@@ -3,7 +3,7 @@
 // adicionar, editar e remover produtos do "catalogo".
 // Coment?rios em portugu?s explicam cada parte do c?digo.
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   addStockMovement,
   filterStockMovementsByDate,
@@ -873,6 +873,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const knownOrderIdsRef = useRef<Set<string>>(new Set());
+  const hasInitializedOrderNotificationsRef = useRef(false);
 
   // Estado que cont?m a lista de produtos exibida na tabela
   const [menu, setMenu] = useState<Product[]>([]);
@@ -1008,6 +1010,66 @@ const AdminPage: React.FC = () => {
     loadBackorderedProducts();
     loadShippingCarriers();
     loadUsers();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
+    const requestNotificationPermission = async () => {
+      if (!("Notification" in window)) return;
+      if (Notification.permission === "default") {
+        try {
+          await Notification.requestPermission();
+        } catch {
+          // Navegadores podem bloquear a solicitacao automatica.
+        }
+      }
+    };
+
+    const checkNewOrders = async () => {
+      try {
+        const response = await authenticatedFetch(`${API_URL}/api/orders/history`);
+        if (!response.ok) return;
+        const data = await response.json().catch(() => []);
+        const orders = extractOrdersList(data);
+        const nextIds = new Set(orders.map((order) => order.id).filter(Boolean));
+
+        if (!hasInitializedOrderNotificationsRef.current) {
+          knownOrderIdsRef.current = nextIds;
+          hasInitializedOrderNotificationsRef.current = true;
+          return;
+        }
+
+        const newOrders = orders.filter(
+          (order) => order.id && !knownOrderIdsRef.current.has(order.id),
+        );
+        knownOrderIdsRef.current = nextIds;
+
+        if (
+          !cancelled &&
+          newOrders.length > 0 &&
+          "Notification" in window &&
+          Notification.permission === "granted"
+        ) {
+          const latestOrder = newOrders[0];
+          new Notification("Novo pedido recebido", {
+            body: `${latestOrder.userName || "Cliente"} - R$ ${Number(latestOrder.total || 0).toFixed(2)}`,
+          });
+        }
+      } catch (err) {
+        console.error("Erro ao verificar novos pedidos:", err);
+      }
+    };
+
+    requestNotificationPermission();
+    checkNewOrders();
+    const intervalId = window.setInterval(checkNewOrders, 30000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
   }, []);
 
   // Busca o total de pedidos dos ultimos 30 dias

@@ -53,6 +53,14 @@ export interface OutsourcedProductQuantity {
   image_url?: string | null;
 }
 
+export interface OutsourcedServiceCostItem {
+  productId: string;
+  product_id?: string;
+  amount: number;
+  productName?: string;
+  name?: string;
+}
+
 export interface OutsourcedService {
   id: string;
   company_id: string;
@@ -65,6 +73,7 @@ export interface OutsourcedService {
   input_items?: OutsourcedProductQuantity[];
   fabric_paid_amount?: number | null;
   service_cost_amount?: number | null;
+  service_cost_items?: OutsourcedServiceCostItem[];
   expected_return_quantity?: number;
   expected_return_unit?: string;
   expected_return_items?: OutsourcedProductQuantity[];
@@ -127,6 +136,7 @@ export interface OutsourcedServicePayload {
   input_quantity: number;
   fabric_paid_amount?: number;
   service_cost_amount?: number;
+  service_cost_items?: OutsourcedServiceCostItem[];
   input_items?: OutsourcedProductQuantity[];
   expected_return_items: OutsourcedProductQuantity[];
   due_date: string;

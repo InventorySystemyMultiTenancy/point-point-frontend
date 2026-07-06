@@ -17,6 +17,7 @@ import {
   type OutsourcedProduct,
   type OutsourcedProductQuantity,
   type OutsourcedService,
+  type OutsourcedServiceCostItem,
   type OutsourcedServicePayload,
   type OutsourcedServiceType,
   type OutsourcedServiceTypePayload,
@@ -114,6 +115,7 @@ const emptyService = {
   input_quantity: "",
   fabric_paid_amount: "",
   service_cost_amount: "",
+  service_cost_items: [{ productId: "", amount: "" }],
   expected_return_items: [{ productId: "", quantity: "" }],
   due_date: "",
   started_at: "",
@@ -244,7 +246,7 @@ const productImage = (
 const productName = (
   productId: string,
   products: OutsourcedProduct[],
-  item?: OutsourcedProductQuantity,
+  item?: Partial<OutsourcedProductQuantity> | OutsourcedServiceCostItem,
 ) =>
   item?.productName ||
   item?.name ||
@@ -263,6 +265,30 @@ const formatProductItems = (
     .map((item) => {
       const productId = itemProductId(item);
       return `${productName(productId, products, item)}: ${item.quantity}`;
+    })
+    .join(", ");
+};
+
+const isSewingService = (
+  value: string,
+  types: OutsourcedServiceType[] = [],
+) => {
+  const label = getTypeLabel(value, types).toLowerCase();
+  return value === "sewing" || label.includes("costura");
+};
+
+const totalCostItems = (items?: Array<{ amount?: number | string }>) =>
+  (items || []).reduce((total, item) => total + (Number(item.amount) || 0), 0);
+
+const formatCostItems = (
+  items: OutsourcedServiceCostItem[] | undefined,
+  products: OutsourcedProduct[],
+) => {
+  if (!items?.length) return "-";
+  return items
+    .map((item) => {
+      const productId = item.productId || item.product_id || "";
+      return `${productName(productId, products, item)}: ${money(Number(item.amount) || 0)}`;
     })
     .join(", ");
 };
@@ -529,6 +555,12 @@ const AdminOutsourcedServicesPage: React.FC = () => {
       expected_return_items: prev.expected_return_items.map((item, itemIndex) =>
         itemIndex === index ? { ...item, [field]: value } : item,
       ),
+      service_cost_items:
+        field === "productId"
+          ? prev.service_cost_items.map((item, itemIndex) =>
+              itemIndex === index ? { ...item, productId: value } : item,
+            )
+          : prev.service_cost_items,
     }));
   };
 
@@ -538,6 +570,10 @@ const AdminOutsourcedServicesPage: React.FC = () => {
       expected_return_items: [
         ...prev.expected_return_items,
         { productId: "", quantity: "" },
+      ],
+      service_cost_items: [
+        ...prev.service_cost_items,
+        { productId: "", amount: "" },
       ],
     }));
   };
@@ -549,6 +585,19 @@ const AdminOutsourcedServicesPage: React.FC = () => {
         prev.expected_return_items.length === 1
           ? prev.expected_return_items
           : prev.expected_return_items.filter((_, itemIndex) => itemIndex !== index),
+      service_cost_items:
+        prev.service_cost_items.length === 1
+          ? prev.service_cost_items
+          : prev.service_cost_items.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
+  const updateServiceCostItem = (index: number, amount: string) => {
+    setServiceForm((prev) => ({
+      ...prev,
+      service_cost_items: prev.service_cost_items.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, amount } : item,
+      ),
     }));
   };
 
@@ -590,6 +639,15 @@ const AdminOutsourcedServicesPage: React.FC = () => {
       }))
       .filter((item) => item.productId && item.quantity > 0);
 
+  const parseCostRows = () =>
+    serviceForm.service_cost_items
+      .map((item, index) => ({
+        productId:
+          item.productId || serviceForm.expected_return_items[index]?.productId || "",
+        amount: Number(item.amount),
+      }))
+      .filter((item) => item.productId && item.amount >= 0);
+
   const saveService = async (event: React.FormEvent) => {
     event.preventDefault();
     const expectedReturnItems = parseItemRows(serviceForm.expected_return_items);
@@ -606,10 +664,22 @@ const AdminOutsourcedServicesPage: React.FC = () => {
       started_at: toIsoOrUndefined(serviceForm.started_at),
       notes: serviceForm.notes.trim() || undefined,
     };
+    const sewingService = isSewingService(serviceForm.service_type, types);
+    const serviceCostItems = sewingService && !isEmployeeView ? parseCostRows() : [];
     if (!isEmployeeView && serviceForm.fabric_paid_amount !== "") {
       payload.fabric_paid_amount = Number(serviceForm.fabric_paid_amount);
     }
-    if (!isEmployeeView && serviceForm.service_cost_amount !== "") {
+    if (!isEmployeeView && sewingService) {
+      if (
+        serviceCostItems.length !== expectedReturnItems.length ||
+        serviceCostItems.some((item) => Number.isNaN(item.amount))
+      ) {
+        alert("Informe o valor cobrado para cada produto de costura.");
+        return;
+      }
+      payload.service_cost_items = serviceCostItems;
+      payload.service_cost_amount = totalCostItems(serviceCostItems);
+    } else if (!isEmployeeView && serviceForm.service_cost_amount !== "") {
       payload.service_cost_amount = Number(serviceForm.service_cost_amount);
     }
 
@@ -709,6 +779,8 @@ const AdminOutsourcedServicesPage: React.FC = () => {
 
   const serviceInputUnit = getInputUnit(serviceForm.service_type, types);
   const expectedReturnTotal = totalItemsQuantity(serviceForm.expected_return_items);
+  const isSewingForm = isSewingService(serviceForm.service_type, types);
+  const sewingCostTotal = totalCostItems(serviceForm.service_cost_items);
   const selectedServiceExpectedProducts = selectedService?.expected_return_items
     ?.map(itemProductId)
     .filter(Boolean);
@@ -1359,7 +1431,12 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                     type="number"
                     min="0"
                     step="0.01"
-                    value={serviceForm.service_cost_amount}
+                    disabled={isSewingForm}
+                    value={
+                      isSewingForm
+                        ? sewingCostTotal.toFixed(2)
+                        : serviceForm.service_cost_amount
+                    }
                     onChange={(value) =>
                       setServiceForm((prev) => ({
                         ...prev,
@@ -1400,6 +1477,44 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   />
                 ))}
               </div>
+              {!isEmployeeView && isSewingForm && (
+                <div className="space-y-3 rounded-lg border border-stone-200 p-4 sm:col-span-2">
+                  <div>
+                    <h3 className="text-sm font-bold uppercase text-stone-700">
+                      Valor da costura por produto
+                    </h3>
+                    <p className="text-xs text-stone-500">
+                      Total cobrado pelo terceirizado: {money(sewingCostTotal)}
+                    </p>
+                  </div>
+                  {serviceForm.expected_return_items.map((item, index) => (
+                    <div
+                      key={`cost-${index}`}
+                      className="grid gap-3 rounded-lg bg-white p-3 shadow-sm sm:grid-cols-[1fr_180px]"
+                    >
+                      <div>
+                        <span className="mb-1 block text-sm font-semibold text-stone-600">
+                          Produto
+                        </span>
+                        <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm font-semibold text-stone-700">
+                          {item.productId
+                            ? productName(item.productId, products)
+                            : "Selecione o produto no retorno previsto"}
+                        </div>
+                      </div>
+                      <FormInput
+                        label="Valor cobrado"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        required
+                        value={serviceForm.service_cost_items[index]?.amount || ""}
+                        onChange={(value) => updateServiceCostItem(index, value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
               <FormInput
                 label="Prazo"
                 type="datetime-local"
@@ -1509,6 +1624,15 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                     <>
                       <Info label="Valor tecido" value={money(selectedService.fabric_paid_amount)} />
                       <Info label="Custo servico" value={money(selectedService.service_cost_amount)} />
+                      {isSewingService(selectedService.service_type, types) && (
+                        <Info
+                          label="Custo por produto"
+                          value={formatCostItems(
+                            selectedService.service_cost_items,
+                            products,
+                          )}
+                        />
+                      )}
                     </>
                   )}
                   <Info label="Inicio" value={formatDate(selectedService.started_at)} />
@@ -1657,7 +1781,8 @@ const FormInput: React.FC<{
   required?: boolean;
   min?: string;
   step?: string;
-}> = ({ label, value, onChange, type = "text", required, min, step }) => (
+  disabled?: boolean;
+}> = ({ label, value, onChange, type = "text", required, min, step, disabled }) => (
   <label>
     <span className="mb-1 block text-sm font-semibold text-stone-600">
       {label}
@@ -1669,7 +1794,8 @@ const FormInput: React.FC<{
       required={required}
       min={min}
       step={step}
-      className="w-full rounded-lg border border-stone-300 px-3 py-2 focus:border-purple-600 focus:outline-none"
+      disabled={disabled}
+      className="w-full rounded-lg border border-stone-300 px-3 py-2 focus:border-purple-600 focus:outline-none disabled:bg-stone-100 disabled:text-stone-500"
     />
   </label>
 );
