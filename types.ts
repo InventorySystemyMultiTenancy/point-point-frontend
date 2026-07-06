@@ -20,6 +20,8 @@ export interface Product {
   costBreakdownEnabled?: boolean;
   hasCostBreakdown?: boolean;
   costSteps?: CostStep[];
+  fabricUsageItems?: FabricUsageItem[];
+  fabric_usage_items?: FabricUsageItem[];
   basePrice?: number;
   customPrice?: number | null;
   hasCustomPrice?: boolean;
@@ -45,6 +47,11 @@ export interface Product {
 export interface CostStep {
   step: string;
   cost: number;
+}
+
+export interface FabricUsageItem {
+  color: string;
+  centimeters: number;
 }
 
 export type DeliveryMethodValue =

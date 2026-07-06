@@ -14,6 +14,7 @@ import {
   type OutsourcedCompany,
   type OutsourcedCompanyPayload,
   type OutsourcedDeliveryPayload,
+  type FabricCuttingSummary,
   type OutsourcedProduct,
   type OutsourcedProductQuantity,
   type OutsourcedService,
@@ -277,6 +278,14 @@ const isSewingService = (
   return value === "sewing" || label.includes("costura");
 };
 
+const isFabricCuttingService = (
+  value: string,
+  types: OutsourcedServiceType[] = [],
+) => {
+  const label = getTypeLabel(value, types).toLowerCase();
+  return value === "fabric_cutting" || label.includes("corte");
+};
+
 const totalCostItems = (items?: Array<{ amount?: number | string }>) =>
   (items || []).reduce((total, item) => total + (Number(item.amount) || 0), 0);
 
@@ -291,6 +300,131 @@ const formatCostItems = (
       return `${productName(productId, products, item)}: ${money(Number(item.amount) || 0)}`;
     })
     .join(", ");
+};
+
+const productFabricUsageItems = (product?: OutsourcedProduct) =>
+  Array.isArray(product?.fabricUsageItems)
+    ? product.fabricUsageItems
+    : Array.isArray(product?.fabric_usage_items)
+      ? product.fabric_usage_items
+      : [];
+
+const formatMeters = (value?: number | null) =>
+  `${Number(value || 0).toLocaleString("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })} m`;
+
+const buildFabricCuttingPreview = (
+  rows: Array<{ productId: string; quantity: string }>,
+  products: OutsourcedProduct[],
+): FabricCuttingSummary => {
+  const items = rows.flatMap((row) => {
+    const product = products.find((item) => item.id === row.productId);
+    const pieces = Number(row.quantity) || 0;
+    if (!product || pieces <= 0) return [];
+
+    return productFabricUsageItems(product)
+      .filter((usage) => usage.color?.trim() && Number(usage.centimeters) > 0)
+      .map((usage) => {
+        const centimetersPerPiece = Number(usage.centimeters) || 0;
+        const totalCentimeters = pieces * centimetersPerPiece;
+        return {
+          productId: product.id,
+          productName: product.name,
+          color: usage.color,
+          pieces,
+          centimeters_per_piece: centimetersPerPiece,
+          total_centimeters: totalCentimeters,
+          total_meters: totalCentimeters / 100,
+        };
+      });
+  });
+
+  const totalsByColor = Array.from(
+    items.reduce((acc, item) => {
+      const current = acc.get(item.color) || {
+        color: item.color,
+        pieces: 0,
+        total_centimeters: 0,
+        total_meters: 0,
+      };
+      current.pieces += item.pieces;
+      current.total_centimeters += item.total_centimeters;
+      current.total_meters = current.total_centimeters / 100;
+      acc.set(item.color, current);
+      return acc;
+    }, new Map<string, FabricCuttingSummary["totals_by_color"][number]>()),
+  ).map(([, value]) => value);
+
+  return { items, totals_by_color: totalsByColor };
+};
+
+const FabricCuttingSummaryBox: React.FC<{
+  summary?: FabricCuttingSummary | null;
+  emptyMessage?: string;
+}> = ({
+  summary,
+  emptyMessage = "Nenhum consumo de tecido cadastrado para os produtos selecionados.",
+}) => {
+  const items = summary?.items || [];
+  const totals = summary?.totals_by_color || [];
+
+  return (
+    <div className="rounded-lg border border-pink-100 bg-pink-50 p-4">
+      <h3 className="text-sm font-bold uppercase text-stone-700">
+        Resumo de corte
+      </h3>
+      {items.length === 0 ? (
+        <p className="mt-2 text-sm text-stone-500">{emptyMessage}</p>
+      ) : (
+        <>
+          <div className="mt-3 space-y-2">
+            {items.map((item, index) => (
+              <p key={`${item.productId}-${item.color}-${index}`} className="text-sm text-stone-700">
+                <span className="font-semibold">{item.productName}</span>: cortar{" "}
+                {item.pieces} peças de {item.centimeters_per_piece} cm de tecido{" "}
+                {item.color}, totalizando {formatMeters(item.total_meters)}
+              </p>
+            ))}
+          </div>
+          <div className="mt-3 rounded-md bg-white px-3 py-2">
+            <p className="mb-1 text-xs font-bold uppercase text-stone-500">
+              Totais por cor
+            </p>
+            <div className="space-y-1">
+              {totals.map((total) => (
+                <p key={total.color} className="text-sm font-semibold text-stone-800">
+                  {total.color}: {formatMeters(total.total_meters)} no total
+                </p>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+const FabricCuttingTotalsInline: React.FC<{
+  summary?: FabricCuttingSummary | null;
+}> = ({ summary }) => {
+  const totals = summary?.totals_by_color || [];
+  if (totals.length === 0) {
+    return (
+      <span className="block text-xs text-stone-400">
+        Nenhum consumo de tecido cadastrado.
+      </span>
+    );
+  }
+
+  return (
+    <span className="block text-xs font-semibold text-pink-700">
+      {totals
+        .map((total) => `${total.color}: ${formatMeters(total.total_meters)}`)
+        .join(" | ")}
+    </span>
+  );
 };
 
 const ProgressBar: React.FC<{ service: OutsourcedService }> = ({ service }) => {
@@ -719,14 +853,17 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     const payload: OutsourcedServicePayload = {
       company_id: serviceForm.company_id,
       service_type: serviceForm.service_type,
-      input_quantity: Number(serviceForm.input_quantity),
       expected_return_items: expectedReturnItems,
       due_date: new Date(serviceForm.due_date).toISOString(),
       started_at: toIsoOrUndefined(serviceForm.started_at),
       notes: serviceForm.notes.trim() || undefined,
     };
     const sewingService = isSewingService(serviceForm.service_type, types);
+    const cuttingService = isFabricCuttingService(serviceForm.service_type, types);
     const serviceCostItems = sewingService && !isEmployeeView ? parseCostRows() : [];
+    if (!cuttingService || serviceForm.input_quantity !== "") {
+      payload.input_quantity = Number(serviceForm.input_quantity);
+    }
     if (!isEmployeeView && serviceForm.fabric_paid_amount !== "") {
       payload.fabric_paid_amount = Number(serviceForm.fabric_paid_amount);
     }
@@ -841,7 +978,11 @@ const AdminOutsourcedServicesPage: React.FC = () => {
   const serviceInputUnit = getInputUnit(serviceForm.service_type, types);
   const expectedReturnTotal = totalItemsQuantity(serviceForm.expected_return_items);
   const isSewingForm = isSewingService(serviceForm.service_type, types);
+  const isFabricCuttingForm = isFabricCuttingService(serviceForm.service_type, types);
   const sewingCostTotal = totalCostItems(serviceForm.service_cost_items);
+  const fabricCuttingPreview = isFabricCuttingForm
+    ? buildFabricCuttingPreview(serviceForm.expected_return_items, products)
+    : null;
   const selectedServiceExpectedProducts = selectedService?.expected_return_items
     ?.map(itemProductId)
     .filter(Boolean);
@@ -1191,6 +1332,11 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                         <span className="block truncate text-xs text-stone-500">
                           {formatProductItems(service.expected_return_items, products)}
                         </span>
+                        {isFabricCuttingService(service.service_type, types) && (
+                          <FabricCuttingTotalsInline
+                            summary={service.fabric_cutting_summary}
+                          />
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {service.total_delivered_quantity}
@@ -1580,11 +1726,15 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                 </select>
               </label>
               <FormInput
-                label={`Quantidade retirada (${serviceInputUnit})`}
+                label={
+                  isFabricCuttingForm
+                    ? `Quantidade retirada (${serviceInputUnit}) - opcional`
+                    : `Quantidade retirada (${serviceInputUnit})`
+                }
                 type="number"
                 min="0.01"
                 step="0.01"
-                required
+                required={!isFabricCuttingForm}
                 value={serviceForm.input_quantity}
                 onChange={(value) =>
                   setServiceForm((prev) => ({
@@ -1659,6 +1809,11 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   />
                 ))}
               </div>
+              {isFabricCuttingForm && (
+                <div className="sm:col-span-2">
+                  <FabricCuttingSummaryBox summary={fabricCuttingPreview} />
+                </div>
+              )}
               {!isEmployeeView && isSewingForm && (
                 <div className="space-y-3 rounded-lg border border-stone-200 p-4 sm:col-span-2">
                   <div>
@@ -1820,6 +1975,14 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   <Info label="Inicio" value={formatDate(selectedService.started_at)} />
                   <Info label="Observacoes" value={selectedService.notes || "-"} />
                 </div>
+
+                {isFabricCuttingService(selectedService.service_type, types) && (
+                  <div className="mb-6">
+                    <FabricCuttingSummaryBox
+                      summary={selectedService.fabric_cutting_summary}
+                    />
+                  </div>
+                )}
 
                 <div className="mb-6">
                   <h3 className="mb-3 text-lg font-bold text-stone-900">

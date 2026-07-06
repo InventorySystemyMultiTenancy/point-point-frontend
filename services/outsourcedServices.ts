@@ -39,6 +39,13 @@ export interface OutsourcedProduct {
   imageUrl?: string | null;
   image_url?: string | null;
   images?: string[] | null;
+  fabricUsageItems?: OutsourcedFabricUsageItem[];
+  fabric_usage_items?: OutsourcedFabricUsageItem[];
+}
+
+export interface OutsourcedFabricUsageItem {
+  color: string;
+  centimeters: number;
 }
 
 export interface OutsourcedProductQuantity {
@@ -61,6 +68,28 @@ export interface OutsourcedServiceCostItem {
   name?: string;
 }
 
+export interface FabricCuttingSummaryItem {
+  productId: string;
+  productName: string;
+  color: string;
+  pieces: number;
+  centimeters_per_piece: number;
+  total_centimeters: number;
+  total_meters: number;
+}
+
+export interface FabricCuttingSummaryTotal {
+  color: string;
+  pieces: number;
+  total_centimeters: number;
+  total_meters: number;
+}
+
+export interface FabricCuttingSummary {
+  items: FabricCuttingSummaryItem[];
+  totals_by_color: FabricCuttingSummaryTotal[];
+}
+
 export interface OutsourcedService {
   id: string;
   company_id: string;
@@ -74,6 +103,7 @@ export interface OutsourcedService {
   fabric_paid_amount?: number | null;
   service_cost_amount?: number | null;
   service_cost_items?: OutsourcedServiceCostItem[];
+  fabric_cutting_summary?: FabricCuttingSummary | null;
   expected_return_quantity?: number;
   expected_return_unit?: string;
   expected_return_items?: OutsourcedProductQuantity[];
@@ -133,7 +163,7 @@ export interface OutsourcedCompanyPayload {
 export interface OutsourcedServicePayload {
   company_id: string;
   service_type: string;
-  input_quantity: number;
+  input_quantity?: number;
   fabric_paid_amount?: number;
   service_cost_amount?: number;
   service_cost_items?: OutsourcedServiceCostItem[];

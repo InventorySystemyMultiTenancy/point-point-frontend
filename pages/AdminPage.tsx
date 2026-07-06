@@ -130,7 +130,14 @@ const StockMovementModal: React.FC<{
   );
 };
 import { useNavigate } from "react-router-dom";
-import type { CostStep, Order, Product, ShippingCarrier, User } from "../types";
+import type {
+  CostStep,
+  FabricUsageItem,
+  Order,
+  Product,
+  ShippingCarrier,
+  User,
+} from "../types";
 import {
   authenticatedFetch,
   createShippingCarrier,
@@ -217,6 +224,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     costBreakdownEnabled: false,
     hasCostBreakdown: false,
     costSteps: [],
+    fabricUsageItems: [],
   });
   const [imageUrls, setImageUrls] = useState<string[]>([""]);
   const [clientUsers, setClientUsers] = useState<User[]>([]);
@@ -276,6 +284,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
             : [""];
       setFormData({
         ...product,
+        fabricUsageItems: Array.isArray(product.fabricUsageItems)
+          ? product.fabricUsageItems
+          : Array.isArray(product.fabric_usage_items)
+            ? product.fabric_usage_items
+            : [],
         quantidadeVenda: product.quantidadeVenda ?? 1,
         hidden: Boolean(product.hidden),
         costBreakdownEnabled: Boolean(
@@ -307,6 +320,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         costBreakdownEnabled: false,
         hasCostBreakdown: false,
         costSteps: [],
+        fabricUsageItems: [],
       });
       setImageUrls([""]);
     }
@@ -365,6 +379,48 @@ const ProductForm: React.FC<ProductFormProps> = ({
     (total, step) => total + (Number(step.cost) || 0),
     0,
   );
+  const fabricUsageItems =
+    formData.fabricUsageItems && formData.fabricUsageItems.length > 0
+      ? formData.fabricUsageItems
+      : [];
+
+  const updateFabricUsageItem = (
+    index: number,
+    field: keyof FabricUsageItem,
+    value: string,
+  ) => {
+    setFormData((prev) => {
+      const currentItems = prev.fabricUsageItems || [];
+      const nextItems = currentItems.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              [field]: field === "centimeters" ? Number(value) || 0 : value,
+            }
+          : item,
+      );
+      return { ...prev, fabricUsageItems: nextItems };
+    });
+  };
+
+  const addFabricUsageItem = () => {
+    setFormData((prev) => ({
+      ...prev,
+      fabricUsageItems: [
+        ...(prev.fabricUsageItems || []),
+        { color: "", centimeters: 0 },
+      ],
+    }));
+  };
+
+  const removeFabricUsageItem = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      fabricUsageItems: (prev.fabricUsageItems || []).filter(
+        (_, itemIndex) => itemIndex !== index,
+      ),
+    }));
+  };
 
   const handleCostBreakdownToggle = (checked: boolean) => {
     setFormData((prev) => ({
@@ -460,6 +516,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
       step: item.step.trim(),
       cost: Number(item.cost) || 0,
     }));
+    const sanitizedFabricUsageItems = fabricUsageItems
+      .map((item) => ({
+        color: item.color.trim(),
+        centimeters: Number(item.centimeters) || 0,
+      }))
+      .filter((item) => item.color && item.centimeters > 0);
 
     if (
       costBreakdownEnabled &&
@@ -476,6 +538,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
       visibleUserIds,
       imageUrl: primaryImage,
       images: normalizedImages.length > 0 ? normalizedImages : [primaryImage],
+      fabricUsageItems: sanitizedFabricUsageItems,
+      fabric_usage_items: undefined,
     };
 
     const finalProduct: Product = costBreakdownEnabled
@@ -783,6 +847,71 @@ const ProductForm: React.FC<ProductFormProps> = ({
               Exemplo: venda de 30 em 30, 15 em 15, etc. O cliente so pode
               comprar multiplos dessa quantidade.
             </p>
+          </div>
+          <div className="rounded-lg border border-stone-200 bg-stone-50 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-bold uppercase text-stone-700">
+                  Tecidos por unidade
+                </h3>
+                <p className="text-xs text-stone-500">
+                  Consumo opcional usado para calcular servicos de corte.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addFabricUsageItem}
+                className="rounded-md bg-blue-100 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-200"
+              >
+                Adicionar tecido
+              </button>
+            </div>
+            {fabricUsageItems.length === 0 ? (
+              <p className="mt-3 rounded-md bg-white px-3 py-2 text-sm text-stone-500">
+                Nenhum tecido cadastrado para este produto.
+              </p>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {fabricUsageItems.map((item, index) => (
+                  <div
+                    key={`fabric-usage-${index}`}
+                    className="grid gap-2 grid-cols-1 sm:grid-cols-[1fr_120px_auto]"
+                  >
+                    <input
+                      type="text"
+                      value={item.color}
+                      onChange={(event) =>
+                        updateFabricUsageItem(index, "color", event.target.value)
+                      }
+                      placeholder="Cor do tecido"
+                      className="w-full min-w-0 rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
+                    />
+                    <input
+                      type="number"
+                      value={item.centimeters}
+                      onChange={(event) =>
+                        updateFabricUsageItem(
+                          index,
+                          "centimeters",
+                          event.target.value,
+                        )
+                      }
+                      min="0"
+                      step="0.01"
+                      placeholder="Cm/un."
+                      className="w-full min-w-0 rounded-md border-stone-300 shadow-sm focus:border-blue-600 focus:ring-blue-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeFabricUsageItem(index)}
+                      className="w-full sm:w-auto rounded-md bg-stone-200 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-300"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="rounded-lg border border-stone-200 bg-stone-50 p-4">
             <label className="flex items-center gap-2 text-sm font-semibold text-stone-700">
