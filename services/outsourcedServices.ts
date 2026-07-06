@@ -281,7 +281,37 @@ export async function getOutsourcedProducts() {
     `${API_URL}/admin/outsourced-services/products`,
   );
   const data = await readJson<unknown>(response);
-  return unwrapArray<OutsourcedProduct>(data, ["products", "data"]);
+  const products = unwrapArray<OutsourcedProduct>(data, ["products", "data"]);
+
+  // O endpoint de produtos terceirizados nem sempre retorna o consumo de
+  // tecido cadastrado no cadastro principal do produto. Buscamos o catalogo
+  // completo e completamos os itens que vierem sem essa informacao.
+  try {
+    const catalogResponse = await outsourcedFetch(`${API_URL}/products`);
+    const catalogData = await readJson<unknown>(catalogResponse);
+    const catalogProducts = unwrapArray<OutsourcedProduct>(catalogData, [
+      "products",
+      "data",
+    ]);
+    const fabricUsageById = new Map(
+      catalogProducts.map((product) => [
+        product.id,
+        product.fabricUsageItems?.length
+          ? product.fabricUsageItems
+          : product.fabric_usage_items || [],
+      ]),
+    );
+    return products.map((product) =>
+      product.fabricUsageItems?.length || product.fabric_usage_items?.length
+        ? product
+        : {
+            ...product,
+            fabricUsageItems: fabricUsageById.get(product.id) || [],
+          },
+    );
+  } catch {
+    return products;
+  }
 }
 
 export async function getOutsourcedCompanies() {
