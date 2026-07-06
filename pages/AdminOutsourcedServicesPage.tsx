@@ -227,7 +227,7 @@ const statusClasses = (service: OutsourcedService) => {
 const getInputUnit = (serviceType: string, types: OutsourcedServiceType[] = []) =>
   types.find((type) => serviceTypeValue(type) === serviceType)?.inputUnit ||
   types.find((type) => serviceTypeValue(type) === serviceType)?.input_unit ||
-  (serviceType === "fabric_cutting" ? "metros" : "unidades");
+  (isFabricCuttingService(serviceType, types) ? "metros" : "unidades");
 
 const totalItemsQuantity = (items?: Array<{ quantity?: number | string }>) =>
   (items || []).reduce((total, item) => total + (Number(item.quantity) || 0), 0);
@@ -282,8 +282,15 @@ const isFabricCuttingService = (
   value: string,
   types: OutsourcedServiceType[] = [],
 ) => {
+  const normalizedValue = (value || "").toLowerCase();
   const label = getTypeLabel(value, types).toLowerCase();
-  return value === "fabric_cutting" || label.includes("corte");
+  return (
+    normalizedValue === "fabric_cutting" ||
+    normalizedValue.includes("corte") ||
+    normalizedValue.includes("cortar") ||
+    label.includes("corte") ||
+    label.includes("cortar")
+  );
 };
 
 const totalCostItems = (items?: Array<{ amount?: number | string }>) =>
@@ -989,6 +996,22 @@ const AdminOutsourcedServicesPage: React.FC = () => {
   const fabricCuttingPreview = isFabricCuttingForm
     ? buildFabricCuttingPreview(serviceForm.expected_return_items, products)
     : null;
+  const buildStoredFabricSummary = (service: OutsourcedService) =>
+    buildFabricCuttingPreview(
+      (service.expected_return_items || []).map((item) => ({
+        productId: itemProductId(item),
+        quantity: String(item.quantity ?? ""),
+      })),
+      products,
+    );
+
+  const selectedServiceFabricSummary =
+    selectedService && isFabricCuttingService(selectedService.service_type, types)
+      ? selectedService.fabric_cutting_summary?.items?.length
+        ? selectedService.fabric_cutting_summary
+        : buildStoredFabricSummary(selectedService)
+      : null;
+
   const selectedServiceExpectedProducts = selectedService?.expected_return_items
     ?.map(itemProductId)
     .filter(Boolean);
@@ -1340,7 +1363,11 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                         </span>
                         {isFabricCuttingService(service.service_type, types) && (
                           <FabricCuttingTotalsInline
-                            summary={service.fabric_cutting_summary}
+                            summary={
+                              service.fabric_cutting_summary?.items?.length
+                                ? service.fabric_cutting_summary
+                                : buildStoredFabricSummary(service)
+                            }
                           />
                         )}
                       </td>
@@ -1984,9 +2011,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
 
                 {isFabricCuttingService(selectedService.service_type, types) && (
                   <div className="mb-6">
-                    <FabricCuttingSummaryBox
-                      summary={selectedService.fabric_cutting_summary}
-                    />
+                    <FabricCuttingSummaryBox summary={selectedServiceFabricSummary} />
                   </div>
                 )}
 
