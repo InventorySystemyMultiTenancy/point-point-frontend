@@ -512,6 +512,7 @@ const MenuPage: React.FC = () => {
   const touchStartXRef = useRef<number | null>(null);
   const didSwipeRef = useRef(false);
   const [isImageZoomed, setIsImageZoomed] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const navigate = useNavigate();
 
@@ -630,7 +631,9 @@ const MenuPage: React.FC = () => {
       console.log("📦 Categorias recebidas:", data);
 
       if (data.length > 0) {
-        setDynamicCategories(filterPrivateCatalog(data, currentUser?.fullAccess));
+        setDynamicCategories(
+          filterPrivateCatalog(data, currentUser?.fullAccess),
+        );
         console.log(
           `✅ ${data.length} categorias carregadas e setadas no estado`,
         );
@@ -800,12 +803,12 @@ const MenuPage: React.FC = () => {
     >
       {/* 1. SIDEBAR ESQUERDA */}
       {false && (
-      <CategorySidebar
-        categories={displayCategories} // 🆕 Usa categorias dinâmicas ordenadas
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-        dynamicCategories={dynamicCategories}
-      />
+        <CategorySidebar
+          categories={displayCategories} // 🆕 Usa categorias dinâmicas ordenadas
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          dynamicCategories={dynamicCategories}
+        />
       )}
 
       {/* 2. ÁREA CENTRAL */}
@@ -899,27 +902,63 @@ const MenuPage: React.FC = () => {
                     )}
                   </section>
                 )}
-                <h2 className="monster-section-title">Produtos em destaque</h2>
-                <div className="monster-product-grid flex flex-wrap gap-4 md:gap-6">
-                {[...menu]
-                  .sort((a, b) => {
-                    const aOOS = isProductBackorder(a) ? 1 : 0;
-                    const bOOS = isProductBackorder(b) ? 1 : 0;
-                    if (aOOS !== bOOS) return aOOS - bOOS;
-                    return a.name.localeCompare(b.name, "pt-BR");
-                  })
-                    .map((product) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        onAddToCart={addToCart}
-                        onOpenImage={openImageViewer}
-                        quantityInCart={
-                          cartItems.find((i) => i.id === product.id)?.quantity ||
-                          0
-                        }
+                <div className="flex flex-col gap-4 md:gap-6">
+                  <div className="flex flex-col gap-2">
+                    <h2 className="monster-section-title">
+                      Produtos em destaque
+                    </h2>
+                    <div className="relative w-full md:max-w-md">
+                      <input
+                        type="text"
+                        placeholder="Pesquisar produtos..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full px-4 py-3 pl-10 rounded-lg border-2 border-stone-300 bg-white text-stone-800 placeholder-stone-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                       />
-                    ))}
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400">
+                        🔍
+                      </span>
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm("")}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-600 text-xl"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="monster-product-grid flex flex-wrap gap-4 md:gap-6">
+                    {[...menu]
+                      .filter(
+                        (product) =>
+                          searchTerm === "" ||
+                          product.name
+                            .toLowerCase()
+                            .includes(searchTerm.toLowerCase()) ||
+                          product.description
+                            ?.toLowerCase()
+                            .includes(searchTerm.toLowerCase()),
+                      )
+                      .sort((a, b) => {
+                        const aOOS = isProductBackorder(a) ? 1 : 0;
+                        const bOOS = isProductBackorder(b) ? 1 : 0;
+                        if (aOOS !== bOOS) return aOOS - bOOS;
+                        return a.name.localeCompare(b.name, "pt-BR");
+                      })
+                      .map((product) => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          onAddToCart={addToCart}
+                          onOpenImage={openImageViewer}
+                          quantityInCart={
+                            cartItems.find((i) => i.id === product.id)
+                              ?.quantity || 0
+                          }
+                        />
+                      ))}
+                  </div>
                 </div>
               </>
             ) : (
@@ -975,27 +1014,27 @@ const MenuPage: React.FC = () => {
             onClick={() => setIsMobileCartOpen(false)}
           />
           <div className="cart-drawer-shell">
-          <button
-            type="button"
-            className="cart-drawer-close"
-            onClick={() => setIsMobileCartOpen(false)}
-            aria-label="Fechar carrinho"
-          >
-            ×
-          </button>
-          <CartSidebar
-            cartItems={cartItems}
-            cartTotal={cartTotal}
-            updateQuantity={updateQuantity}
-            onCheckout={handleCheckout}
-            isPlacingOrder={isPlacingOrder}
-            cartSuggestion={cartSuggestion}
-            menu={menu}
-            onAddToCart={addToCart}
-            observation={observation}
-            setObservation={setObservation}
-            currentUser={currentUser}
-          />
+            <button
+              type="button"
+              className="cart-drawer-close"
+              onClick={() => setIsMobileCartOpen(false)}
+              aria-label="Fechar carrinho"
+            >
+              ×
+            </button>
+            <CartSidebar
+              cartItems={cartItems}
+              cartTotal={cartTotal}
+              updateQuantity={updateQuantity}
+              onCheckout={handleCheckout}
+              isPlacingOrder={isPlacingOrder}
+              cartSuggestion={cartSuggestion}
+              menu={menu}
+              onAddToCart={addToCart}
+              observation={observation}
+              setObservation={setObservation}
+              currentUser={currentUser}
+            />
           </div>
         </>
       )}
