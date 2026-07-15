@@ -2041,7 +2041,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
         </div>
       )}
 
-      {selectedService && (
+      {selectedService && !serviceModal && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4">
           <div className="mt-8 w-full max-w-4xl rounded-lg bg-white p-6 shadow-xl">
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
