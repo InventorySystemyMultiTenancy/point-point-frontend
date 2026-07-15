@@ -174,6 +174,20 @@ export interface OutsourcedServicePayload {
   notes?: string;
 }
 
+export interface OutsourcedServiceUpdatePayload {
+  company_id?: string;
+  service_type?: string;
+  input_quantity?: number;
+  fabric_paid_amount?: number;
+  service_cost_amount?: number;
+  service_cost_items?: OutsourcedServiceCostItem[];
+  input_items?: OutsourcedProductQuantity[];
+  expected_return_items?: OutsourcedProductQuantity[];
+  due_date?: string;
+  started_at?: string;
+  notes?: string;
+}
+
 export interface OutsourcedDeliveryPayload {
   items: OutsourcedProductQuantity[];
   delivered_at: string;
@@ -357,11 +371,19 @@ export async function updateOutsourcedCompany(
 
 export async function getOutsourcedServices(filters?: {
   status?: string;
+  companyId?: string;
   overdue?: boolean;
+  companyName?: string;
+  productId?: string;
+  productName?: string;
 }) {
   const params = new URLSearchParams();
   if (filters?.status) params.set("status", filters.status);
+  if (filters?.companyId) params.set("companyId", filters.companyId);
   if (filters?.overdue) params.set("overdue", "true");
+  if (filters?.companyName) params.set("companyName", filters.companyName);
+  if (filters?.productId) params.set("productId", filters.productId);
+  if (filters?.productName) params.set("productName", filters.productName);
   const query = params.toString() ? `?${params.toString()}` : "";
   const response = await outsourcedFetch(
     `${API_URL}/admin/outsourced-services${query}`,
@@ -404,6 +426,23 @@ export async function createOutsourcedService(
     `${API_URL}/admin/outsourced-services`,
     {
       method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+  return unwrapObject<OutsourcedService>(
+    await readJson<unknown>(response),
+    ["service", "data"],
+  );
+}
+
+export async function updateOutsourcedService(
+  id: string,
+  payload: OutsourcedServiceUpdatePayload,
+) {
+  const response = await outsourcedFetch(
+    `${API_URL}/admin/outsourced-services/${id}`,
+    {
+      method: "PUT",
       body: JSON.stringify(payload),
     },
   );

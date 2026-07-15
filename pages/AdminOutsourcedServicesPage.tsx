@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useDebounce } from "../hooks/useDebounce";
 import {
   addOutsourcedServiceDelivery,
   createOutsourcedCompany,
@@ -20,8 +21,10 @@ import {
   type OutsourcedService,
   type OutsourcedServiceCostItem,
   type OutsourcedServicePayload,
+  type OutsourcedServiceUpdatePayload,
   type OutsourcedServiceType,
   type OutsourcedServiceTypePayload,
+  updateOutsourcedService,
   updateOutsourcedServiceType,
   updateOutsourcedCompany,
 } from "../services/outsourcedServices";
@@ -293,6 +296,14 @@ const isFabricCuttingService = (
   );
 };
 
+const outputRequiresProducts = (
+  value: string,
+  types: OutsourcedServiceType[] = [],
+) => {
+  const type = types.find((item) => serviceTypeValue(item) === value);
+  return (type?.outputMode || "products") !== "measure";
+};
+
 const totalCostItems = (items?: Array<{ amount?: number | string }>) =>
   (items || []).reduce((total, item) => total + (Number(item.amount) || 0), 0);
 
@@ -496,6 +507,10 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     "all" | "pendente" | "concluido" | "overdue"
   >("all");
   const [companyFilter, setCompanyFilter] = useState("all");
+  const [companyNameSearch, setCompanyNameSearch] = useState("");
+  const [productNameSearch, setProductNameSearch] = useState("");
+  const debouncedCompanyName = useDebounce(companyNameSearch, 400);
+  const debouncedProductName = useDebounce(productNameSearch, 400);
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
   const [calendarYear, setCalendarYear] = useState<number>(new Date().getFullYear());
   const [calendarMonth, setCalendarMonth] = useState<number>(new Date().getMonth());
@@ -506,6 +521,9 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     useState<OutsourcedCompanyPayload>(emptyCompany);
   const [serviceModal, setServiceModal] = useState(false);
   const [serviceForm, setServiceForm] = useState({ ...emptyService });
+  const [editingService, setEditingService] = useState<OutsourcedService | null>(
+    null,
+  );
   const [selectedService, setSelectedService] =
     useState<OutsourcedService | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -539,14 +557,18 @@ const AdminOutsourcedServicesPage: React.FC = () => {
 
   const loadServices = async (
     filter: "all" | "pendente" | "concluido" | "overdue" = statusFilter,
+    companyName: string = debouncedCompanyName,
+    productName: string = debouncedProductName,
   ) => {
-    const nextServices = await getOutsourcedServices(
-      filter === "overdue"
+    const nextServices = await getOutsourcedServices({
+      ...(filter === "overdue"
         ? { overdue: true }
         : filter === "all"
-          ? undefined
-          : { status: filter },
-    );
+          ? {}
+          : { status: filter }),
+      ...(companyName.trim() ? { companyName: companyName.trim() } : {}),
+      ...(productName.trim() ? { productName: productName.trim() } : {}),
+    });
     setServices(nextServices);
   };
 
@@ -555,11 +577,13 @@ const AdminOutsourcedServicesPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    loadServices(statusFilter).catch((err) => {
-      console.error("Erro ao filtrar servicos:", err);
-      setError("Nao foi possivel aplicar o filtro.");
-    });
-  }, [statusFilter]);
+    loadServices(statusFilter, debouncedCompanyName, debouncedProductName).catch(
+      (err) => {
+        console.error("Erro ao filtrar servicos:", err);
+        setError("Nao foi possivel aplicar o filtro.");
+      },
+    );
+  }, [statusFilter, debouncedCompanyName, debouncedProductName]);
 
   const visibleServices = useMemo(
     () =>
@@ -650,10 +674,48 @@ const AdminOutsourcedServicesPage: React.FC = () => {
   const openNewService = () => {
     const firstActiveType =
       types.find((type) => type.active !== false) || types[0] || SERVICE_FALLBACKS[0];
+    setEditingService(null);
     setServiceForm({
       ...emptyService,
       service_type: serviceTypeValue(firstActiveType),
       expected_return_items: [{ productId: "", quantity: "" }],
+    });
+    setServiceModal(true);
+  };
+
+  const openEditService = (service: OutsourcedService) => {
+    const expectedItems = service.expected_return_items?.length
+      ? service.expected_return_items.map((item) => ({
+          productId: itemProductId(item),
+          quantity: String(item.quantity ?? ""),
+        }))
+      : [{ productId: "", quantity: "" }];
+    const costItems = expectedItems.map((item, index) => {
+      const existing = service.service_cost_items?.[index];
+      return {
+        productId: item.productId,
+        amount: existing?.amount != null ? String(existing.amount) : "",
+      };
+    });
+    setEditingService(service);
+    setServiceForm({
+      company_id: service.company_id,
+      service_type: service.service_type,
+      input_quantity:
+        service.input_quantity != null ? String(service.input_quantity) : "",
+      fabric_paid_amount:
+        service.fabric_paid_amount != null
+          ? String(service.fabric_paid_amount)
+          : "",
+      service_cost_amount:
+        service.service_cost_amount != null
+          ? String(service.service_cost_amount)
+          : "",
+      service_cost_items: costItems,
+      expected_return_items: expectedItems,
+      due_date: toDateTimeLocal(service.due_date),
+      started_at: toDateTimeLocal(service.started_at),
+      notes: service.notes || "",
     });
     setServiceModal(true);
   };
@@ -859,11 +921,14 @@ const AdminOutsourcedServicesPage: React.FC = () => {
   const saveService = async (event: React.FormEvent) => {
     event.preventDefault();
     const expectedReturnItems = parseItemRows(serviceForm.expected_return_items);
-    if (expectedReturnItems.length === 0) {
-      alert("Informe pelo menos um produto no retorno previsto.");
+    if (
+      outputRequiresProducts(serviceForm.service_type, types) &&
+      expectedReturnItems.length === 0
+    ) {
+      alert("Informe os produtos e quantidades previstos para retorno.");
       return;
     }
-    const payload: OutsourcedServicePayload = {
+    const payload: OutsourcedServicePayload | OutsourcedServiceUpdatePayload = {
       company_id: serviceForm.company_id,
       service_type: serviceForm.service_type,
       expected_return_items: expectedReturnItems,
@@ -896,13 +961,38 @@ const AdminOutsourcedServicesPage: React.FC = () => {
 
     setSaving(true);
     try {
-      await createOutsourcedService(payload);
-      setServiceModal(false);
-      setServiceForm({ ...emptyService });
-      await loadServices(statusFilter);
+      if (editingService) {
+        const updated = await updateOutsourcedService(editingService.id, payload);
+        setServiceModal(false);
+        setEditingService(null);
+        setServiceForm({ ...emptyService });
+        await loadServices(statusFilter, debouncedCompanyName, debouncedProductName);
+        if (selectedService?.id === editingService.id) {
+          setSelectedService(
+            updated?.id ? updated : await getOutsourcedService(editingService.id),
+          );
+        }
+      } else {
+        await createOutsourcedService(payload as OutsourcedServicePayload);
+        setServiceModal(false);
+        setServiceForm({ ...emptyService });
+        await loadServices(statusFilter, debouncedCompanyName, debouncedProductName);
+      }
     } catch (err) {
-      console.error("Erro ao criar servico:", err);
-      alert("Erro ao criar servico terceirizado.");
+      const status = (err as Error & { status?: number }).status;
+      if (status === 400) {
+        alert((err as Error).message);
+      } else {
+        console.error(
+          editingService ? "Erro ao atualizar servico:" : "Erro ao criar servico:",
+          err,
+        );
+        alert(
+          editingService
+            ? "Erro ao atualizar servico terceirizado."
+            : "Erro ao criar servico terceirizado.",
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -1158,6 +1248,26 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm font-semibold text-stone-600">
+                Buscar por nome da empresa
+                <input
+                  type="text"
+                  value={companyNameSearch}
+                  onChange={(event) => setCompanyNameSearch(event.target.value)}
+                  placeholder="Ex: Confeccoes"
+                  className="min-w-[220px] rounded-lg border border-stone-300 px-3 py-2"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm font-semibold text-stone-600">
+                Buscar por produto previsto
+                <input
+                  type="text"
+                  value={productNameSearch}
+                  onChange={(event) => setProductNameSearch(event.target.value)}
+                  placeholder="Ex: Camiseta"
+                  className="min-w-[220px] rounded-lg border border-stone-300 px-3 py-2"
+                />
               </label>
             </div>
 
@@ -1706,7 +1816,9 @@ const AdminOutsourcedServicesPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4">
           <div className="mt-8 w-full max-w-3xl rounded-lg bg-white p-6 shadow-xl">
             <h2 className="mb-5 text-2xl font-bold text-stone-900">
-              Novo servico terceirizado
+              {editingService
+                ? "Editar servico terceirizado"
+                : "Novo servico terceirizado"}
             </h2>
             <form onSubmit={saveService} className="grid gap-4 sm:grid-cols-2">
               <label>
@@ -1919,7 +2031,10 @@ const AdminOutsourcedServicesPage: React.FC = () => {
               </label>
               <ModalActions
                 saving={saving}
-                onCancel={() => setServiceModal(false)}
+                onCancel={() => {
+                  setServiceModal(false);
+                  setEditingService(null);
+                }}
               />
             </form>
           </div>
@@ -1942,12 +2057,22 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   )}
                 </p>
               </div>
-              <button
-                onClick={() => setSelectedService(null)}
-                className="rounded-lg bg-stone-100 px-4 py-2 font-bold text-stone-700 hover:bg-stone-200"
-              >
-                Fechar
-              </button>
+              <div className="flex gap-2">
+                {!isEmployeeView && (
+                  <button
+                    onClick={() => openEditService(selectedService)}
+                    className="rounded-lg bg-purple-100 px-4 py-2 font-bold text-purple-800 hover:bg-purple-200"
+                  >
+                    Editar
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedService(null)}
+                  className="rounded-lg bg-stone-100 px-4 py-2 font-bold text-stone-700 hover:bg-stone-200"
+                >
+                  Fechar
+                </button>
+              </div>
             </div>
 
             {detailLoading ? (
