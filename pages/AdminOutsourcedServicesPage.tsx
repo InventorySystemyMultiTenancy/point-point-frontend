@@ -537,19 +537,6 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const tableContainer = servicesTableScrollRef.current;
-    if (!tableContainer || viewMode !== "table") return;
-
-    const updateScrollWidth = () =>
-      setServicesTableScrollWidth(tableContainer.scrollWidth);
-
-    updateScrollWidth();
-
-    const resizeObserver = new ResizeObserver(updateScrollWidth);
-    resizeObserver.observe(tableContainer);
-    return () => resizeObserver.disconnect();
-  }, [viewMode, visibleServices, isEmployeeView]);
   const [calendarYear, setCalendarYear] = useState<number>(new Date().getFullYear());
   const [calendarMonth, setCalendarMonth] = useState<number>(new Date().getMonth());
   const [companyModal, setCompanyModal] = useState(false);
@@ -718,6 +705,20 @@ const AdminOutsourcedServicesPage: React.FC = () => {
         : services.filter((service) => service.company_id === companyFilter),
     [companyFilter, services],
   );
+
+  useEffect(() => {
+    const tableContainer = servicesTableScrollRef.current;
+    if (!tableContainer || viewMode !== "table") return;
+
+    const updateScrollWidth = () =>
+      setServicesTableScrollWidth(tableContainer.scrollWidth);
+
+    updateScrollWidth();
+
+    const resizeObserver = new ResizeObserver(updateScrollWidth);
+    resizeObserver.observe(tableContainer);
+    return () => resizeObserver.disconnect();
+  }, [viewMode, visibleServices, isEmployeeView]);
 
   const summary = useMemo(() => {
     const activeCompanies = companies.filter(
