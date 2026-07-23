@@ -1,6 +1,5 @@
 // Página de gerenciamento de categorias (Admin)
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import {
   getCategories,
@@ -16,7 +15,6 @@ const AdminCategoriesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const navigate = useNavigate();
 
   // Carrega categorias ao montar o componente
   useEffect(() => {
@@ -140,22 +138,14 @@ const AdminCategoriesPage: React.FC = () => {
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate("/admin")}
-                className="text-purple-600 hover:bg-purple-100 p-2 rounded-full transition-colors"
-              >
-                ← Voltar
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold text-purple-800">
-                  📂 Gerenciar Categorias
-                </h1>
-                <p className="text-stone-600 text-sm mt-1">
-                  Organize os produtos em categorias
-                </p>
-                {/* Loja: single-tenant, não exibe mais storeId */}
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold text-purple-800">
+                📂 Gerenciar Categorias
+              </h1>
+              <p className="text-stone-600 text-sm mt-1">
+                Organize os produtos em categorias
+              </p>
+              {/* Loja: single-tenant, não exibe mais storeId */}
             </div>
             <button
               onClick={() => {

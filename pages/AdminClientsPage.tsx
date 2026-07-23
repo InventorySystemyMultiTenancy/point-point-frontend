@@ -2,7 +2,6 @@
 // Painel para o admin gerenciar clientes comuns: ver dados, editar,
 // desativar/ativar, e controlar fechamento mensal e acesso a produtos ocultos.
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import type { User } from "../types";
 import {
   getUsers,
@@ -22,7 +21,6 @@ interface ClientFormState {
 const emptyForm: ClientFormState = { name: "", email: "", cpf: "", telefone: "" };
 
 const AdminClientsPage: React.FC = () => {
-  const navigate = useNavigate();
   const [clients, setClients] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -192,22 +190,14 @@ const AdminClientsPage: React.FC = () => {
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate("/admin")}
-                className="text-purple-600 hover:bg-purple-100 p-2 rounded-full transition-colors"
-              >
-                ← Voltar
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold text-purple-800">
-                  Clientes
-                </h1>
-                <p className="text-stone-600 text-sm mt-1">
-                  Veja os dados dos clientes, edite, desative e controle
-                  fechamento mensal e acesso a produtos ocultos.
-                </p>
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold text-purple-800">
+                Clientes
+              </h1>
+              <p className="text-stone-600 text-sm mt-1">
+                Veja os dados dos clientes, edite, desative e controle
+                fechamento mensal e acesso a produtos ocultos.
+              </p>
             </div>
             <button
               onClick={loadClients}

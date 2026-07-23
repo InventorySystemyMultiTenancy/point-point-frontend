@@ -114,6 +114,8 @@ export interface OutsourcedService {
   is_overdue?: boolean;
   notes?: string | null;
   deliveries?: OutsourcedDelivery[];
+  paid?: boolean;
+  paid_at?: string | null;
 }
 
 export interface OutsourcedAlert {
@@ -376,6 +378,8 @@ export async function getOutsourcedServices(filters?: {
   companyName?: string;
   productId?: string;
   productName?: string;
+  dueFrom?: string;
+  dueTo?: string;
 }) {
   const params = new URLSearchParams();
   if (filters?.status) params.set("status", filters.status);
@@ -384,6 +388,8 @@ export async function getOutsourcedServices(filters?: {
   if (filters?.companyName) params.set("companyName", filters.companyName);
   if (filters?.productId) params.set("productId", filters.productId);
   if (filters?.productName) params.set("productName", filters.productName);
+  if (filters?.dueFrom) params.set("dueFrom", filters.dueFrom);
+  if (filters?.dueTo) params.set("dueTo", filters.dueTo);
   const query = params.toString() ? `?${params.toString()}` : "";
   const response = await outsourcedFetch(
     `${API_URL}/admin/outsourced-services${query}`,
@@ -477,4 +483,29 @@ export async function finalizeOutsourcedService(id: string) {
     },
   );
   return readJson<unknown>(response);
+}
+
+export interface MarkCompanyServicesPaidResult {
+  markedCount: number;
+  totalPaid: number;
+}
+
+export async function markOutsourcedCompanyServicesPaid(
+  companyId: string,
+  filters?: { dueFrom?: string; dueTo?: string },
+) {
+  const response = await outsourcedFetch(
+    `${API_URL}/admin/outsourced-companies/${companyId}/mark-services-paid`,
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        dueFrom: filters?.dueFrom || undefined,
+        dueTo: filters?.dueTo || undefined,
+      }),
+    },
+  );
+  return unwrapObject<MarkCompanyServicesPaidResult>(
+    await readJson<unknown>(response),
+    ["result", "data"],
+  );
 }

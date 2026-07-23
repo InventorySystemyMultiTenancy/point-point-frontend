@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "../hooks/useDebounce";
+import StatCard from "../components/admin/StatCard";
 import {
   addOutsourcedServiceDelivery,
   createOutsourcedCompany,
@@ -12,6 +13,7 @@ import {
   getOutsourcedService,
   getOutsourcedServices,
   getOutsourcedServiceTypes,
+  markOutsourcedCompanyServicesPaid,
   type OutsourcedCompany,
   type OutsourcedCompanyPayload,
   type OutsourcedDeliveryPayload,
@@ -478,17 +480,6 @@ const ProgressBar: React.FC<{ service: OutsourcedService }> = ({ service }) => {
   );
 };
 
-const SummaryCard: React.FC<{
-  label: string;
-  value: number;
-  color: string;
-}> = ({ label, value, color }) => (
-  <div className={`rounded-lg bg-white p-5 shadow border-l-4 ${color}`}>
-    <p className="text-sm font-medium text-stone-500">{label}</p>
-    <p className="mt-2 text-3xl font-bold text-stone-900">{value}</p>
-  </div>
-);
-
 const AdminOutsourcedServicesPage: React.FC = () => {
   const isEmployeeView = `${window.location.pathname}${window.location.hash}`.includes(
     "/employee",
@@ -511,6 +502,13 @@ const AdminOutsourcedServicesPage: React.FC = () => {
   const [productNameSearch, setProductNameSearch] = useState("");
   const debouncedCompanyName = useDebounce(companyNameSearch, 400);
   const debouncedProductName = useDebounce(productNameSearch, 400);
+  const [dueFrom, setDueFrom] = useState("");
+  const [dueTo, setDueTo] = useState("");
+  const [companyPaymentServices, setCompanyPaymentServices] = useState<
+    OutsourcedService[]
+  >([]);
+  const [loadingCompanyPayment, setLoadingCompanyPayment] = useState(false);
+  const [markingCompanyPaid, setMarkingCompanyPaid] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
   const [calendarYear, setCalendarYear] = useState<number>(new Date().getFullYear());
   const [calendarMonth, setCalendarMonth] = useState<number>(new Date().getMonth());
@@ -559,6 +557,8 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     filter: "all" | "pendente" | "concluido" | "overdue" = statusFilter,
     companyName: string = debouncedCompanyName,
     productName: string = debouncedProductName,
+    dueFromValue: string = dueFrom,
+    dueToValue: string = dueTo,
   ) => {
     const nextServices = await getOutsourcedServices({
       ...(filter === "overdue"
@@ -568,6 +568,8 @@ const AdminOutsourcedServicesPage: React.FC = () => {
           : { status: filter }),
       ...(companyName.trim() ? { companyName: companyName.trim() } : {}),
       ...(productName.trim() ? { productName: productName.trim() } : {}),
+      ...(dueFromValue ? { dueFrom: dueFromValue } : {}),
+      ...(dueToValue ? { dueTo: dueToValue } : {}),
     });
     setServices(nextServices);
   };
@@ -577,13 +579,97 @@ const AdminOutsourcedServicesPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    loadServices(statusFilter, debouncedCompanyName, debouncedProductName).catch(
-      (err) => {
-        console.error("Erro ao filtrar servicos:", err);
-        setError("Nao foi possivel aplicar o filtro.");
-      },
+    loadServices(
+      statusFilter,
+      debouncedCompanyName,
+      debouncedProductName,
+      dueFrom,
+      dueTo,
+    ).catch((err) => {
+      console.error("Erro ao filtrar servicos:", err);
+      setError("Nao foi possivel aplicar o filtro.");
+    });
+  }, [statusFilter, debouncedCompanyName, debouncedProductName, dueFrom, dueTo]);
+
+  useEffect(() => {
+    if (companyFilter === "all") {
+      setCompanyPaymentServices([]);
+      return;
+    }
+    let isMounted = true;
+    setLoadingCompanyPayment(true);
+    getOutsourcedServices({
+      companyId: companyFilter,
+      ...(dueFrom ? { dueFrom } : {}),
+      ...(dueTo ? { dueTo } : {}),
+    })
+      .then((data) => {
+        if (isMounted) setCompanyPaymentServices(data);
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar pagamentos da empresa:", err);
+        if (isMounted) setCompanyPaymentServices([]);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingCompanyPayment(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [companyFilter, dueFrom, dueTo]);
+
+  const companyPaymentSummary = useMemo(() => {
+    const withCost = companyPaymentServices.filter(
+      (service) => service.service_cost_amount != null,
     );
-  }, [statusFilter, debouncedCompanyName, debouncedProductName]);
+    const open = withCost.filter((service) => !service.paid);
+    const paid = withCost.filter((service) => service.paid);
+    return {
+      openTotal: totalCostItems(
+        open.map((service) => ({ amount: service.service_cost_amount || 0 })),
+      ),
+      paidTotal: totalCostItems(
+        paid.map((service) => ({ amount: service.service_cost_amount || 0 })),
+      ),
+      openCount: open.length,
+      paidCount: paid.length,
+    };
+  }, [companyPaymentServices]);
+
+  const handleMarkCompanyPaid = async () => {
+    if (companyFilter === "all" || companyPaymentSummary.openCount === 0) return;
+    const company = companies.find((item) => item.id === companyFilter);
+    const confirmed = window.confirm(
+      `Marcar ${companyPaymentSummary.openCount} servico(s) de "${
+        company?.name || "empresa"
+      }" como pago, totalizando ${money(companyPaymentSummary.openTotal)}?`,
+    );
+    if (!confirmed) return;
+
+    setMarkingCompanyPaid(true);
+    try {
+      const result = await markOutsourcedCompanyServicesPaid(companyFilter, {
+        ...(dueFrom ? { dueFrom } : {}),
+        ...(dueTo ? { dueTo } : {}),
+      });
+      await Promise.all([
+        getOutsourcedServices({
+          companyId: companyFilter,
+          ...(dueFrom ? { dueFrom } : {}),
+          ...(dueTo ? { dueTo } : {}),
+        }).then(setCompanyPaymentServices),
+        loadServices(statusFilter, debouncedCompanyName, debouncedProductName),
+      ]);
+      alert(
+        `${result.markedCount} servico(s) marcado(s) como pago, totalizando ${money(result.totalPaid)}.`,
+      );
+    } catch (err) {
+      console.error("Erro ao marcar servicos como pago:", err);
+      alert("Erro ao marcar servicos como pago.");
+    } finally {
+      setMarkingCompanyPaid(false);
+    }
+  };
 
   const visibleServices = useMemo(
     () =>
@@ -1148,22 +1234,22 @@ const AdminOutsourcedServicesPage: React.FC = () => {
       )}
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard
+        <StatCard
           label="Servicos pendentes"
           value={summary.pending}
           color="border-amber-500"
         />
-        <SummaryCard
+        <StatCard
           label="Servicos concluidos"
           value={summary.completed}
           color="border-emerald-500"
         />
-        <SummaryCard
+        <StatCard
           label="Servicos atrasados"
           value={summary.overdue}
           color="border-red-500"
         />
-        <SummaryCard
+        <StatCard
           label="Empresas ativas"
           value={summary.activeCompanies}
           color="border-purple-500"
@@ -1269,6 +1355,24 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   className="min-w-[220px] rounded-lg border border-stone-300 px-3 py-2"
                 />
               </label>
+              <label className="flex flex-col gap-1 text-sm font-semibold text-stone-600">
+                Prazo de
+                <input
+                  type="date"
+                  value={dueFrom}
+                  onChange={(event) => setDueFrom(event.target.value)}
+                  className="rounded-lg border border-stone-300 px-3 py-2"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm font-semibold text-stone-600">
+                Prazo ate
+                <input
+                  type="date"
+                  value={dueTo}
+                  onChange={(event) => setDueTo(event.target.value)}
+                  className="rounded-lg border border-stone-300 px-3 py-2"
+                />
+              </label>
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -1296,6 +1400,51 @@ const AdminOutsourcedServicesPage: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {!isEmployeeView && companyFilter !== "all" && (
+            <div className="flex flex-col gap-4 rounded-lg border border-purple-200 bg-purple-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
+                    Em aberto no periodo
+                  </p>
+                  <p className="text-2xl font-black text-red-700">
+                    {money(companyPaymentSummary.openTotal)}
+                  </p>
+                  <p className="text-xs text-stone-500">
+                    {companyPaymentSummary.openCount} servico(s)
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
+                    Ja pago no periodo
+                  </p>
+                  <p className="text-2xl font-black text-emerald-700">
+                    {money(companyPaymentSummary.paidTotal)}
+                  </p>
+                  <p className="text-xs text-stone-500">
+                    {companyPaymentSummary.paidCount} servico(s)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleMarkCompanyPaid}
+                disabled={
+                  markingCompanyPaid ||
+                  loadingCompanyPayment ||
+                  companyPaymentSummary.openCount === 0
+                }
+                className="whitespace-nowrap rounded-lg bg-emerald-700 px-5 py-3 font-bold text-white shadow hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {markingCompanyPaid
+                  ? "Marcando..."
+                  : companyPaymentSummary.openCount === 0
+                    ? "Nada em aberto"
+                    : `Marcar todos como pago (${money(companyPaymentSummary.openTotal)})`}
+              </button>
+            </div>
+          )}
 
           {viewMode === "calendar" ? (
             <div className="space-y-4 rounded-lg bg-white shadow">
@@ -1494,6 +1643,17 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                           </td>
                           <td className="px-4 py-3">
                             {money(service.service_cost_amount)}
+                            {service.service_cost_amount != null && (
+                              <span
+                                className={`ml-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${
+                                  service.paid
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : "bg-amber-100 text-amber-800"
+                                }`}
+                              >
+                                {service.paid ? "Pago" : "Em aberto"}
+                              </span>
+                            )}
                           </td>
                         </>
                       )}

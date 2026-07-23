@@ -48,8 +48,8 @@ const StockMovementModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-20 flex justify-center items-center z-50">
-      <div className="bg-purple-600 p-6 rounded-xl shadow-xl w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4 text-blue-800">
+      <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
+        <h2 className="text-xl font-bold mb-4 text-purple-800">
           Movimentacao de Estoque
         </h2>
         <form
@@ -152,11 +152,11 @@ import {
   updateUserFullAccess,
   updateUserMonthlyPayment,
 } from "../services/apiService";
-import { useAuth } from "../contexts/AuthContext";
 import {
   getOutsourcedServiceAlerts,
   type OutsourcedAlert,
 } from "../services/outsourcedServices";
+import StatCard from "../components/admin/StatCard";
 
 type BackorderedProduct = {
   id?: string;
@@ -1028,12 +1028,15 @@ const ProductForm: React.FC<ProductFormProps> = ({
 // --- Componente principal da p?gina administrativa ---
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
   const knownOrderIdsRef = useRef<Set<string>>(new Set());
   const hasInitializedOrderNotificationsRef = useRef(false);
 
   // Estado que cont?m a lista de produtos exibida na tabela
   const [menu, setMenu] = useState<Product[]>([]);
+  // Aba ativa do painel administrativo
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "products" | "stock" | "carriers" | "users"
+  >("overview");
   // Modal de movimentacao de estoque
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   // Historico de movimentacoes (backend)
@@ -1866,81 +1869,47 @@ const AdminPage: React.FC = () => {
   return (
     <div className="container mx-auto p-2 sm:p-4 md:p-6">
       {/* Cabe?alho */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div className="mb-6">
         <h1 className="text-4xl font-bold text-blue-800">
           Painel Administrativo
         </h1>
-        <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
-          <button
-            onClick={() => setIsStockModalOpen(true)}
-            className="bg-white border border-stone-300 text-stone-700 font-bold py-2 px-6 rounded-lg hover:bg-stone-50 transition-colors shadow-sm"
-          >
-            Movimentacao Estoque
-          </button>
-          {/* Modal de movimentacao de estoque */}
-          {isStockModalOpen && (
-            <StockMovementModal
-              products={menu}
-              onClose={() => setIsStockModalOpen(false)}
-              onMovement={handleStockMovement}
-            />
-          )}
-          {/* Historico de movimentacoes de estoque */}
-          <div className="mt-12"></div>
-          <button
-            onClick={() => navigate("/admin/categories")}
-            className="bg-white border border-stone-300 text-stone-700 font-bold py-2 px-6 rounded-lg hover:bg-stone-50 transition-colors shadow-sm"
-          >
-            Categorias
-          </button>
-          <button
-            onClick={() => navigate("/admin/outsourced-services")}
-            className="bg-white border border-stone-300 text-stone-700 font-bold py-2 px-6 rounded-lg hover:bg-stone-50 transition-colors shadow-sm"
-          >
-            Servicos Terceirizados
-          </button>
-          <button
-            onClick={() => navigate("/historico")}
-            className="bg-white border border-stone-300 text-stone-700 font-bold py-2 px-6 rounded-lg hover:bg-stone-50 transition-colors shadow-sm"
-          >
-            Historico de Pedidos
-          </button>
-          <button
-            onClick={handleGenerateAnalysis}
-            disabled={isLoadingAnalysis}
-            className="bg-purple-50 border border-purple-200 text-purple-700 font-bold py-2 px-6 rounded-lg hover:bg-purple-100 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
-          >
-            {isLoadingAnalysis ? " Analisando..." : "Analise com IA"}
-          </button>
-          <button
-            onClick={() => {
-              setEditingProduct(null);
-              setIsFormOpen(true);
-            }}
-            className="bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-colors shadow-md"
-          >
-            + Adicionar Produto
-          </button>
-          <button
-            onClick={() => navigate("/admin/clients")}
-            className="bg-white border border-stone-300 text-stone-700 font-bold py-2 px-6 rounded-lg hover:bg-stone-50 transition-colors shadow-sm"
-          >
-            Clientes
-          </button>
-          <button
-            onClick={async () => {
-              if (window.confirm("Deseja realmente sair?")) {
-                await logout();
-                navigate("/admin/login");
-              }
-            }}
-            className="bg-white border border-red-200 text-red-600 font-bold py-2 px-6 rounded-lg hover:bg-red-50 transition-colors shadow-sm"
-          >
-            Sair
-          </button>
+        <div className="mt-4 flex gap-1 overflow-x-auto border-b border-stone-200">
+          {(
+            [
+              { id: "overview", label: "Visão Geral" },
+              { id: "products", label: "Produtos" },
+              { id: "stock", label: "Estoque" },
+              { id: "carriers", label: "Transportadoras" },
+              { id: "users", label: "Usuários" },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`whitespace-nowrap px-4 py-3 text-sm font-bold transition-colors ${
+                activeTab === tab.id
+                  ? "border-b-2 border-purple-700 text-purple-700"
+                  : "text-stone-500 hover:text-stone-700"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
+      {/* Modal de movimentacao de estoque */}
+      {isStockModalOpen && (
+        <StockMovementModal
+          products={menu}
+          onClose={() => setIsStockModalOpen(false)}
+          onMovement={handleStockMovement}
+        />
+      )}
+
+      {activeTab === "overview" && (
+        <>
       {/* Cards de Estatisticas */}
       {outsourcedAlerts.length > 0 && (
         <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-5 shadow">
@@ -1990,10 +1959,10 @@ const AdminPage: React.FC = () => {
       <div className="mb-6 rounded-xl border-l-4 border-amber-500 bg-white p-5 shadow-lg">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-2xl font-black text-white">
+            <h2 className="text-2xl font-black text-stone-800">
               Produtos encomendados
             </h2>
-            <p className="text-sm font-semibold text-blue-100">
+            <p className="text-sm font-semibold text-stone-600">
               Unidades sob encomenda de pedidos ainda nao entregues.
             </p>
           </div>
@@ -2005,7 +1974,7 @@ const AdminPage: React.FC = () => {
           </div>
         </div>
         {backorderedData.products.length === 0 ? (
-          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-blue-100">
+          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-stone-600">
             Nenhum produto com estoque negativo no momento.
           </p>
         ) : (
@@ -2060,37 +2029,60 @@ const AdminPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
-          <div className="text-sm text-stone-500 mb-1">Total de Produtos</div>
-          <div className="text-3xl font-bold text-blue-600">
-            {stats.totalProducts}
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500">
-          <div className="text-sm text-stone-500 mb-1">Pedidos (30 dias)</div>
-          <div className="text-3xl font-bold text-green-600">
-            {stats.totalOrders}
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-yellow-500">
-          <div className="text-sm text-stone-500 mb-1">Estoque Baixo</div>
-          <div className="text-3xl font-bold text-yellow-600">
-            {stats.lowStock}
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-600">
-          <div className="text-sm text-stone-500 mb-1">Esgotados</div>
-          <div className="text-3xl font-bold text-blue-700">
-            {stats.outOfStock}
-          </div>
-        </div>
+        <StatCard
+          label="Total de Produtos"
+          value={stats.totalProducts}
+          color="border-blue-500"
+          valueClassName="text-blue-600"
+        />
+        <StatCard
+          label="Pedidos (30 dias)"
+          value={stats.totalOrders}
+          color="border-green-500"
+          valueClassName="text-green-600"
+        />
+        <StatCard
+          label="Estoque Baixo"
+          value={stats.lowStock}
+          color="border-yellow-500"
+          valueClassName="text-yellow-600"
+        />
+        <StatCard
+          label="Esgotados"
+          value={stats.outOfStock}
+          color="border-blue-600"
+          valueClassName="text-blue-700"
+        />
       </div>
 
+      <div className="mb-6 rounded-xl border-l-4 border-purple-500 bg-white p-5 shadow-lg">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-stone-800">
+              Análise Inteligente
+            </h2>
+            <p className="text-sm font-semibold text-stone-600">
+              Gere um resumo do estoque e vendas usando IA.
+            </p>
+          </div>
+          <button
+            onClick={handleGenerateAnalysis}
+            disabled={isLoadingAnalysis}
+            className="rounded-lg bg-purple-600 px-6 py-2 font-bold text-white shadow-md transition-colors hover:bg-purple-700 disabled:opacity-50"
+          >
+            {isLoadingAnalysis ? "Analisando..." : "Analise com IA"}
+          </button>
+        </div>
+      </div>
+        </>
+      )}
+
+      {activeTab === "carriers" && (
       <div className="mb-6 rounded-xl border-l-4 border-blue-500 bg-white p-5 shadow-lg">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-2xl font-black text-white">Transportadoras</h2>
-            <p className="text-sm font-semibold text-blue-100">
+            <h2 className="text-2xl font-black text-stone-800">Transportadoras</h2>
+            <p className="text-sm font-semibold text-stone-600">
               Cadastre links de rastreio usados nos pedidos com transportadora.
             </p>
           </div>
@@ -2231,7 +2223,9 @@ const AdminPage: React.FC = () => {
           </table>
         </div>
       </div>
+      )}
 
+      {activeTab === "users" && (
       <div className="mb-6 rounded-xl border-l-4 border-purple-500 bg-white p-5 shadow-lg">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -2473,9 +2467,10 @@ const AdminPage: React.FC = () => {
           </>
         )}
       </div>
+      )}
 
       {/* Area de Analise da IA */}
-      {showAnalysis && (
+      {activeTab === "overview" && showAnalysis && (
         <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-xl shadow-lg mb-6 border border-purple-200">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-purple-800 flex items-center gap-2">
@@ -2560,10 +2555,23 @@ const AdminPage: React.FC = () => {
         </div>
       )}
 
+      {activeTab === "products" && (
+      <>
       {/* Secao de Gerenciamento de Produtos */}
-      <h2 className="text-2xl font-bold text-stone-800 mb-4">
-        Gerenciar Produtos
-      </h2>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-2xl font-bold text-stone-800">
+          Gerenciar Produtos
+        </h2>
+        <button
+          onClick={() => {
+            setEditingProduct(null);
+            setIsFormOpen(true);
+          }}
+          className="rounded-lg bg-purple-600 px-6 py-2 font-bold text-white shadow-md transition-colors hover:bg-purple-700"
+        >
+          + Adicionar Produto
+        </button>
+      </div>
 
       {/* Tabela que lista os produtos */}
       <div className="bg-white shadow-xl rounded-2xl overflow-x-auto">
@@ -2733,10 +2741,22 @@ const AdminPage: React.FC = () => {
           </tbody>
         </table>
       </div>
-      <div className="mt-16 bg-white rounded-2xl shadow-lg px-6 py-8 mb-8">
-        <h2 className="text-2xl font-bold text-stone-800 mb-6">
-          Historico de Movimentacoes de Estoque
-        </h2>
+      </>
+      )}
+
+      {activeTab === "stock" && (
+      <div className="bg-white rounded-2xl shadow-lg px-6 py-8 mb-8">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-2xl font-bold text-stone-800">
+            Historico de Movimentacoes de Estoque
+          </h2>
+          <button
+            onClick={() => setIsStockModalOpen(true)}
+            className="rounded-lg border border-stone-300 bg-white px-6 py-2 font-bold text-stone-700 shadow-sm transition-colors hover:bg-stone-50"
+          >
+            Movimentacao Estoque
+          </button>
+        </div>
         <div className="flex flex-wrap gap-4 mb-6 items-end">
           <div>
             <label className="block text-xs font-medium mb-1">De</label>
@@ -2844,6 +2864,7 @@ const AdminPage: React.FC = () => {
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 };
