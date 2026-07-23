@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useDebounce } from "../hooks/useDebounce";
 import StatCard from "../components/admin/StatCard";
 import {
@@ -510,6 +510,46 @@ const AdminOutsourcedServicesPage: React.FC = () => {
   const [loadingCompanyPayment, setLoadingCompanyPayment] = useState(false);
   const [markingCompanyPaid, setMarkingCompanyPaid] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
+  const servicesTableScrollRef = useRef<HTMLDivElement>(null);
+  const servicesTableTopScrollRef = useRef<HTMLDivElement>(null);
+  const [servicesTableScrollWidth, setServicesTableScrollWidth] = useState(0);
+  const isSyncingTableScroll = useRef(false);
+
+  const handleServicesTopScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    if (isSyncingTableScroll.current) {
+      isSyncingTableScroll.current = false;
+      return;
+    }
+    if (servicesTableScrollRef.current) {
+      isSyncingTableScroll.current = true;
+      servicesTableScrollRef.current.scrollLeft = event.currentTarget.scrollLeft;
+    }
+  };
+
+  const handleServicesTableScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    if (isSyncingTableScroll.current) {
+      isSyncingTableScroll.current = false;
+      return;
+    }
+    if (servicesTableTopScrollRef.current) {
+      isSyncingTableScroll.current = true;
+      servicesTableTopScrollRef.current.scrollLeft = event.currentTarget.scrollLeft;
+    }
+  };
+
+  useEffect(() => {
+    const tableContainer = servicesTableScrollRef.current;
+    if (!tableContainer || viewMode !== "table") return;
+
+    const updateScrollWidth = () =>
+      setServicesTableScrollWidth(tableContainer.scrollWidth);
+
+    updateScrollWidth();
+
+    const resizeObserver = new ResizeObserver(updateScrollWidth);
+    resizeObserver.observe(tableContainer);
+    return () => resizeObserver.disconnect();
+  }, [viewMode, visibleServices, isEmployeeView]);
   const [calendarYear, setCalendarYear] = useState<number>(new Date().getFullYear());
   const [calendarMonth, setCalendarMonth] = useState<number>(new Date().getMonth());
   const [companyModal, setCompanyModal] = useState(false);
@@ -1298,7 +1338,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
       ) : activeTab === "services" ? (
         <section className="space-y-4">
           <div className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center">
               <label className="flex flex-col gap-1 text-sm font-semibold text-stone-600">
                 Status
                 <select
@@ -1361,7 +1401,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   type="date"
                   value={dueFrom}
                   onChange={(event) => setDueFrom(event.target.value)}
-                  className="rounded-lg border border-stone-300 px-3 py-2"
+                  className="w-full min-w-0 max-w-[160px] rounded-lg border border-stone-300 px-2 py-2 text-sm"
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm font-semibold text-stone-600">
@@ -1370,7 +1410,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   type="date"
                   value={dueTo}
                   onChange={(event) => setDueTo(event.target.value)}
-                  className="rounded-lg border border-stone-300 px-3 py-2"
+                  className="w-full min-w-0 max-w-[160px] rounded-lg border border-stone-300 px-2 py-2 text-sm"
                 />
               </label>
             </div>
@@ -1435,7 +1475,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   loadingCompanyPayment ||
                   companyPaymentSummary.openCount === 0
                 }
-                className="whitespace-nowrap rounded-lg bg-emerald-700 px-5 py-3 font-bold text-white shadow hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-lg bg-emerald-700 px-5 py-3 text-center font-bold text-white shadow hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:whitespace-nowrap"
               >
                 {markingCompanyPaid
                   ? "Marcando..."
@@ -1539,7 +1579,19 @@ const AdminOutsourcedServicesPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg bg-white shadow">
+            <>
+            <div
+              ref={servicesTableTopScrollRef}
+              onScroll={handleServicesTopScroll}
+              className="overflow-x-auto overflow-y-hidden"
+            >
+              <div style={{ width: servicesTableScrollWidth, height: 1 }} />
+            </div>
+            <div
+              ref={servicesTableScrollRef}
+              onScroll={handleServicesTableScroll}
+              className="overflow-x-auto rounded-lg bg-white shadow"
+            >
             <table className="min-w-[1180px] w-full divide-y divide-stone-200 text-sm">
               <thead className="bg-stone-50">
                 <tr>
@@ -1669,6 +1721,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+          </>
           )}
         </section>
       ) : activeTab === "companies" ? (
