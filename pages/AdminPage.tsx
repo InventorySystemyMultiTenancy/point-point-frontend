@@ -2235,8 +2235,8 @@ const AdminPage: React.FC = () => {
       <div className="mb-6 rounded-xl border-l-4 border-purple-500 bg-white p-5 shadow-lg">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-2xl font-black text-white">Usuarios</h2>
-            <p className="text-sm font-semibold text-blue-100">
+            <h2 className="text-2xl font-black text-stone-800">Usuarios</h2>
+            <p className="text-sm font-semibold text-stone-600">
               Busque pelo nome para liberar a categoria privada importados.
             </p>
           </div>
@@ -2246,7 +2246,7 @@ const AdminPage: React.FC = () => {
             value={userSearch}
             onChange={(event) => setUserSearch(event.target.value)}
             placeholder="Buscar usuario por nome"
-            className="min-h-11 rounded-lg border border-blue-500/30 px-3 py-2 text-white placeholder:text-blue-100/70 focus:border-purple-500 focus:outline-none"
+            className="min-h-11 rounded-lg border border-blue-500/30 px-3 py-2 text-stone-900 placeholder:text-stone-400 focus:border-purple-500 focus:outline-none"
           />
           <button
             type="button"
@@ -2257,24 +2257,24 @@ const AdminPage: React.FC = () => {
           </button>
         </div>
         {normalizedUserSearch.length > 0 && normalizedUserSearch.length < 2 ? (
-          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-blue-100">
+          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-stone-600">
             Digite pelo menos 2 letras para buscar.
           </p>
         ) : normalizedUserSearch.length === 0 ? (
-          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-blue-100">
+          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-stone-600">
             Digite um nome para localizar usuarios.
           </p>
         ) : users.length === 0 ? (
-          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-blue-100">
+          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-stone-600">
             Nenhum usuario encontrado.
           </p>
         ) : searchedUsers.length === 0 ? (
-          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-blue-100">
+          <p className="rounded-lg bg-white p-4 text-sm font-semibold text-stone-600">
             Nenhum usuario encontrado para "{userSearch.trim()}".
           </p>
         ) : (
           <>
-            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-blue-100">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-stone-600">
               Mostrando {searchedUsers.length} resultado(s)
               {users.length > searchedUsers.length ? " mais proximos" : ""}.
             </p>
@@ -2286,8 +2286,8 @@ const AdminPage: React.FC = () => {
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <div className="font-black text-white">{user.name}</div>
-                    <div className="truncate text-xs font-semibold text-blue-100">
+                    <div className="font-black text-stone-800">{user.name}</div>
+                    <div className="truncate text-xs font-semibold text-stone-600">
                       {user.email || user.cpf || user.id}
                     </div>
                   </div>
