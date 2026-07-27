@@ -116,6 +116,16 @@ export interface OutsourcedService {
   deliveries?: OutsourcedDelivery[];
   paid?: boolean;
   paid_at?: string | null;
+  paid_amount?: number;
+  remaining_amount?: number | null;
+  payments?: OutsourcedServicePayment[];
+}
+
+export interface OutsourcedServicePayment {
+  id: string;
+  amount: number;
+  paid_at: string;
+  observation?: string | null;
 }
 
 export interface OutsourcedAlert {
@@ -193,6 +203,12 @@ export interface OutsourcedServiceUpdatePayload {
 export interface OutsourcedDeliveryPayload {
   items: OutsourcedProductQuantity[];
   delivered_at: string;
+  observation?: string;
+}
+
+export interface OutsourcedServicePaymentPayload {
+  amount: number;
+  paid_at: string;
   observation?: string;
 }
 
@@ -472,6 +488,22 @@ export async function addOutsourcedServiceDelivery(
   return unwrapObject<OutsourcedService>(
     await readJson<unknown>(response),
     ["service", "data"],
+  );
+}
+
+export async function addOutsourcedServicePayment(
+  id: string,
+  payload: OutsourcedServicePaymentPayload,
+) {
+  const response = await outsourcedFetch(
+    `${API_URL}/admin/outsourced-services/${id}/payments`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+  return readJson<{ payment: OutsourcedServicePayment; service: OutsourcedService }>(
+    response,
   );
 }
 

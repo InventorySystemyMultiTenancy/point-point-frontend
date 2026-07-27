@@ -22,6 +22,11 @@ interface EmployeeOrderItem {
   price?: number;
 }
 
+interface EmployeeOrderDeliveredItem {
+  productId: string;
+  quantity: number;
+}
+
 interface EmployeeOrder {
   id: string;
   userName?: string;
@@ -39,7 +44,25 @@ interface EmployeeOrder {
   separationChecklist?: unknown;
   separationChecklistUpdatedAt?: string | null;
   items?: EmployeeOrderItem[];
+  deliveredItems?: EmployeeOrderDeliveredItem[];
+  remainingItems?: EmployeeOrderDeliveredItem[];
 }
+
+const getEmployeeRemainingQuantity = (
+  order: EmployeeOrder,
+  item: EmployeeOrderItem,
+) => {
+  const ordered = Number(item.quantity) || 0;
+  const remainingEntry = (order.remainingItems || []).find(
+    (entry) => entry.productId === item.productId,
+  );
+  if (remainingEntry) return Math.max(0, Number(remainingEntry.quantity) || 0);
+  const deliveredEntry = (order.deliveredItems || []).find(
+    (entry) => entry.productId === item.productId,
+  );
+  const delivered = deliveredEntry ? Number(deliveredEntry.quantity) || 0 : 0;
+  return Math.max(0, ordered - delivered);
+};
 
 const unwrapOrders = (data: unknown): EmployeeOrder[] => {
   if (Array.isArray(data)) return data as EmployeeOrder[];
@@ -128,12 +151,24 @@ const EmployeePage: React.FC = () => {
   const [savingChecklistOrderId, setSavingChecklistOrderId] = useState<
     string | null
   >(null);
+  const [deliveringOrderId, setDeliveringOrderId] = useState<string | null>(
+    null,
+  );
+  const [partialDeliveryOpen, setPartialDeliveryOpen] = useState(false);
+  const [partialDeliveryQuantities, setPartialDeliveryQuantities] = useState<
+    Record<string, string>
+  >({});
 
   useEffect(() => {
     if (!isEmployeeAuthenticated()) {
       navigate("/employee/login", { replace: true });
     }
   }, [navigate]);
+
+  useEffect(() => {
+    setPartialDeliveryOpen(false);
+    setPartialDeliveryQuantities({});
+  }, [selectedOrder?.id]);
 
   const loadOrders = async () => {
     setLoadingOrders(true);
@@ -266,21 +301,67 @@ const EmployeePage: React.FC = () => {
     return { done, total: items.length, complete: done === items.length };
   };
 
-  const markDelivered = async (order: EmployeeOrder) => {
-    const checklist = getOrderChecklist(order);
-    setSavingChecklistOrderId(order.id);
+  const submitOrderDelivery = async (
+    order: EmployeeOrder,
+    body: { mode: "all" } | { items: { productId: string; quantity: number }[] },
+  ) => {
+    setDeliveringOrderId(order.id);
     try {
-      await saveOrderUpdate(order, {
-        separationChecklist: checklist,
-        status: "delivered",
-        entregueCliente: true,
-      });
-      setSelectedOrder(null);
+      const response = await employeeFetch(
+        `${API_URL}/orders/${order.id}/deliveries`,
+        { method: "POST", body: JSON.stringify(body) },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(
+          String(
+            (data as Record<string, unknown>).error ||
+              "Erro ao registrar entrega",
+          ),
+        );
+      }
+      const updatedOrder = unwrapOrder(data, order);
+      applyOrderUpdate(updatedOrder);
+      setPartialDeliveryOpen(false);
+      if (updatedOrder.entregueCliente) {
+        setSelectedOrder(null);
+      }
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao marcar como entregue");
+      alert(err instanceof Error ? err.message : "Erro ao registrar entrega");
     } finally {
-      setSavingChecklistOrderId(null);
+      setDeliveringOrderId(null);
     }
+  };
+
+  const markDelivered = (order: EmployeeOrder) =>
+    submitOrderDelivery(order, { mode: "all" });
+
+  const openPartialDelivery = (order: EmployeeOrder) => {
+    const defaults: Record<string, string> = {};
+    (order.items || []).forEach((item) => {
+      if (!item.productId) return;
+      const remaining = getEmployeeRemainingQuantity(order, item);
+      if (remaining > 0) defaults[item.productId] = String(remaining);
+    });
+    setPartialDeliveryQuantities(defaults);
+    setPartialDeliveryOpen(true);
+  };
+
+  const submitPartialDelivery = (order: EmployeeOrder) => {
+    const items = (order.items || [])
+      .filter((item): item is EmployeeOrderItem & { productId: string } =>
+        Boolean(item.productId),
+      )
+      .map((item) => ({
+        productId: item.productId,
+        quantity: Number(partialDeliveryQuantities[item.productId] || 0),
+      }))
+      .filter((item) => item.quantity > 0);
+    if (items.length === 0) {
+      alert("Informe ao menos uma quantidade a entregar.");
+      return;
+    }
+    submitOrderDelivery(order, { items });
   };
 
   const selectTab = (tab: EmployeeTab) => {
@@ -611,6 +692,7 @@ const EmployeePage: React.FC = () => {
               const orderChecks = getOrderCheckedItems(selectedOrder);
               const isSavingChecklist =
                 savingChecklistOrderId === selectedOrder.id;
+              const isDelivering = deliveringOrderId === selectedOrder.id;
               return (
                 <>
                   <div className="mb-4 rounded-xl border border-purple-100 bg-purple-50 p-4">
@@ -687,11 +769,12 @@ const EmployeePage: React.FC = () => {
                       disabled={
                         selectedOrder.entregueCliente ||
                         !progress.complete ||
-                        isSavingChecklist
+                        isSavingChecklist ||
+                        isDelivering
                       }
                       className="rounded-xl bg-purple-700 px-4 py-3 font-black text-white hover:bg-purple-800 disabled:bg-purple-200 disabled:text-purple-900"
                     >
-                      {isSavingChecklist
+                      {isDelivering
                         ? "Salvando..."
                         : selectedOrder.entregueCliente
                         ? "Pedido pronto"
@@ -699,6 +782,71 @@ const EmployeePage: React.FC = () => {
                           ? "Pedido pronto"
                           : "Marque todos os itens"}
                     </button>
+                    {!selectedOrder.entregueCliente && (
+                      <button
+                        type="button"
+                        onClick={() => openPartialDelivery(selectedOrder)}
+                        disabled={isDelivering}
+                        className="rounded-xl bg-stone-200 px-4 py-3 font-black text-stone-800 hover:bg-stone-300 disabled:opacity-60"
+                      >
+                        {partialDeliveryOpen
+                          ? "Cancelar entrega parcial"
+                          : "Entrega parcial"}
+                      </button>
+                    )}
+                    {partialDeliveryOpen && !selectedOrder.entregueCliente && (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                        <p className="mb-2 text-sm font-bold text-amber-900">
+                          Quantidade entregue de cada produto
+                        </p>
+                        <div className="space-y-2">
+                          {(selectedOrder.items || []).map((item, index) => {
+                            if (!item.productId) return null;
+                            const remaining = getEmployeeRemainingQuantity(
+                              selectedOrder,
+                              item,
+                            );
+                            if (remaining <= 0) return null;
+                            const productId = item.productId;
+                            return (
+                              <div
+                                key={productId || index}
+                                className="grid grid-cols-[1fr_100px] items-center gap-2"
+                              >
+                                <span className="text-sm text-stone-700">
+                                  {item.name || item.productName}{" "}
+                                  <span className="text-xs text-stone-500">
+                                    (restam {remaining})
+                                  </span>
+                                </span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={remaining}
+                                  step="1"
+                                  value={partialDeliveryQuantities[productId] ?? ""}
+                                  onChange={(event) =>
+                                    setPartialDeliveryQuantities((prev) => ({
+                                      ...prev,
+                                      [productId]: event.target.value,
+                                    }))
+                                  }
+                                  className="rounded-lg border border-stone-300 px-2 py-1 text-sm"
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => submitPartialDelivery(selectedOrder)}
+                          disabled={isDelivering}
+                          className="mt-3 rounded-lg bg-amber-700 px-4 py-2 text-sm font-bold text-white hover:bg-amber-800 disabled:opacity-60"
+                        >
+                          {isDelivering ? "Salvando..." : "Salvar entrega parcial"}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </>
               );

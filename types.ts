@@ -83,6 +83,19 @@ export interface OrderItem {
   backorderNotice?: string;
 }
 
+export interface OrderDeliveredItem {
+  productId: string;
+  quantity: number;
+}
+
+export interface OrderDelivery {
+  id: string;
+  items: OrderDeliveredItem[];
+  quantity: number;
+  delivered_at: string;
+  observation?: string | null;
+}
+
 export interface Order {
   id: string;
   userId: string;
@@ -99,7 +112,10 @@ export interface Order {
   installments?: number;
   fee?: number;
   paymentStatus?: "pending" | "paid" | "authorized" | "canceled";
-  entregueCliente?: boolean; // Indica se o pedido foi entregue ao cliente
+  entregueCliente?: boolean; // Indica se o pedido foi TOTALMENTE entregue ao cliente
+  deliveredItems?: OrderDeliveredItem[]; // Quantidade ja entregue, por produto
+  remainingItems?: OrderDeliveredItem[]; // Quantidade restante a entregar, por produto
+  deliveries?: OrderDelivery[];
   hasBackorder?: boolean;
   backorderNotice?: string;
   userMonthlyPayment?: boolean;

@@ -3,6 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import type { Order, OrderItem } from "../types";
 import { formatMoney, toMoneyNumber } from "../utils/money";
+import { getOrderDeliveryProgress, getRemainingQuantity } from "../utils/orderDelivery";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -25,8 +26,14 @@ const getDisplayOrderTotal = (order: Order) => {
   return looksLikeCents(total) ? total / 100 : total;
 };
 
-const getPreparationStatus = (order: Order) =>
-  order.entregueCliente ? "Pronto para retirada" : "Em montagem";
+const getPreparationStatus = (order: Order) => {
+  if (order.entregueCliente) return "Pronto para retirada";
+  const { delivered, total } = getOrderDeliveryProgress(order);
+  if (delivered > 0 && delivered < total) {
+    return `Entrega parcial (${delivered}/${total})`;
+  }
+  return "Em montagem";
+};
 
 const getDeliveryLabel = (order: Order) =>
   order.deliveryMethodLabel ||
@@ -102,7 +109,11 @@ const CustomerOrdersPage: React.FC = () => {
                 <span className="font-semibold">Separação:</span>{" "}
                 <span
                   className={`font-bold ${
-                    order.entregueCliente ? "text-green-700" : "text-blue-700"
+                    order.entregueCliente
+                      ? "text-green-700"
+                      : getOrderDeliveryProgress(order).delivered > 0
+                        ? "text-amber-600"
+                        : "text-blue-700"
                   }`}
                 >
                   {getPreparationStatus(order)}
@@ -134,12 +145,21 @@ const CustomerOrdersPage: React.FC = () => {
                 )}
               </div>
               <ul className="text-sm text-stone-700">
-                {order.items.map((item, idx) => (
-                  <li key={item.productId || idx}>
-                    {item.name} x {item.quantity} - R${" "}
-                    {formatMoney(getDisplayItemPrice(item))}
-                  </li>
-                ))}
+                {order.items.map((item, idx) => {
+                  const remaining = getRemainingQuantity(order, item);
+                  const delivered = item.quantity - remaining;
+                  return (
+                    <li key={item.productId || idx}>
+                      {item.name} x {item.quantity} - R${" "}
+                      {formatMoney(getDisplayItemPrice(item))}
+                      {!order.entregueCliente && delivered > 0 && (
+                        <span className="ml-2 text-xs font-bold text-amber-600">
+                          (entregue {delivered}/{item.quantity})
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </li>
           ))}

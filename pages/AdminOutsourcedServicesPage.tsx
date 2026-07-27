@@ -3,6 +3,7 @@ import { useDebounce } from "../hooks/useDebounce";
 import StatCard from "../components/admin/StatCard";
 import {
   addOutsourcedServiceDelivery,
+  addOutsourcedServicePayment,
   createOutsourcedCompany,
   createOutsourcedService,
   createOutsourcedServiceType,
@@ -23,6 +24,7 @@ import {
   type OutsourcedService,
   type OutsourcedServiceCostItem,
   type OutsourcedServicePayload,
+  type OutsourcedServicePaymentPayload,
   type OutsourcedServiceUpdatePayload,
   type OutsourcedServiceType,
   type OutsourcedServiceTypePayload,
@@ -131,6 +133,12 @@ const emptyService = {
 const emptyDelivery = {
   items: [{ productId: "", quantity: "" }],
   delivered_at: "",
+  observation: "",
+};
+
+const emptyPayment = {
+  amount: "",
+  paid_at: "",
   observation: "",
 };
 
@@ -553,6 +561,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     useState<OutsourcedService | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [deliveryForm, setDeliveryForm] = useState({ ...emptyDelivery });
+  const [paymentForm, setPaymentForm] = useState({ ...emptyPayment });
   const [editingType, setEditingType] = useState<OutsourcedServiceType | null>(
     null,
   );
@@ -651,15 +660,24 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     );
     const open = withCost.filter((service) => !service.paid);
     const paid = withCost.filter((service) => service.paid);
+    const partial = open.filter((service) => (service.paid_amount || 0) > 0);
     return {
       openTotal: totalCostItems(
-        open.map((service) => ({ amount: service.service_cost_amount || 0 })),
+        open.map((service) => ({
+          amount:
+            service.remaining_amount ??
+            (service.service_cost_amount || 0) - (service.paid_amount || 0),
+        })),
       ),
       paidTotal: totalCostItems(
         paid.map((service) => ({ amount: service.service_cost_amount || 0 })),
       ),
       openCount: open.length,
       paidCount: paid.length,
+      partialCount: partial.length,
+      partialTotal: totalCostItems(
+        partial.map((service) => ({ amount: service.paid_amount || 0 })),
+      ),
     };
   }, [companyPaymentServices]);
 
@@ -1134,6 +1152,10 @@ const AdminOutsourcedServicesPage: React.FC = () => {
         ...emptyDelivery,
         delivered_at: toDateTimeLocal(new Date().toISOString()),
       });
+      setPaymentForm({
+        ...emptyPayment,
+        paid_at: toDateTimeLocal(new Date().toISOString()),
+      });
     } catch (err) {
       console.error("Erro ao buscar detalhe do servico:", err);
       alert("Erro ao carregar detalhe do servico.");
@@ -1184,6 +1206,52 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     } catch (err) {
       console.error("Erro ao lancar entrega:", err);
       alert("Erro ao lancar entrega.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const submitPayment = async (amountOverride?: number) => {
+    if (!selectedService) return;
+    const amount = amountOverride ?? Number(paymentForm.amount);
+    if (!amount || amount <= 0) {
+      alert("Informe um valor pago maior que zero.");
+      return;
+    }
+    const payload: OutsourcedServicePaymentPayload = {
+      amount,
+      paid_at: new Date(paymentForm.paid_at).toISOString(),
+      observation: paymentForm.observation.trim() || undefined,
+    };
+    setSaving(true);
+    try {
+      const { payment, service } = await addOutsourcedServicePayment(
+        selectedService.id,
+        payload,
+      );
+      setPaymentForm({
+        ...emptyPayment,
+        paid_at: toDateTimeLocal(new Date().toISOString()),
+      });
+      setSelectedService((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...service,
+              payments: [payment, ...(prev.payments || [])],
+            }
+          : prev,
+      );
+      setServices((prev) =>
+        prev.map((item) => (item.id === service.id ? { ...item, ...service } : item)),
+      );
+    } catch (err) {
+      console.error("Erro ao lancar pagamento:", err);
+      alert(
+        err instanceof Error && (err as Error & { status?: number }).status === 400
+          ? (err as Error).message
+          : "Erro ao lancar pagamento.",
+      );
     } finally {
       setSaving(false);
     }
@@ -1444,7 +1512,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
 
           {!isEmployeeView && companyFilter !== "all" && (
             <div className="flex flex-col gap-4 rounded-lg border border-purple-200 bg-purple-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
                     Em aberto no periodo
@@ -1456,6 +1524,19 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                     {companyPaymentSummary.openCount} servico(s)
                   </p>
                 </div>
+                {companyPaymentSummary.partialCount > 0 && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
+                      Pago parcialmente
+                    </p>
+                    <p className="text-2xl font-black text-amber-600">
+                      {money(companyPaymentSummary.partialTotal)}
+                    </p>
+                    <p className="text-xs text-stone-500">
+                      {companyPaymentSummary.partialCount} servico(s)
+                    </p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
                     Ja pago no periodo
@@ -2333,6 +2414,15 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                     <>
                       <Info label="Valor tecido" value={money(selectedService.fabric_paid_amount)} />
                       <Info label="Custo servico" value={money(selectedService.service_cost_amount)} />
+                      <Info label="Pago" value={money(selectedService.paid_amount)} />
+                      <Info
+                        label="Falta pagar"
+                        value={
+                          selectedService.remaining_amount == null
+                            ? "-"
+                            : money(selectedService.remaining_amount)
+                        }
+                      />
                       {isSewingService(selectedService.service_type, types) && (
                         <Info
                           label="Custo por produto"
@@ -2479,6 +2569,107 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                     )}
                   </div>
                 </form>
+
+                {!isEmployeeView && selectedService.service_cost_amount != null && (
+                  <div className="mt-6">
+                    <h3 className="mb-3 text-lg font-bold text-stone-900">
+                      Historico de pagamentos
+                    </h3>
+                    <div className="overflow-x-auto rounded-lg border border-stone-200">
+                      <table className="w-full min-w-[420px] text-sm">
+                        <thead className="bg-stone-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left">Data</th>
+                            <th className="px-4 py-3 text-left">Valor</th>
+                            <th className="px-4 py-3 text-left">Observacao</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100">
+                          {(selectedService.payments || []).length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={3}
+                                className="px-4 py-5 text-center text-stone-500"
+                              >
+                                Nenhum pagamento lancado.
+                              </td>
+                            </tr>
+                          ) : (
+                            selectedService.payments?.map((payment) => (
+                              <tr key={payment.id}>
+                                <td className="px-4 py-3">
+                                  {formatDate(payment.paid_at)}
+                                </td>
+                                <td className="px-4 py-3 font-bold">
+                                  {money(payment.amount)}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {payment.observation || "-"}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {(selectedService.remaining_amount ?? 0) > 0 && (
+                      <form
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          submitPayment();
+                        }}
+                        className="mt-4 grid gap-4 rounded-lg bg-emerald-50 p-4 sm:grid-cols-3"
+                      >
+                        <FormInput
+                          label="Valor pago"
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={paymentForm.amount}
+                          onChange={(value) =>
+                            setPaymentForm((prev) => ({ ...prev, amount: value }))
+                          }
+                        />
+                        <FormInput
+                          label="Data do pagamento"
+                          type="datetime-local"
+                          required
+                          value={paymentForm.paid_at}
+                          onChange={(value) =>
+                            setPaymentForm((prev) => ({ ...prev, paid_at: value }))
+                          }
+                        />
+                        <FormInput
+                          label="Observacao"
+                          value={paymentForm.observation}
+                          onChange={(value) =>
+                            setPaymentForm((prev) => ({ ...prev, observation: value }))
+                          }
+                        />
+                        <div className="flex flex-wrap gap-2 sm:col-span-3">
+                          <button
+                            type="submit"
+                            disabled={saving}
+                            className="rounded-lg bg-emerald-700 px-5 py-2 font-bold text-white hover:bg-emerald-800 disabled:opacity-60"
+                          >
+                            Registrar pagamento parcial
+                          </button>
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() =>
+                              submitPayment(selectedService.remaining_amount || 0)
+                            }
+                            className="rounded-lg bg-emerald-600 px-5 py-2 font-bold text-white hover:bg-emerald-700 disabled:opacity-60"
+                          >
+                            Pagar tudo ({money(selectedService.remaining_amount)})
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </div>

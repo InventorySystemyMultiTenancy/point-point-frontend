@@ -16,6 +16,7 @@ import {
   updateOrderDelivery,
 } from "../services/apiService";
 import { useAuth } from "../contexts/AuthContext";
+import { getRemainingQuantity, hasPartialDelivery } from "../utils/orderDelivery";
 
 // Página de Histórico de Pedidos com filtro por data
 // (OrderHistoryPage)
@@ -72,6 +73,15 @@ const OrderHistoryPage: React.FC = () => {
   const [savingDeliveryOrderId, setSavingDeliveryOrderId] = useState<
     string | null
   >(null);
+  const [deliveringOrderId, setDeliveringOrderId] = useState<string | null>(
+    null,
+  );
+  const [partialDeliveryOrderId, setPartialDeliveryOrderId] = useState<
+    string | null
+  >(null);
+  const [partialDeliveryQuantities, setPartialDeliveryQuantities] = useState<
+    Record<string, string>
+  >({});
 
   const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
   const isAdmin = currentUser?.role === "admin";
@@ -281,6 +291,65 @@ const OrderHistoryPage: React.FC = () => {
     } finally {
       setSavingDeliveryOrderId(null);
     }
+  };
+
+  const submitOrderDelivery = async (
+    order: Order,
+    body: { mode: "all" } | { items: { productId: string; quantity: number }[] },
+  ) => {
+    setDeliveringOrderId(order.id);
+    try {
+      const resp = await authenticatedFetch(
+        `${BACKEND_URL}/api/orders/${order.id}/deliveries`,
+        { method: "POST", body: JSON.stringify(body) },
+      );
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(data.error || "Erro ao registrar entrega");
+      }
+      localStorage.setItem("backorderedProductsUpdatedAt", String(Date.now()));
+      setPartialDeliveryOrderId(null);
+      await reloadHistory();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erro ao registrar entrega");
+    } finally {
+      setDeliveringOrderId(null);
+    }
+  };
+
+  const handleDeliverAll = (order: Order, e: React.MouseEvent) => {
+    e.stopPropagation();
+    submitOrderDelivery(order, { mode: "all" });
+  };
+
+  const togglePartialDelivery = (order: Order, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (partialDeliveryOrderId === order.id) {
+      setPartialDeliveryOrderId(null);
+      return;
+    }
+    const defaults: Record<string, string> = {};
+    order.items.forEach((item) => {
+      const remaining = getRemainingQuantity(order, item);
+      if (remaining > 0) defaults[item.productId] = String(remaining);
+    });
+    setPartialDeliveryQuantities(defaults);
+    setPartialDeliveryOrderId(order.id);
+  };
+
+  const submitPartialDelivery = (order: Order, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const items = order.items
+      .map((item) => ({
+        productId: item.productId,
+        quantity: Number(partialDeliveryQuantities[item.productId] || 0),
+      }))
+      .filter((item) => item.quantity > 0);
+    if (items.length === 0) {
+      alert("Informe ao menos uma quantidade a entregar.");
+      return;
+    }
+    submitOrderDelivery(order, { items });
   };
 
   const handleMonthlyClosing = async (order: Order, e: React.MouseEvent) => {
@@ -610,12 +679,21 @@ const OrderHistoryPage: React.FC = () => {
                 {order.userName || "-"}
               </div>
               <ul className="mb-2">
-                {order.items.map((item, idx) => (
-                  <li key={idx} className="text-stone-800">
-                    <span className="font-semibold">{item.quantity}x</span>{" "}
-                    {item.name}
-                  </li>
-                ))}
+                {order.items.map((item, idx) => {
+                  const remaining = getRemainingQuantity(order, item);
+                  const delivered = item.quantity - remaining;
+                  return (
+                    <li key={idx} className="text-stone-800">
+                      <span className="font-semibold">{item.quantity}x</span>{" "}
+                      {item.name}
+                      {!order.entregueCliente && delivered > 0 && (
+                        <span className="ml-2 text-xs font-bold text-emerald-700">
+                          (entregue {delivered}/{item.quantity})
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
               {order.observation && (
                 <div className="mb-2 text-yellow-800 bg-yellow-100 rounded p-2">
@@ -748,35 +826,42 @@ const OrderHistoryPage: React.FC = () => {
                   </button>
                 )}
                 {/* Botão entregar ao cliente */}
-                <button
-                  className={`px-3 py-1 rounded text-xs font-bold transition ${order.entregueCliente ? "bg-green-500 text-white" : "bg-yellow-400 text-stone-800 hover:bg-yellow-500"}`}
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    const resp = await authenticatedFetch(
-                      `${BACKEND_URL}/api/orders/${order.id}/mark-delivered`,
-                      { method: "PUT" },
-                    );
-                    if (resp.ok) {
-                      localStorage.setItem(
-                        "backorderedProductsUpdatedAt",
-                        String(Date.now()),
-                      );
-                      reloadHistory();
-                    } else {
-                      alert("Erro ao marcar como entregue");
-                    }
-                  }}
-                  disabled={order.entregueCliente}
-                  title={
-                    order.entregueCliente
-                      ? "Já entregue ao cliente"
-                      : "Marcar como entregue"
-                  }
-                >
-                  {order.entregueCliente
-                    ? "Entregue ao Cliente ✔"
-                    : "Entregar ao Cliente"}
-                </button>
+                {order.entregueCliente ? (
+                  <button
+                    className="px-3 py-1 rounded text-xs font-bold bg-green-500 text-white"
+                    disabled
+                    title="Já entregue ao cliente"
+                  >
+                    Entregue ao Cliente ✔
+                  </button>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {hasPartialDelivery(order) && (
+                      <span className="px-2 py-1 rounded bg-amber-100 text-amber-800 text-xs font-bold">
+                        Entrega parcial
+                      </span>
+                    )}
+                    <button
+                      className="px-3 py-1 rounded text-xs font-bold transition bg-yellow-400 text-stone-800 hover:bg-yellow-500 disabled:opacity-60"
+                      onClick={(e) => handleDeliverAll(order, e)}
+                      disabled={deliveringOrderId === order.id}
+                      title="Marcar como totalmente entregue"
+                    >
+                      {deliveringOrderId === order.id
+                        ? "Entregando..."
+                        : "Entregar tudo"}
+                    </button>
+                    <button
+                      className="px-3 py-1 rounded text-xs font-bold transition bg-stone-200 text-stone-800 hover:bg-stone-300"
+                      onClick={(e) => togglePartialDelivery(order, e)}
+                      title="Entregar apenas parte do pedido"
+                    >
+                      {partialDeliveryOrderId === order.id
+                        ? "Cancelar entrega parcial"
+                        : "Entrega parcial"}
+                    </button>
+                  </div>
+                )}
                 {isAdmin && (
                   <button
                     className="px-3 py-1 rounded bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition disabled:bg-red-300 disabled:cursor-not-allowed"
@@ -788,6 +873,58 @@ const OrderHistoryPage: React.FC = () => {
                   </button>
                 )}
               </div>
+              {partialDeliveryOrderId === order.id && (
+                <div
+                  className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <p className="mb-2 text-sm font-bold text-amber-900">
+                    Informe a quantidade entregue de cada produto
+                  </p>
+                  <div className="space-y-2">
+                    {order.items.map((item, idx) => {
+                      const remaining = getRemainingQuantity(order, item);
+                      if (remaining <= 0) return null;
+                      return (
+                        <div
+                          key={idx}
+                          className="grid grid-cols-[1fr_100px] items-center gap-2"
+                        >
+                          <span className="text-sm text-stone-700">
+                            {item.name}{" "}
+                            <span className="text-xs text-stone-500">
+                              (restam {remaining})
+                            </span>
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            max={remaining}
+                            step="1"
+                            value={partialDeliveryQuantities[item.productId] ?? ""}
+                            onChange={(event) =>
+                              setPartialDeliveryQuantities((prev) => ({
+                                ...prev,
+                                [item.productId]: event.target.value,
+                              }))
+                            }
+                            className="rounded-lg border border-stone-300 px-2 py-1 text-sm"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button
+                    className="mt-3 rounded-lg bg-amber-700 px-4 py-2 text-sm font-bold text-white hover:bg-amber-800 disabled:opacity-60"
+                    onClick={(e) => submitPartialDelivery(order, e)}
+                    disabled={deliveringOrderId === order.id}
+                  >
+                    {deliveringOrderId === order.id
+                      ? "Salvando..."
+                      : "Salvar entrega parcial"}
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
