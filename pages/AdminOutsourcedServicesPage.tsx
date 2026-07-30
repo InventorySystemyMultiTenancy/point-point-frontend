@@ -123,7 +123,7 @@ const emptyService = {
   input_quantity: "",
   fabric_paid_amount: "",
   service_cost_amount: "",
-  service_cost_items: [{ productId: "", amount: "" }],
+  service_cost_items: [{ productId: "", amount: "", unitAmount: "" }],
   expected_return_items: [{ productId: "", quantity: "" }],
   due_date: "",
   started_at: "",
@@ -325,7 +325,9 @@ const formatCostItems = (
   return items
     .map((item) => {
       const productId = item.productId || item.product_id || "";
-      return `${productName(productId, products, item)}: ${money(Number(item.amount) || 0)}`;
+      const unitLabel =
+        item.unitAmount != null ? ` (${money(Number(item.unitAmount))}/un.)` : "";
+      return `${productName(productId, products, item)}: ${money(Number(item.amount) || 0)}${unitLabel}`;
     })
     .join(", ");
 };
@@ -837,9 +839,17 @@ const AdminOutsourcedServicesPage: React.FC = () => {
       : [{ productId: "", quantity: "" }];
     const costItems = expectedItems.map((item, index) => {
       const existing = service.service_cost_items?.[index];
+      const expectedQty = Number(item.quantity) || 0;
+      const unitAmount =
+        existing?.unitAmount != null
+          ? existing.unitAmount
+          : existing?.amount != null && expectedQty > 0
+            ? Math.round((Number(existing.amount) / expectedQty) * 100) / 100
+            : null;
       return {
         productId: item.productId,
         amount: existing?.amount != null ? String(existing.amount) : "",
+        unitAmount: unitAmount != null ? String(unitAmount) : "",
       };
     });
     setEditingService(service);
@@ -988,7 +998,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
       ],
       service_cost_items: [
         ...prev.service_cost_items,
-        { productId: "", amount: "" },
+        { productId: "", amount: "", unitAmount: "" },
       ],
     }));
   };
@@ -1007,13 +1017,23 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     }));
   };
 
-  const updateServiceCostItem = (index: number, amount: string) => {
-    setServiceForm((prev) => ({
-      ...prev,
-      service_cost_items: prev.service_cost_items.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, amount } : item,
-      ),
-    }));
+  const updateServiceCostItemUnitAmount = (index: number, unitAmount: string) => {
+    setServiceForm((prev) => {
+      const expectedQty = Number(prev.expected_return_items[index]?.quantity) || 0;
+      const unit = Number(unitAmount);
+      const computedAmount =
+        unitAmount !== "" && Number.isFinite(unit)
+          ? String(Math.round(unit * expectedQty * 100) / 100)
+          : "";
+      return {
+        ...prev,
+        service_cost_items: prev.service_cost_items.map((item, itemIndex) =>
+          itemIndex === index
+            ? { ...item, unitAmount, amount: computedAmount }
+            : item,
+        ),
+      };
+    });
   };
 
   const updateDeliveryItem = (
@@ -1060,6 +1080,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
         productId:
           item.productId || serviceForm.expected_return_items[index]?.productId || "",
         amount: Number(item.amount),
+        unitAmount: item.unitAmount !== "" ? Number(item.unitAmount) : undefined,
       }))
       .filter((item) => item.productId && item.amount >= 0);
 
@@ -1185,7 +1206,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
     };
     setSaving(true);
     try {
-      const updatedService = await addOutsourcedServiceDelivery(
+      const { amountDue } = await addOutsourcedServiceDelivery(
         selectedService.id,
         payload,
       );
@@ -1193,15 +1214,11 @@ const AdminOutsourcedServicesPage: React.FC = () => {
         ...emptyDelivery,
         delivered_at: toDateTimeLocal(new Date().toISOString()),
       });
-      if (updatedService?.id) {
-        setSelectedService(updatedService);
-        setServices((prev) =>
-          prev.map((service) =>
-            service.id === updatedService.id ? updatedService : service,
-          ),
-        );
-      } else {
-        await refreshSelectedService(selectedService.id);
+      // Recarrega o servico completo (com historico de entregas atualizado) em vez de
+      // usar a resposta do POST diretamente, pois ela nao inclui a lista de entregas.
+      await refreshSelectedService(selectedService.id);
+      if (!isEmployeeView && amountDue != null) {
+        alert(`Entrega registrada. Valor a pagar por esta entrega: ${money(amountDue)}`);
       }
     } catch (err) {
       console.error("Erro ao lancar entrega:", err);
@@ -2264,32 +2281,48 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                       Total cobrado pelo terceirizado: {money(sewingCostTotal)}
                     </p>
                   </div>
-                  {serviceForm.expected_return_items.map((item, index) => (
-                    <div
-                      key={`cost-${index}`}
-                      className="grid gap-3 rounded-lg bg-white p-3 shadow-sm sm:grid-cols-[1fr_180px]"
-                    >
-                      <div>
-                        <span className="mb-1 block text-sm font-semibold text-stone-600">
-                          Produto
-                        </span>
-                        <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm font-semibold text-stone-700">
-                          {item.productId
-                            ? productName(item.productId, products)
-                            : "Selecione o produto no retorno previsto"}
+                  {serviceForm.expected_return_items.map((item, index) => {
+                    const expectedQty = Number(item.quantity) || 0;
+                    const rowAmount = Number(
+                      serviceForm.service_cost_items[index]?.amount || 0,
+                    );
+                    return (
+                      <div
+                        key={`cost-${index}`}
+                        className="grid gap-3 rounded-lg bg-white p-3 shadow-sm sm:grid-cols-[1fr_160px_140px]"
+                      >
+                        <div>
+                          <span className="mb-1 block text-sm font-semibold text-stone-600">
+                            Produto
+                          </span>
+                          <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm font-semibold text-stone-700">
+                            {item.productId
+                              ? productName(item.productId, products)
+                              : "Selecione o produto no retorno previsto"}
+                          </div>
+                        </div>
+                        <FormInput
+                          label="Valor por unidade"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          required
+                          value={serviceForm.service_cost_items[index]?.unitAmount || ""}
+                          onChange={(value) =>
+                            updateServiceCostItemUnitAmount(index, value)
+                          }
+                        />
+                        <div>
+                          <span className="mb-1 block text-sm font-semibold text-stone-600">
+                            Subtotal ({expectedQty || 0} un.)
+                          </span>
+                          <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm font-bold text-stone-700">
+                            {money(rowAmount)}
+                          </div>
                         </div>
                       </div>
-                      <FormInput
-                        label="Valor cobrado"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        required
-                        value={serviceForm.service_cost_items[index]?.amount || ""}
-                        onChange={(value) => updateServiceCostItem(index, value)}
-                      />
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
               <FormInput
@@ -2455,6 +2488,9 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                           <th className="px-4 py-3 text-left">Data</th>
                           <th className="px-4 py-3 text-left">Produtos</th>
                           <th className="px-4 py-3 text-left">Total</th>
+                          {!isEmployeeView && (
+                            <th className="px-4 py-3 text-left">Valor a pagar</th>
+                          )}
                           <th className="px-4 py-3 text-left">Observacao</th>
                         </tr>
                       </thead>
@@ -2462,7 +2498,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                         {(selectedService.deliveries || []).length === 0 ? (
                           <tr>
                             <td
-                              colSpan={4}
+                              colSpan={isEmployeeView ? 4 : 5}
                               className="px-4 py-5 text-center text-stone-500"
                             >
                               Nenhuma entrega lancada.
@@ -2481,6 +2517,13 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                                 {delivery.quantity ||
                                   totalItemsQuantity(delivery.items)}
                               </td>
+                              {!isEmployeeView && (
+                                <td className="px-4 py-3 font-bold text-purple-800">
+                                  {delivery.amount_due != null
+                                    ? money(delivery.amount_due)
+                                    : "-"}
+                                </td>
+                              )}
                               <td className="px-4 py-3">
                                 {delivery.observation || "-"}
                               </td>

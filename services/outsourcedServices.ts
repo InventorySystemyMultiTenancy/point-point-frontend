@@ -29,6 +29,7 @@ export interface OutsourcedDelivery {
   items?: OutsourcedProductQuantity[];
   delivered_at: string;
   observation?: string | null;
+  amount_due?: number | null;
 }
 
 export interface OutsourcedProduct {
@@ -64,6 +65,7 @@ export interface OutsourcedServiceCostItem {
   productId: string;
   product_id?: string;
   amount: number;
+  unitAmount?: number | null;
   productName?: string;
   name?: string;
 }
@@ -485,10 +487,14 @@ export async function addOutsourcedServiceDelivery(
       body: JSON.stringify(payload),
     },
   );
-  return unwrapObject<OutsourcedService>(
-    await readJson<unknown>(response),
-    ["service", "data"],
-  );
+  const data = await readJson<unknown>(response);
+  const service = unwrapObject<OutsourcedService>(data, ["service", "data"]);
+  const deliveryAmountDue =
+    data && typeof data === "object" && "delivery" in data
+      ? (data as { delivery?: { amount_due?: number | null } }).delivery
+          ?.amount_due ?? null
+      : null;
+  return { service, amountDue: deliveryAmountDue };
 }
 
 export async function addOutsourcedServicePayment(
