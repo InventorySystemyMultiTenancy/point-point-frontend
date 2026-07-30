@@ -1033,6 +1033,9 @@ const AdminPage: React.FC = () => {
 
   // Estado que cont?m a lista de produtos exibida na tabela
   const [menu, setMenu] = useState<Product[]>([]);
+  // Busca por nome e filtro de ocultos na aba de produtos
+  const [productSearch, setProductSearch] = useState("");
+  const [showHiddenOnly, setShowHiddenOnly] = useState(false);
   // Aba ativa do painel administrativo
   const [activeTab, setActiveTab] = useState<
     "overview" | "products" | "stock" | "carriers" | "users"
@@ -1866,6 +1869,22 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  // Lista de produtos filtrada por nome e pelo filtro de ocultos (aba Produtos)
+  const normalizedProductSearch = productSearch
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const filteredMenu = menu.filter((product) => {
+    if (showHiddenOnly && !product.hidden) return false;
+    if (!normalizedProductSearch) return true;
+    const normalizedName = (product.name || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+    return normalizedName.includes(normalizedProductSearch);
+  });
+
   return (
     <div className="container mx-auto p-2 sm:p-4 md:p-6">
       {/* Cabe?alho */}
@@ -2573,6 +2592,28 @@ const AdminPage: React.FC = () => {
         </button>
       </div>
 
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <input
+          type="text"
+          value={productSearch}
+          onChange={(e) => setProductSearch(e.target.value)}
+          placeholder="Buscar produto por nome..."
+          className="w-full sm:max-w-xs rounded-lg border border-stone-300 px-4 py-2 text-sm text-stone-800 focus:border-purple-600 focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => setShowHiddenOnly((prev) => !prev)}
+          aria-pressed={showHiddenOnly}
+          className={`rounded-lg px-4 py-2 text-sm font-bold shadow-md transition-colors ${
+            showHiddenOnly
+              ? "bg-purple-700 text-white hover:bg-purple-800"
+              : "bg-stone-200 text-stone-700 hover:bg-stone-300"
+          }`}
+        >
+          {showHiddenOnly ? "Mostrando ocultos" : "Ocultos"}
+        </button>
+      </div>
+
       {/* Tabela que lista os produtos */}
       <div className="bg-white shadow-xl rounded-2xl overflow-x-auto">
         <table className="min-w-full divide-y divide-stone-200 text-xs sm:text-sm">
@@ -2608,7 +2649,17 @@ const AdminPage: React.FC = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-stone-200">
-            {menu.map((product) => (
+            {filteredMenu.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-4 py-6 text-center text-sm font-semibold text-stone-500"
+                >
+                  Nenhum produto encontrado.
+                </td>
+              </tr>
+            )}
+            {filteredMenu.map((product) => (
               <tr
                 key={product.id}
                 className={`hover:bg-stone-50 ${product.active === false ? "opacity-60" : ""}`}

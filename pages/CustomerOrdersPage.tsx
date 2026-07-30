@@ -57,8 +57,8 @@ const CustomerOrdersPage: React.FC = () => {
       navigate("/login");
       return;
     }
-    const fetchOrders = async () => {
-      setLoading(true);
+    const fetchOrders = async (isInitialLoad: boolean) => {
+      if (isInitialLoad) setLoading(true);
       setError("");
       try {
         const resp = await fetch(
@@ -68,12 +68,17 @@ const CustomerOrdersPage: React.FC = () => {
         const data = await resp.json();
         setOrders(Array.isArray(data) ? data : []);
       } catch (err) {
-        setError("Erro ao buscar pedidos. Tente novamente.");
+        if (isInitialLoad) setError("Erro ao buscar pedidos. Tente novamente.");
       } finally {
-        setLoading(false);
+        if (isInitialLoad) setLoading(false);
       }
     };
-    fetchOrders();
+    fetchOrders(true);
+
+    // Atualiza o status de entrega periodicamente para refletir marcacoes do
+    // admin (entrega parcial ou pedido totalmente entregue) sem precisar recarregar.
+    const intervalId = setInterval(() => fetchOrders(false), 15000);
+    return () => clearInterval(intervalId);
   }, [currentUser, navigate]);
 
   return (

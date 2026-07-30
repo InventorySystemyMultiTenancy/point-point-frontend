@@ -192,6 +192,9 @@ const PaymentPage: React.FC = () => {
   // Ref para limpeza (cleanup) ao desmontar a pÃ¡gina
   const paymentIdRef = useRef<string | null>(null);
 
+  // Trava sincrona contra duplo clique ao finalizar pedido (evita pedidos duplicados)
+  const isSubmittingOrderRef = useRef(false);
+
   // --- REACT QUERY: POLLING INTELIGENTE ---
   const { data: paymentStatusData } = useQuery({
     queryKey: ["paymentStatus", activePayment?.id, activePayment?.type],
@@ -408,7 +411,21 @@ const PaymentPage: React.FC = () => {
     return false;
   };
 
+  // Executa a acao de finalizacao protegida contra cliques duplicados: a trava e
+  // sincrona (ref), entao o segundo clique e descartado mesmo antes do primeiro
+  // "await" resolver e o estado (disabled) ser re-renderizado.
+  const runGuardedAction = async (action: () => Promise<void>) => {
+    if (isSubmittingOrderRef.current) return;
+    isSubmittingOrderRef.current = true;
+    try {
+      await action();
+    } finally {
+      isSubmittingOrderRef.current = false;
+    }
+  };
+
   const runWithGuestName = async (action: () => Promise<void>) => {
+    if (isSubmittingOrderRef.current) return;
     if (!ensurePrivateCatalogAllowed()) return;
     if (!currentUser && !getGuestName()) {
       setGuestNameError("");
@@ -416,7 +433,7 @@ const PaymentPage: React.FC = () => {
       setShowGuestNameModal(true);
       return;
     }
-    await action();
+    await runGuardedAction(action);
   };
 
   const buildBuyerPayload = () =>
@@ -1038,7 +1055,8 @@ const PaymentPage: React.FC = () => {
               {/* Step 3: Finalizar pedido */}
               {presencialStep === "finalize" && (
                 <button
-                  className="mt-4 px-6 py-3 rounded bg-blue-600 text-white font-bold text-lg hover:bg-blue-700 transition-all"
+                  className="mt-4 px-6 py-3 rounded bg-blue-600 text-white font-bold text-lg hover:bg-blue-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={status === "processing"}
                   onClick={async () => {
                     await runWithGuestName(async () => {
                       const confirmed = await confirmBackorderIfNeeded();
@@ -1116,7 +1134,7 @@ const PaymentPage: React.FC = () => {
                     });
                   }}
                 >
-                  Finalizar Pedido
+                  {status === "processing" ? "Finalizando..." : "Finalizar Pedido"}
                 </button>
               )}
 
@@ -1187,7 +1205,7 @@ const PaymentPage: React.FC = () => {
                   setPendingGuestAction(null);
                   setGuestNameError("");
                   if (action) {
-                    await action();
+                    await runGuardedAction(action);
                   }
                 }}
                 className="rounded-lg bg-blue-600 px-4 py-3 font-black text-white hover:bg-blue-700"
