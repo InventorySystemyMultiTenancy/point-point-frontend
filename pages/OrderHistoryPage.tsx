@@ -82,6 +82,10 @@ const OrderHistoryPage: React.FC = () => {
   const [partialDeliveryQuantities, setPartialDeliveryQuantities] = useState<
     Record<string, string>
   >({});
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [bulkMarkingPaid, setBulkMarkingPaid] = useState(false);
 
   const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
   const isAdmin = currentUser?.role === "admin";
@@ -93,6 +97,11 @@ const OrderHistoryPage: React.FC = () => {
         order.userMonthlyPayment ||
       order.paymentMethod === "a_prazo",
     );
+
+  const isPayable = (order: Order) =>
+    order.paymentType === "presencial" &&
+    order.paymentStatus === "pending" &&
+    !isMonthlyOrder(order);
 
   const formatMoney = (value: number) =>
     Number(value || 0).toLocaleString("pt-BR", {
@@ -427,6 +436,96 @@ const OrderHistoryPage: React.FC = () => {
     return true;
   });
 
+  const payableFilteredOrders = filteredOrders.filter(isPayable);
+  const allPayableSelected =
+    payableFilteredOrders.length > 0 &&
+    payableFilteredOrders.every((order) => selectedOrderIds.has(order.id));
+
+  const toggleOrderSelection = (orderId: string) => {
+    setSelectedOrderIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(orderId)) {
+        next.delete(orderId);
+      } else {
+        next.add(orderId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (allPayableSelected) {
+      setSelectedOrderIds(new Set());
+    } else {
+      setSelectedOrderIds(new Set(payableFilteredOrders.map((order) => order.id)));
+    }
+  };
+
+  const handleBulkMarkPaid = async () => {
+    const idsToMark = payableFilteredOrders
+      .filter((order) => selectedOrderIds.has(order.id))
+      .map((order) => order.id);
+
+    if (idsToMark.length === 0) return;
+
+    const confirm = await Swal.fire({
+      title: `Marcar ${idsToMark.length} pedido(s) como pago?`,
+      text: "Todos os pedidos selecionados serão marcados como totalmente pagos.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Sim, marcar como pago",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#16a34a",
+      cancelButtonColor: "#64748b",
+      reverseButtons: true,
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    setBulkMarkingPaid(true);
+    try {
+      const results = await Promise.all(
+        idsToMark.map((id) =>
+          authenticatedFetch(`${BACKEND_URL}/api/orders/${id}/mark-paid`, {
+            method: "PUT",
+          })
+            .then((resp) => ({ id, ok: resp.ok }))
+            .catch(() => ({ id, ok: false })),
+        ),
+      );
+      const failedCount = results.filter((result) => !result.ok).length;
+
+      setSelectedOrderIds(new Set());
+      await reloadHistory();
+
+      if (failedCount > 0) {
+        await Swal.fire({
+          icon: "warning",
+          title: "Alguns pedidos não foram marcados",
+          text: `${failedCount} de ${idsToMark.length} pedido(s) falharam. Tente novamente.`,
+        });
+      } else {
+        await Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "success",
+          title: `${idsToMark.length} pedido(s) marcado(s) como pago`,
+          showConfirmButton: false,
+          timer: 2200,
+          timerProgressBar: true,
+        });
+      }
+    } catch (err) {
+      await Swal.fire({
+        icon: "error",
+        title: "Erro ao marcar pedidos como pago",
+        text: "Não foi possível concluir a operação. Tente novamente.",
+      });
+    } finally {
+      setBulkMarkingPaid(false);
+    }
+  };
+
   const clientOptions = Array.from(
     new Set(
       orders
@@ -657,7 +756,31 @@ const OrderHistoryPage: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <>
+          {payableFilteredOrders.length > 0 && (
+            <div className="mb-4 flex flex-wrap items-center gap-3 bg-white rounded-xl shadow-sm p-3 border border-stone-200">
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="px-4 py-2 rounded-lg bg-stone-700 text-white text-sm font-bold hover:bg-stone-800 transition"
+              >
+                {allPayableSelected
+                  ? "Desmarcar todos"
+                  : `Selecionar todos (${payableFilteredOrders.length})`}
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkMarkPaid}
+                disabled={selectedOrderIds.size === 0 || bulkMarkingPaid}
+                className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition disabled:bg-stone-300 disabled:cursor-not-allowed"
+              >
+                {bulkMarkingPaid
+                  ? "Marcando..."
+                  : `Marcar selecionados como pago (${selectedOrderIds.size})`}
+              </button>
+            </div>
+          )}
+          <div className="space-y-6">
           {filteredOrders.map((order) => (
             <div
               key={order.id}
@@ -667,8 +790,20 @@ const OrderHistoryPage: React.FC = () => {
               }
             >
               <div className="flex flex-wrap justify-between items-center mb-2">
-                <div className="font-bold text-lg text-stone-800">
-                  Pedido #{order.id.slice(-4)}
+                <div className="flex items-center gap-2">
+                  {isPayable(order) && (
+                    <input
+                      type="checkbox"
+                      checked={selectedOrderIds.has(order.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => toggleOrderSelection(order.id)}
+                      title="Selecionar para marcar como pago"
+                      className="h-5 w-5 rounded border-stone-300 text-green-600 focus:ring-green-500"
+                    />
+                  )}
+                  <div className="font-bold text-lg text-stone-800">
+                    Pedido #{order.id.slice(-4)}
+                  </div>
                 </div>
                 <div className="text-sm text-stone-500">
                   {new Date(order.timestamp).toLocaleString()}
@@ -927,7 +1062,8 @@ const OrderHistoryPage: React.FC = () => {
               )}
             </div>
           ))}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
