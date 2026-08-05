@@ -144,7 +144,7 @@ const PaymentPage: React.FC = () => {
   >(null);
 
   const [paymentMethod, setPaymentMethod] = useState<
-    "credit" | "debit" | "pix" | "a_prazo" | "cheque" | "boleto" | null
+    "credit" | "debit" | "pix" | "cheque" | "boleto" | null
   >(null);
 
   const [status, setStatus] = useState<
@@ -156,8 +156,8 @@ const PaymentPage: React.FC = () => {
   // Estados para taxa e parcelas (usados em ambos os fluxos)
   const [selectedInstallments, setSelectedInstallments] = useState<number>(1);
   const [taxaSelecionada, setTaxaSelecionada] = useState<number>(0); // Corrigido valor inicial para 0 se nÃ£o tiver taxa padrÃ£o
-  const [currentUserMonthlyPayment, setCurrentUserMonthlyPayment] = useState(
-    Boolean(currentUser?.monthlyPayment),
+  const [currentUserChequePayment, setCurrentUserChequePayment] = useState(
+    Boolean(currentUser?.chequePayment),
   );
 
   useEffect(() => {
@@ -171,7 +171,7 @@ const PaymentPage: React.FC = () => {
   const totalComTaxa = Number(
     (cartTotal * (1 + (taxaSelecionada || 0) / 100)).toFixed(2),
   );
-  const canUseMonthlyPayment = currentUserMonthlyPayment;
+  const canUseChequePayment = currentUserChequePayment;
 
   // Estados para PIX
   const [qrCodeBase64, setQrCodeBase64] = useState<string | null>(null);
@@ -275,37 +275,37 @@ const PaymentPage: React.FC = () => {
   useEffect(() => {
     let isMounted = true;
 
-    const refreshMonthlyPayment = async () => {
+    const refreshChequePayment = async () => {
       if (!currentUser?.id) {
-        setCurrentUserMonthlyPayment(false);
+        setCurrentUserChequePayment(false);
         return;
       }
 
-      setCurrentUserMonthlyPayment(Boolean(currentUser.monthlyPayment));
+      setCurrentUserChequePayment(Boolean(currentUser.chequePayment));
 
       try {
         const data = await getUserById(currentUser.id);
         const updatedUser = data.user || data;
-        if (!isMounted || typeof updatedUser?.monthlyPayment !== "boolean") {
+        if (!isMounted || typeof updatedUser?.chequePayment !== "boolean") {
           return;
         }
 
-        setCurrentUserMonthlyPayment(updatedUser.monthlyPayment);
+        setCurrentUserChequePayment(updatedUser.chequePayment);
         localStorage.setItem(
           "currentUser",
           JSON.stringify({ ...currentUser, ...updatedUser }),
         );
       } catch (err) {
-        console.error("Erro ao atualizar pagamento mensal do usuario:", err);
+        console.error("Erro ao atualizar pagamento com cheque do usuario:", err);
       }
     };
 
-    refreshMonthlyPayment();
+    refreshChequePayment();
 
     return () => {
       isMounted = false;
     };
-  }, [currentUser?.id, currentUser?.monthlyPayment]);
+  }, [currentUser?.id, currentUser?.chequePayment]);
 
   useEffect(() => {
     return () => {
@@ -973,22 +973,7 @@ const PaymentPage: React.FC = () => {
                   >
                     PIX
                   </button>
-                  {canUseMonthlyPayment && (
-                    <button
-                      className={`px-6 py-3 rounded font-bold text-lg transition-all ${
-                        paymentMethod === "a_prazo"
-                          ? "bg-slate-700 text-white"
-                          : "bg-white text-slate-700 border border-slate-600"
-                      }`}
-                      onClick={() => {
-                        setPaymentMethod("a_prazo");
-                        setPresencialStep("finalize");
-                      }}
-                    >
-                      À prazo
-                    </button>
-                  )}
-                  {canUseMonthlyPayment && (
+                  {canUseChequePayment && (
                     <button
                       className={`px-6 py-3 rounded font-bold text-lg transition-all ${
                         paymentMethod === "cheque"

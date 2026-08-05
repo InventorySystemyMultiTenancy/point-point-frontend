@@ -1,6 +1,6 @@
 // Página: /pages/AdminClientsPage.tsx
 // Painel para o admin gerenciar clientes comuns: ver dados, editar,
-// desativar/ativar, e controlar fechamento mensal e acesso a produtos ocultos.
+// desativar/ativar, e controlar pagamento com cheque e acesso a produtos ocultos.
 import React, { useEffect, useMemo, useState } from "react";
 import type { User } from "../types";
 import {
@@ -8,7 +8,7 @@ import {
   updateUser,
   updateUserActive,
   updateUserFullAccess,
-  updateUserMonthlyPayment,
+  updateUserChequePayment,
 } from "../services/apiService";
 
 interface ClientFormState {
@@ -32,7 +32,7 @@ const AdminClientsPage: React.FC = () => {
   const [updatingFullAccessId, setUpdatingFullAccessId] = useState<string | null>(
     null,
   );
-  const [updatingMonthlyPaymentId, setUpdatingMonthlyPaymentId] = useState<
+  const [updatingChequePaymentId, setUpdatingChequePaymentId] = useState<
     string | null
   >(null);
   const [updatingActiveId, setUpdatingActiveId] = useState<string | null>(null);
@@ -126,12 +126,12 @@ const AdminClientsPage: React.FC = () => {
     }
   };
 
-  const handleToggleMonthlyPayment = async (client: User) => {
-    setUpdatingMonthlyPaymentId(client.id);
+  const handleToggleChequePayment = async (client: User) => {
+    setUpdatingChequePaymentId(client.id);
     try {
-      const data = await updateUserMonthlyPayment(
+      const data = await updateUserChequePayment(
         client.id,
-        !client.monthlyPayment,
+        !client.chequePayment,
       );
       const updatedUser = data.user || data;
       setClients((prev) =>
@@ -140,10 +140,10 @@ const AdminClientsPage: React.FC = () => {
         ),
       );
     } catch (err) {
-      console.error("Erro ao atualizar fechamento mensal:", err);
-      alert("Erro ao atualizar fechamento mensal do cliente.");
+      console.error("Erro ao atualizar pagamento com cheque:", err);
+      alert("Erro ao atualizar pagamento com cheque do cliente.");
     } finally {
-      setUpdatingMonthlyPaymentId(null);
+      setUpdatingChequePaymentId(null);
     }
   };
 
@@ -196,7 +196,7 @@ const AdminClientsPage: React.FC = () => {
               </h1>
               <p className="text-stone-600 text-sm mt-1">
                 Veja os dados dos clientes, edite, desative e controle
-                fechamento mensal e acesso a produtos ocultos.
+                pagamento com cheque e acesso a produtos ocultos.
               </p>
             </div>
             <button
@@ -278,19 +278,19 @@ const AdminClientsPage: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleToggleMonthlyPayment(client)}
-                      disabled={updatingMonthlyPaymentId === client.id}
+                      onClick={() => handleToggleChequePayment(client)}
+                      disabled={updatingChequePaymentId === client.id}
                       className={`rounded-full px-4 py-2 text-xs font-black transition disabled:opacity-60 ${
-                        client.monthlyPayment
+                        client.chequePayment
                           ? "bg-blue-600 text-white hover:bg-blue-700"
                           : "bg-stone-200 text-stone-700 hover:bg-stone-300"
                       }`}
                     >
-                      {updatingMonthlyPaymentId === client.id
+                      {updatingChequePaymentId === client.id
                         ? "Salvando..."
-                        : client.monthlyPayment
-                          ? "Fechamento mensal: Sim"
-                          : "Fechamento mensal: Nao"}
+                        : client.chequePayment
+                          ? "Pagamento com cheque: Sim"
+                          : "Pagamento com cheque: Nao"}
                     </button>
                     <button
                       type="button"

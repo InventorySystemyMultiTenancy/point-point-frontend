@@ -150,7 +150,7 @@ import {
   updateShippingCarrier,
   updateUserProductPrices,
   updateUserFullAccess,
-  updateUserMonthlyPayment,
+  updateUserChequePayment,
 } from "../services/apiService";
 import {
   getOutsourcedServiceAlerts,
@@ -1127,7 +1127,7 @@ const AdminPage: React.FC = () => {
   const [updatingFullAccessId, setUpdatingFullAccessId] = useState<string | null>(
     null,
   );
-  const [updatingMonthlyPaymentId, setUpdatingMonthlyPaymentId] = useState<
+  const [updatingChequePaymentId, setUpdatingChequePaymentId] = useState<
     string | null
   >(null);
   const [expandedPriceUserId, setExpandedPriceUserId] = useState<string | null>(
@@ -1421,19 +1421,19 @@ const AdminPage: React.FC = () => {
     }
   };
 
-  const handleToggleMonthlyPayment = async (user: User) => {
-    setUpdatingMonthlyPaymentId(user.id);
+  const handleToggleChequePayment = async (user: User) => {
+    setUpdatingChequePaymentId(user.id);
     try {
-      const data = await updateUserMonthlyPayment(user.id, !user.monthlyPayment);
+      const data = await updateUserChequePayment(user.id, !user.chequePayment);
       const updatedUser = data.user || data;
       setUsers((prev) =>
         prev.map((item) => (item.id === user.id ? { ...item, ...updatedUser } : item)),
       );
     } catch (err) {
-      console.error("Erro ao atualizar pagamento mensal:", err);
-      alert("Erro ao atualizar pagamento mensal do usuario.");
+      console.error("Erro ao atualizar pagamento com cheque:", err);
+      alert("Erro ao atualizar pagamento com cheque do usuario.");
     } finally {
-      setUpdatingMonthlyPaymentId(null);
+      setUpdatingChequePaymentId(null);
     }
   };
 
@@ -2319,20 +2319,20 @@ const AdminPage: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleToggleMonthlyPayment(user)}
-                      disabled={updatingMonthlyPaymentId === user.id}
-                      aria-pressed={Boolean(user.monthlyPayment)}
+                      onClick={() => handleToggleChequePayment(user)}
+                      disabled={updatingChequePaymentId === user.id}
+                      aria-pressed={Boolean(user.chequePayment)}
                       className={`rounded-full px-4 py-2 text-xs font-black transition disabled:opacity-60 ${
-                        user.monthlyPayment
+                        user.chequePayment
                           ? "bg-blue-600 text-white hover:bg-blue-700"
                           : "bg-stone-700 text-white hover:bg-stone-800"
                       }`}
                     >
-                      {updatingMonthlyPaymentId === user.id
+                      {updatingChequePaymentId === user.id
                         ? "Salvando..."
-                        : user.monthlyPayment
-                          ? "Pagamento mensal"
-                          : "Sem pagamento mensal"}
+                        : user.chequePayment
+                          ? "Pagamento com cheque"
+                          : "Sem pagamento com cheque"}
                     </button>
                     <button
                       type="button"

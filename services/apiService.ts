@@ -550,15 +550,15 @@ export async function updateUserFullAccess(userId: string, fullAccess: boolean) 
   return response.json();
 }
 
-export async function updateUserMonthlyPayment(
+export async function updateUserChequePayment(
   userId: string,
-  monthlyPayment: boolean,
+  chequePayment: boolean,
 ) {
   const response = await authenticatedFetch(
-    `${API_URL}/users/${userId}/monthly-payment`,
+    `${API_URL}/users/${userId}/cheque-payment`,
     {
       method: "PATCH",
-      body: JSON.stringify({ monthlyPayment }),
+      body: JSON.stringify({ chequePayment }),
     },
   );
   return response.json();

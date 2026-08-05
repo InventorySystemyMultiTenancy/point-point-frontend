@@ -108,7 +108,7 @@ export interface Order {
   observation?: string;
   // Novos campos para pagamento
   paymentType?: "online" | "presencial";
-  paymentMethod?: "credit" | "debit" | "pix" | "a_prazo" | "cheque" | "boleto";
+  paymentMethod?: "credit" | "debit" | "pix" | "cheque" | "boleto";
   installments?: number;
   fee?: number;
   paymentStatus?: "pending" | "paid" | "authorized" | "canceled";
@@ -118,12 +118,6 @@ export interface Order {
   deliveries?: OrderDelivery[];
   hasBackorder?: boolean;
   backorderNotice?: string;
-  userMonthlyPayment?: boolean;
-  monthlyBilling?: boolean;
-  canMonthlyClose?: boolean;
-  monthlyBillingMonth?: string;
-  monthlyClosedAt?: string;
-  monthlyClosedBy?: string;
   deliveryMethod?: DeliveryMethodValue;
   deliveryMethodLabel?: string;
   deliveryRequiresCarrier?: boolean;
@@ -151,7 +145,7 @@ export interface User {
   pontos?: number;
   role?: UserRole; // Tipo de usuário: customer (padrão), kitchen ou admin
   fullAccess?: boolean;
-  monthlyPayment?: boolean;
+  chequePayment?: boolean;
   active?: boolean;
 }
 
