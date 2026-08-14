@@ -942,7 +942,7 @@ const MenuPage: React.FC = () => {
             </section>
           )}
 
-          <div className="max-w-7xl mx-auto min-h-[101%] p-4 md:p-8 pt-6">
+          <div className="max-w-7xl mx-auto p-4 md:p-8 pt-6">
             {searchResults !== null ? (
               <div className="animate-fadeIn">
                 <h3 className="monster-section-title text-2xl md:text-3xl font-bold text-stone-700 mb-6">
@@ -986,8 +986,11 @@ const MenuPage: React.FC = () => {
                 {showFeaturedDivider && (
                   <>
                     <div className="section-divider-banner">
-                      <h3>Momentos que viram lembranças para sempre</h3>
-                      <p>Pelúcias POIT&amp;POIT, feitas pra abraçar.</p>
+                      <img
+                        src="/bannerquebradelinhoebannerprincipal.png"
+                        alt="Pequenos detalhes, grandes momentos - POIT&POIT"
+                        loading="lazy"
+                      />
                     </div>
                     <div className="monster-product-grid flex flex-wrap gap-4 md:gap-6">
                       {featuredSecondHalf.map((product) => (
