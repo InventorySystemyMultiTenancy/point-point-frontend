@@ -1,7 +1,7 @@
 /* ===== Rodapé completo (site-footer-v2) ===== */
 .site-footer-v2 {
   width: 100%;
-  background: #02132f;
+  background: #2e1065;
   color: #eaf2ff;
   position: relative;
   z-index: 10;
@@ -11,8 +11,8 @@
 .footer-newsletter {
   position: relative;
   overflow: visible;
-  background: linear-gradient(120deg, #02132f 0%, #022859 60%, #063a8c 100%);
-  border-bottom: 1px solid rgba(96, 165, 250, 0.18);
+  background: linear-gradient(120deg, #2e1065 0%, #4c1d95 60%, #6d28d9 100%);
+  border-bottom: 1px solid rgba(167, 139, 250, 0.18);
 }
 
 .footer-newsletter-inner {
@@ -103,7 +103,7 @@
 
 /* --- Colunas principais --- */
 .footer-main {
-  background: #02132f;
+  background: #2e1065;
 }
 
 .footer-main-inner {
@@ -173,7 +173,7 @@
   width: 36px;
   height: 36px;
   border-radius: 999px;
-  background: rgba(96, 165, 250, 0.14);
+  background: rgba(167, 139, 250, 0.16);
   color: #eaf2ff;
   transition: background 160ms ease, color 160ms ease, transform 160ms ease;
 }
@@ -239,8 +239,8 @@
 
 /* --- Barra inferior --- */
 .footer-bottom-bar {
-  background: #010b1f;
-  border-top: 1px solid rgba(96, 165, 250, 0.14);
+  background: #1a0733;
+  border-top: 1px solid rgba(167, 139, 250, 0.16);
 }
 
 .footer-bottom-inner {

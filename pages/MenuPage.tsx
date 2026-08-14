@@ -9,7 +9,6 @@ import {
 } from "../services/geminiService";
 import { getProducts } from "../services/apiService";
 import ProductCard from "../components/ProductCard";
-import bannerPlaceholderTwo from "../assets/pointpointcorrect.jpg";
 import type { Product, CartItem } from "../types";
 import {
   BACKORDER_SHORT_NOTICE,
@@ -40,14 +39,29 @@ interface PromoBanner {
 
 const PROMO_BANNERS: PromoBanner[] = [
   {
-    image: "/selfMachine.jpg",
-    alt: "Conheça o catálogo completo de pelúcias POIT&POIT",
-    buttonLabel: "Ver catálogo",
+    image: "/banner1.png",
+    alt: "O cantinho perfeito para o seu melhor amigo",
+    buttonLabel: "Veja todos os modelos",
   },
   {
-    image: bannerPlaceholderTwo,
-    alt: "Novidades POIT&POIT",
-    buttonLabel: "Ver novidades",
+    image: "/banner2.png",
+    alt: "Eu te amo - um abraço em forma de capivara",
+    buttonLabel: "Garanta já a sua!",
+  },
+  {
+    image: "/banner3.png",
+    alt: "Cavalinhos de time - para ver, torcer e abraçar",
+    buttonLabel: "Escolha o seu favorito!",
+  },
+  {
+    image: "/banner4.png",
+    alt: "Puzzle Game Machine - diversão que estimula",
+    buttonLabel: "Garanta a diversão do seu pequeno!",
+  },
+  {
+    image: "/banner5.png",
+    alt: "Ursinho que Respira - um abraço que acalma de verdade",
+    buttonLabel: "Garanta o seu!",
   },
 ];
 

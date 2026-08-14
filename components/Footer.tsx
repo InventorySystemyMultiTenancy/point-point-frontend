@@ -4,6 +4,11 @@ import "./Footer.css";
 import { getCategories } from "../services/categoryService";
 import logo from "../assets/pointpointcorrect-transparent.png";
 
+// Limite de categorias exibidas no rodapé — a loja tem muitas, então só
+// mostramos as primeiras (ordenadas) e deixamos um link para o catálogo
+// completo ver as demais.
+const FOOTER_CATEGORY_LIMIT = 6;
+
 const PAYMENT_BADGES: { name: string; src: string }[] = [
   { name: "Visa", src: "/payment-logos/visa.svg" },
   { name: "Mastercard", src: "/payment-logos/mastercard.svg" },
@@ -163,13 +168,20 @@ const Footer: React.FC = () => {
             <h3>Categorias</h3>
             <ul>
               {categoryNames.length > 0 ? (
-                categoryNames.map((category) => (
-                  <li key={category}>
-                    <Link to={`/menu?cat=${encodeURIComponent(category)}`}>
-                      {category}
-                    </Link>
-                  </li>
-                ))
+                <>
+                  {categoryNames.slice(0, FOOTER_CATEGORY_LIMIT).map((category) => (
+                    <li key={category}>
+                      <Link to={`/menu?cat=${encodeURIComponent(category)}`}>
+                        {category}
+                      </Link>
+                    </li>
+                  ))}
+                  {categoryNames.length > FOOTER_CATEGORY_LIMIT && (
+                    <li>
+                      <Link to="/menu">Ver todas</Link>
+                    </li>
+                  )}
+                </>
               ) : (
                 <li>
                   <Link to="/menu">Ver catálogo</Link>
