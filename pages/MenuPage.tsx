@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import {
@@ -8,6 +8,8 @@ import {
   getChefMessage,
 } from "../services/geminiService";
 import { getProducts } from "../services/apiService";
+import ProductCard from "../components/ProductCard";
+import bannerPlaceholderTwo from "../assets/pointpointcorrect.jpg";
 import type { Product, CartItem } from "../types";
 import {
   BACKORDER_SHORT_NOTICE,
@@ -24,95 +26,30 @@ import {
 // URL da API
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
-// ==========================================
-// 1. COMPONENTE: PRODUCT CARD (Produtos maiores)
-// ==========================================
-interface ProductCardProps {
-  product: Product;
-  onAddToCart: (product: Product) => void;
-  quantityInCart?: number;
-  onOpenImage: (product: Product) => void;
+// Banners promocionais do hero (imagens de placeholder já existentes no
+// projeto — troque `image` pela arte final de cada campanha quando estiver
+// pronta). O botão navega para a categoria real (?cat=) se ela existir no
+// backend, senão cai no fallback de busca por texto (?q=).
+interface PromoBanner {
+  image: string;
+  alt: string;
+  buttonLabel: string;
+  category?: string;
+  query?: string;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({
-  product,
-  onAddToCart,
-  quantityInCart = 0,
-  onOpenImage,
-}) => {
-  const isBackorder = isProductBackorder(product);
-  const primaryImage = product.images?.[0] || product.imageUrl;
-
-  return (
-    <div
-      className={`monster-product-card bg-white w-60 rounded-2xl shadow-md overflow-hidden flex flex-col relative h-full transition-transform hover:shadow-xl ${
-        isBackorder ? "ring-2 ring-amber-500" : ""
-      }`}
-    >
-      {/* Badges - Apenas ESGOTADO agora */}
-      {/* Mídia (Imagem ou Vídeo) */}
-      <div className="monster-product-media relative h-40 md:h-52 bg-gray-100">
-        {primaryImage ? (
-          <img
-            src={primaryImage}
-            alt={product.name}
-            className="w-full h-full object-cover hover:scale-105 transition-transform cursor-zoom-in"
-            loading="lazy"
-            onClick={() => onOpenImage(product)}
-          />
-        ) : null}
-        {isBackorder && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/45 p-4">
-            <div className="w-full border-2 border-amber-300 bg-amber-500/95 px-3 py-4 text-center shadow-xl">
-              <div className="text-2xl md:text-3xl font-black tracking-wide text-black">
-                SOB ENCOMENDA
-              </div>
-              <div className="mt-1 text-sm md:text-base font-bold text-black">
-                {BACKORDER_SHORT_NOTICE}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Conteúdo */}
-      <div className="monster-product-body p-4 flex flex-col flex-grow justify-between">
-        <div>
-          <h3 className="monster-product-title font-bold text-lg md:text-xl text-gray-800 leading-tight mb-2">
-            {product.name}
-          </h3>
-          <p className="monster-product-description hidden md:block text-sm text-stone-600 line-clamp-2 mb-3">
-            {product.description}
-          </p>
-        </div>
-
-        <div className="mt-2">
-          <div className="flex flex-col gap-3">
-            <span className="monster-product-price text-xl md:text-2xl font-bold text-stone-800">
-              R$ {formatMoney(product.price)}
-            </span>
-            {product.quantidadeVenda && product.quantidadeVenda > 1 && (
-              <span
-                className="text-xs text-stone-300 mt-1 block"
-                style={{ fontSize: "12px", opacity: 0.7 }}
-              >
-                Mínimo: {product.quantidadeVenda} por compra
-              </span>
-            )}
-            <button
-              onClick={() => onAddToCart(product)}
-              className="monster-buy-button w-full font-bold py-3 px-4 rounded-xl text-base md:text-lg transition-colors shadow-sm bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800"
-            >
-              {quantityInCart > 0
-                ? `Adicionado (${quantityInCart})`
-                : "Adicionar"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+const PROMO_BANNERS: PromoBanner[] = [
+  {
+    image: "/selfMachine.jpg",
+    alt: "Conheça o catálogo completo de pelúcias POIT&POIT",
+    buttonLabel: "Ver catálogo",
+  },
+  {
+    image: bannerPlaceholderTwo,
+    alt: "Novidades POIT&POIT",
+    buttonLabel: "Ver novidades",
+  },
+];
 
 // ==========================================
 // 2. COMPONENTE: CART SIDEBAR (Letras e Botões Grandes + Observação)
@@ -474,8 +411,6 @@ const MenuPage: React.FC = () => {
   const [isChefLoading, setIsChefLoading] = useState<boolean>(false);
   const [isSuggestionLoading, setIsSuggestionLoading] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
-  const [isCatalogNavOpen, setIsCatalogNavOpen] = useState(false);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [imageViewer, setImageViewer] = useState<{
     isOpen: boolean;
@@ -508,13 +443,20 @@ const MenuPage: React.FC = () => {
     clearCart,
     observation,
     setObservation,
+    isCartOpen,
+    openCart,
+    closeCart,
   } = useCart();
   const touchStartXRef = useRef<number | null>(null);
   const didSwipeRef = useRef(false);
   const [isImageZoomed, setIsImageZoomed] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchTerm = useMemo(
+    () => new URLSearchParams(location.search).get("q")?.trim() || "",
+    [location.search],
+  );
 
   const getProductImages = (product: Product): string[] => {
     if (Array.isArray(product.images) && product.images.length > 0) {
@@ -524,12 +466,6 @@ const MenuPage: React.FC = () => {
       return [product.imageUrl];
     }
     return [];
-  };
-
-  const getCategoryIcon = (categoryName: string): string => {
-    const dynamicCat = dynamicCategories.find((dc) => dc.name === categoryName);
-    if (dynamicCat) return dynamicCat.icon;
-    return "🧸";
   };
 
   const openImageViewer = (product: Product) => {
@@ -716,28 +652,37 @@ const MenuPage: React.FC = () => {
     fetchCartSuggestion();
   }, [cartItems, menu, currentUser]);
 
-  const latestProducts = useMemo(() => {
-    return [...menu]
-      .filter((product) => getProductImages(product).length > 0)
-      .slice(-5)
-      .reverse();
-  }, [menu]);
-
   useEffect(() => {
-    if (latestProducts.length <= 1) return;
+    if (PROMO_BANNERS.length <= 1) return;
 
     const interval = window.setInterval(() => {
-      setCurrentBannerIndex((current) => (current + 1) % latestProducts.length);
+      setCurrentBannerIndex((current) => (current + 1) % PROMO_BANNERS.length);
     }, 10000);
 
     return () => window.clearInterval(interval);
-  }, [latestProducts.length]);
+  }, []);
 
-  useEffect(() => {
-    if (currentBannerIndex >= latestProducts.length) {
-      setCurrentBannerIndex(0);
+  const showNextBanner = () => {
+    setCurrentBannerIndex((current) => (current + 1) % PROMO_BANNERS.length);
+  };
+
+  const showPreviousBanner = () => {
+    setCurrentBannerIndex(
+      (current) =>
+        (current - 1 + PROMO_BANNERS.length) % PROMO_BANNERS.length,
+    );
+  };
+
+  const handleBannerClick = (banner: PromoBanner) => {
+    if (banner.category) {
+      navigate(`/menu?cat=${encodeURIComponent(banner.category)}`);
+    } else if (banner.query) {
+      navigate(`/menu?q=${encodeURIComponent(banner.query)}`);
+    } else {
+      setSelectedCategory(null);
+      navigate("/menu");
     }
-  }, [currentBannerIndex, latestProducts.length]);
+  };
 
   const handleCheckout = () => {
     if (cartItems.length === 0) return;
@@ -782,29 +727,68 @@ const MenuPage: React.FC = () => {
     return Object.keys(categorizedMenu).sort();
   }, [dynamicCategories, categorizedMenu]);
 
+  // Seleciona a categoria vinda de um link externo (?cat=Nome), assim que a
+  // lista real de categorias estiver disponível.
+  useEffect(() => {
+    const catParam = new URLSearchParams(location.search).get("cat");
+    if (!catParam) return;
+    const normalized = catParam.trim().toLowerCase();
+    const match = displayCategories.find(
+      (category) => category.toLowerCase() === normalized,
+    );
+    if (match) setSelectedCategory(match);
+  }, [location.search, displayCategories]);
+
+  const searchResults = useMemo(() => {
+    if (!searchTerm) return null;
+    const normalized = searchTerm.toLowerCase();
+    return menu.filter((product) => {
+      const description = (product as { description?: string }).description;
+      return (
+        product.name.toLowerCase().includes(normalized) ||
+        (description && description.toLowerCase().includes(normalized))
+      );
+    });
+  }, [menu, searchTerm]);
+
+  // Produtos em destaque, ordenados (sob encomenda por último). Dividido em
+  // duas partes para encaixar o banner de quebra de linha no meio da
+  // grade, como um intervalo promocional entre os produtos.
+  const featuredProducts = useMemo(() => {
+    return [...menu].sort((a, b) => {
+      const aBackorder = isProductBackorder(a) ? 1 : 0;
+      const bBackorder = isProductBackorder(b) ? 1 : 0;
+      if (aBackorder !== bBackorder) return aBackorder - bBackorder;
+      return a.name.localeCompare(b.name, "pt-BR");
+    });
+  }, [menu]);
+
+  const showFeaturedDivider = featuredProducts.length > 3;
+  const featuredBreakIndex = Math.min(
+    8,
+    Math.ceil(featuredProducts.length / 2),
+  );
+  const featuredFirstHalf = showFeaturedDivider
+    ? featuredProducts.slice(0, featuredBreakIndex)
+    : featuredProducts;
+  const featuredSecondHalf = showFeaturedDivider
+    ? featuredProducts.slice(featuredBreakIndex)
+    : [];
+
   const totalViewerImages = imageViewer.images.length;
   const normalizedViewerIndex =
     totalViewerImages > 0
       ? ((imageViewer.currentIndex % totalViewerImages) + totalViewerImages) %
         totalViewerImages
       : 0;
-  const currentBannerProduct =
-    latestProducts.length > 0
-      ? latestProducts[currentBannerIndex % latestProducts.length]
-      : null;
-  const currentBannerImage = currentBannerProduct
-    ? getProductImages(currentBannerProduct)[0]
-    : "";
+  const currentBanner = PROMO_BANNERS[currentBannerIndex % PROMO_BANNERS.length];
 
   return (
-    <div
-      className="monster-shell animated-gradient flex h-screen w-full overflow-hidden font-sans"
-      style={{ background: "#050604" }}
-    >
-      {/* 1. SIDEBAR ESQUERDA */}
+    <div className="monster-shell flex w-full font-sans">
+      {/* 1. SIDEBAR ESQUERDA (desativada, mantida no código por compatibilidade) */}
       {false && (
         <CategorySidebar
-          categories={displayCategories} // 🆕 Usa categorias dinâmicas ordenadas
+          categories={displayCategories}
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
           dynamicCategories={dynamicCategories}
@@ -812,141 +796,132 @@ const MenuPage: React.FC = () => {
       )}
 
       {/* 2. ÁREA CENTRAL */}
-      <main className="monster-content flex-1 flex flex-col h-full relative overflow-hidden">
-        <div className="catalog-header">
+      <main className="monster-content flex-1 flex flex-col relative">
+        <div className="catalog-subnav">
           <button
             type="button"
-            className="catalog-toggle"
-            onClick={() => setIsCatalogNavOpen((open) => !open)}
+            onClick={() => setSelectedCategory(null)}
+            className={`catalog-subnav-item ${
+              selectedCategory === null ? "is-active" : ""
+            }`}
           >
-            Ver catálogo
-            <span aria-hidden="true">{isCatalogNavOpen ? "−" : "+"}</span>
+            Todos
           </button>
-        </div>
 
-        {isCatalogNavOpen && (
-          <div className="catalog-subnav">
+          {displayCategories.map((category) => (
             <button
               type="button"
-              onClick={() => {
-                setSelectedCategory(null);
-              }}
+              key={category}
+              onClick={() => setSelectedCategory(category)}
               className={`catalog-subnav-item ${
-                selectedCategory === null ? "is-active" : ""
+                selectedCategory === category ? "is-active" : ""
               }`}
             >
-              <span>🧸</span>
-              Todos
+              {category}
             </button>
+          ))}
+        </div>
 
-            {displayCategories.map((category) => (
-              <button
-                type="button"
-                key={category}
-                onClick={() => {
-                  setSelectedCategory(category);
-                }}
-                className={`catalog-subnav-item ${
-                  selectedCategory === category ? "is-active" : ""
-                }`}
-              >
-                <span>{getCategoryIcon(category)}</span>
-                {category}
-              </button>
-            ))}
-          </div>
-        )}
-        {/* Scroll Container */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-48 md:pb-8 scroll-smooth">
-          {/* Mensagens IA */}
+        {/* Conteúdo (flui normalmente com o restante da página, sem scroll próprio) */}
+        <div className="pb-48 md:pb-8">
+          {searchResults === null && selectedCategory === null && (
+            <section className="latest-banner" aria-label="Destaques">
+              {PROMO_BANNERS.length > 1 && (
+                <button
+                  type="button"
+                  className="latest-banner-arrow latest-banner-arrow-prev"
+                  onClick={showPreviousBanner}
+                  aria-label="Destaque anterior"
+                >
+                  ‹
+                </button>
+              )}
+              <div className="latest-banner-slide">
+                <img src={currentBanner.image} alt={currentBanner.alt} loading="eager" />
+                <button
+                  type="button"
+                  className="latest-banner-cta"
+                  onClick={() => handleBannerClick(currentBanner)}
+                >
+                  {currentBanner.buttonLabel}
+                  <span aria-hidden="true">›</span>
+                </button>
+              </div>
+              {PROMO_BANNERS.length > 1 && (
+                <button
+                  type="button"
+                  className="latest-banner-arrow latest-banner-arrow-next"
+                  onClick={showNextBanner}
+                  aria-label="Próximo destaque"
+                >
+                  ›
+                </button>
+              )}
+              {PROMO_BANNERS.length > 1 && (
+                <div className="latest-banner-dots">
+                  {PROMO_BANNERS.map((banner, index) => (
+                    <button
+                      type="button"
+                      key={`banner-dot-${banner.image}`}
+                      aria-label={`Ver destaque ${index + 1}`}
+                      className={index === currentBannerIndex ? "is-active" : ""}
+                      onClick={() => setCurrentBannerIndex(index)}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
 
-          {/* Grid de Produtos */}
-          <div className="max-w-7xl mx-auto min-h-[101%]">
-            {selectedCategory === null ? (
+          <div className="max-w-7xl mx-auto min-h-[101%] p-4 md:p-8 pt-6">
+            {searchResults !== null ? (
+              <div className="animate-fadeIn">
+                <h3 className="monster-section-title text-2xl md:text-3xl font-bold text-stone-700 mb-6">
+                  {searchResults.length > 0
+                    ? `Resultados para "${searchTerm}"`
+                    : `Nenhum resultado para "${searchTerm}"`}
+                </h3>
+                <div className="monster-product-grid flex flex-wrap gap-4 md:gap-6">
+                  {searchResults.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onAddToCart={addToCart}
+                      onOpenImage={openImageViewer}
+                      quantityInCart={
+                        cartItems.find((i) => i.id === product.id)
+                          ?.quantity || 0
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : selectedCategory === null ? (
               <>
-                {currentBannerProduct && (
-                  <section className="latest-banner" aria-label="Novidades">
-                    <div className="latest-banner-copy">
-                      <span>Novidades!</span>
-                      <h2>Últimos lançamentos!</h2>
-                      <p>Pelúcia Premium</p>
-                      <strong>{currentBannerProduct.name}</strong>
-                      <button
-                        type="button"
-                        onClick={() => openImageViewer(currentBannerProduct)}
-                      >
-                        Ver detalhes
-                      </button>
+                <h2 className="monster-section-title">Produtos em destaque</h2>
+                <div className="monster-product-grid flex flex-wrap gap-4 md:gap-6">
+                  {featuredFirstHalf.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onAddToCart={addToCart}
+                      onOpenImage={openImageViewer}
+                      quantityInCart={
+                        cartItems.find((i) => i.id === product.id)
+                          ?.quantity || 0
+                      }
+                    />
+                  ))}
+                </div>
+
+                {showFeaturedDivider && (
+                  <>
+                    <div className="section-divider-banner">
+                      <h3>Momentos que viram lembranças para sempre</h3>
+                      <p>Pelúcias POIT&amp;POIT, feitas pra abraçar.</p>
                     </div>
-                    <div className="latest-banner-stage">
-                      <img
-                        src={currentBannerImage}
-                        alt={currentBannerProduct.name}
-                        loading="eager"
-                      />
-                    </div>
-                    {latestProducts.length > 1 && (
-                      <div className="latest-banner-dots">
-                        {latestProducts.map((product, index) => (
-                          <button
-                            type="button"
-                            key={`banner-dot-${product.id}`}
-                            aria-label={`Ver novidade ${index + 1}`}
-                            className={
-                              index === currentBannerIndex ? "is-active" : ""
-                            }
-                            onClick={() => setCurrentBannerIndex(index)}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </section>
-                )}
-                <div className="flex flex-col gap-4 md:gap-6">
-                  <div className="flex flex-col gap-2">
-                    <h2 className="monster-section-title">
-                      Produtos em destaque
-                    </h2>
-                    <div className="relative w-full md:max-w-md">
-                      <input
-                        type="text"
-                        placeholder="Pesquisar produtos..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-4 py-3 pl-10 rounded-lg border-2 border-stone-300 bg-white text-stone-800 placeholder-stone-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                      />
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400">
-                        🔍
-                      </span>
-                      {searchTerm && (
-                        <button
-                          onClick={() => setSearchTerm("")}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-600 text-xl"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="monster-product-grid flex flex-wrap gap-4 md:gap-6">
-                    {[...menu]
-                      .filter(
-                        (product) =>
-                          searchTerm === "" ||
-                          product.name
-                            .toLowerCase()
-                            .includes(searchTerm.toLowerCase()) ||
-                          product.description
-                            ?.toLowerCase()
-                            .includes(searchTerm.toLowerCase()),
-                      )
-                      .sort((a, b) => {
-                        const aOOS = isProductBackorder(a) ? 1 : 0;
-                        const bOOS = isProductBackorder(b) ? 1 : 0;
-                        if (aOOS !== bOOS) return aOOS - bOOS;
-                        return a.name.localeCompare(b.name, "pt-BR");
-                      })
-                      .map((product) => (
+                    <div className="monster-product-grid flex flex-wrap gap-4 md:gap-6">
+                      {featuredSecondHalf.map((product) => (
                         <ProductCard
                           key={product.id}
                           product={product}
@@ -958,8 +933,9 @@ const MenuPage: React.FC = () => {
                           }
                         />
                       ))}
-                  </div>
-                </div>
+                    </div>
+                  </>
+                )}
               </>
             ) : (
               <div className="animate-fadeIn">
@@ -990,11 +966,11 @@ const MenuPage: React.FC = () => {
             )}
           </div>
         </div>
-        {cartItems.length > 0 && !isMobileCartOpen && (
+        {cartItems.length > 0 && !isCartOpen && (
           <button
             type="button"
             className="plush-cart-orbit"
-            onClick={() => setIsMobileCartOpen(true)}
+            onClick={() => openCart()}
             aria-label="Abrir carrinho"
           >
             <span className="plush-cart-orbit-icon">🛒</span>
@@ -1007,17 +983,17 @@ const MenuPage: React.FC = () => {
         )}
       </main>
 
-      {isMobileCartOpen && (
+      {isCartOpen && (
         <>
           <div
             className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm"
-            onClick={() => setIsMobileCartOpen(false)}
+            onClick={() => closeCart()}
           />
           <div className="cart-drawer-shell">
             <button
               type="button"
               className="cart-drawer-close"
-              onClick={() => setIsMobileCartOpen(false)}
+              onClick={() => closeCart()}
               aria-label="Fechar carrinho"
             >
               ×

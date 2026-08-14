@@ -29,6 +29,10 @@ interface CartContextType {
   cartTotal: number;
   observation: string;
   setObservation: (obs: string) => void;
+  isCartOpen: boolean;
+  openCart: () => void;
+  closeCart: () => void;
+  toggleCart: () => void;
 }
 
 // Cria o contexto com tipo opcional (undefined por padrão até o Provider ser usado)
@@ -61,6 +65,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       return "";
     }
   });
+
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const openCart = () => setIsCartOpen(true);
+  const closeCart = () => setIsCartOpen(false);
+  const toggleCart = () => setIsCartOpen((prev) => !prev);
 
   // 2. Efeito de Persistência: Salva no LocalStorage sempre que o carrinho mudar
   useEffect(() => {
@@ -176,6 +185,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
         cartTotal,
         observation,
         setObservation,
+        isCartOpen,
+        openCart,
+        closeCart,
+        toggleCart,
       }}
     >
       {children}

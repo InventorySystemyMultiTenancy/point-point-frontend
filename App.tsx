@@ -10,6 +10,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"; // <--- IMPORTANTE
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
+import { FavoritesProvider } from "./contexts/FavoritesContext";
 import { StoreProvider, useStore } from "./contexts/StoreContext"; // 🏪 MULTI-TENANT
 import LoginPage from "./pages/LoginPage";
 import StoreNotFound from "./pages/StoreNotFound";
@@ -37,6 +38,8 @@ import {
 
 import OrderDetailPage from "./pages/OrderDetailPage";
 import CustomerOrdersPage from "./pages/CustomerOrdersPage";
+import FavoritesPage from "./pages/FavoritesPage";
+import InfoPage from "./pages/InfoPage";
 import AdminLayout from "./components/admin/AdminLayout";
 
 // 1. Configuração do Cliente React Query
@@ -87,6 +90,20 @@ const RoleProtectedRoute: React.FC<{
   return <>{children}</>;
 };
 
+// Leva a visão para o topo sempre que o usuário navega para uma página
+// diferente (filtros por query string, como busca/categoria no catálogo,
+// não disparam o reset). Sem isso, o SPA mantém o scroll de onde o link
+// foi clicado, dando a impressão de que a navegação não aconteceu.
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
+
 const App: React.FC = () => {
   // Configurar Point Smart 2 na inicialização do sistema
 
@@ -98,10 +115,13 @@ const App: React.FC = () => {
       <StoreProvider>
         <AuthProvider>
           <CartProvider>
-            <HashRouter>
-              <RouterBody />
-              <Footer />
-            </HashRouter>
+            <FavoritesProvider>
+              <HashRouter>
+                <ScrollToTop />
+                <RouterBody />
+                <Footer />
+              </HashRouter>
+            </FavoritesProvider>
           </CartProvider>
         </AuthProvider>
       </StoreProvider>
@@ -179,6 +199,9 @@ const RouterBody: React.FC = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/employee/login" element={<EmployeeLoginPage />} />
+
+          {/* Páginas institucionais (rodapé) */}
+          <Route path="/pagina/:slug" element={<InfoPage />} />
           <Route
             path="/employee"
             element={
@@ -238,6 +261,16 @@ const RouterBody: React.FC = () => {
             element={
               <ProtectedRoute>
                 <CustomerOrdersPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Rota protegida para favoritos */}
+          <Route
+            path="/favoritos"
+            element={
+              <ProtectedRoute>
+                <FavoritesPage />
               </ProtectedRoute>
             }
           />
