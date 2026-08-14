@@ -133,8 +133,8 @@ const Header: React.FC = () => {
             <span className="site-header-brand truncate">POIT&POIT</span>
           </NavLink>
 
-          {/* Busca (clientes) */}
-          {isCustomerRole && (
+          {/* Busca (clientes e administradores navegando pela loja) */}
+          {(isCustomerRole || currentUser?.role === "admin") && (
             <form
               className="site-header-search flex max-[860px]:hidden"
               onSubmit={handleSearchSubmit}
@@ -358,7 +358,7 @@ const Header: React.FC = () => {
       {isMenuOpen && (
         <div className="site-header-mobile site-header-dark min-[1101px]:hidden">
           <div className="container mx-auto px-4 py-4 flex flex-col gap-3">
-            {isCustomerRole && (
+            {(isCustomerRole || currentUser?.role === "admin") && (
               <form
                 className="site-header-search site-header-search-mobile flex"
                 onSubmit={handleSearchSubmit}

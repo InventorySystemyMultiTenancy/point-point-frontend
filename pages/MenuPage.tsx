@@ -25,6 +25,9 @@ import {
 // URL da API
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
+// Quantidade de produtos exibidos por vez antes do botão "Ver mais".
+const PRODUCTS_PAGE_SIZE = 20;
+
 // Banners promocionais do hero (imagens de placeholder já existentes no
 // projeto — troque `image` pela arte final de cada campanha quando estiver
 // pronta). O botão navega para a categoria real (?cat=) se ela existir no
@@ -426,6 +429,15 @@ const MenuPage: React.FC = () => {
   const [isSuggestionLoading, setIsSuggestionLoading] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(PRODUCTS_PAGE_SIZE);
+  const categorySubnavRef = useRef<HTMLDivElement>(null);
+
+  const scrollCategorySubnav = (direction: 1 | -1) => {
+    categorySubnavRef.current?.scrollBy({
+      left: direction * 220,
+      behavior: "smooth",
+    });
+  };
   const [imageViewer, setImageViewer] = useState<{
     isOpen: boolean;
     images: string[];
@@ -676,6 +688,11 @@ const MenuPage: React.FC = () => {
     return () => window.clearInterval(interval);
   }, []);
 
+  // Reinicia a paginação sempre que o filtro (busca ou categoria) muda.
+  useEffect(() => {
+    setVisibleCount(PRODUCTS_PAGE_SIZE);
+  }, [selectedCategory, searchTerm]);
+
   const showNextBanner = () => {
     setCurrentBannerIndex((current) => (current + 1) % PROMO_BANNERS.length);
   };
@@ -777,16 +794,36 @@ const MenuPage: React.FC = () => {
     });
   }, [menu]);
 
-  const showFeaturedDivider = featuredProducts.length > 3;
+  const sortedCategoryProducts = useMemo(() => {
+    if (!selectedCategory) return [];
+    return [...(categorizedMenu[selectedCategory] || [])].sort((a, b) => {
+      const aOOS = isProductBackorder(a) ? 1 : 0;
+      const bOOS = isProductBackorder(b) ? 1 : 0;
+      return aOOS - bOOS;
+    });
+  }, [categorizedMenu, selectedCategory]);
+
+  // Lista atualmente em exibição (busca > categoria > destaques), usada para
+  // a paginação "Ver mais" (20 produtos por vez).
+  const activeProductList =
+    searchResults !== null
+      ? searchResults
+      : selectedCategory !== null
+        ? sortedCategoryProducts
+        : featuredProducts;
+  const visibleProducts = activeProductList.slice(0, visibleCount);
+  const hasMoreProducts = activeProductList.length > visibleProducts.length;
+
+  const showFeaturedDivider = visibleProducts.length > 3;
   const featuredBreakIndex = Math.min(
     8,
-    Math.ceil(featuredProducts.length / 2),
+    Math.ceil(visibleProducts.length / 2),
   );
   const featuredFirstHalf = showFeaturedDivider
-    ? featuredProducts.slice(0, featuredBreakIndex)
-    : featuredProducts;
+    ? visibleProducts.slice(0, featuredBreakIndex)
+    : visibleProducts;
   const featuredSecondHalf = showFeaturedDivider
-    ? featuredProducts.slice(featuredBreakIndex)
+    ? visibleProducts.slice(featuredBreakIndex)
     : [];
 
   const totalViewerImages = imageViewer.images.length;
@@ -811,29 +848,47 @@ const MenuPage: React.FC = () => {
 
       {/* 2. ÁREA CENTRAL */}
       <main className="monster-content flex-1 flex flex-col relative">
-        <div className="catalog-subnav">
+        <div className="catalog-subnav-wrap">
           <button
             type="button"
-            onClick={() => setSelectedCategory(null)}
-            className={`catalog-subnav-item ${
-              selectedCategory === null ? "is-active" : ""
-            }`}
+            className="catalog-subnav-arrow catalog-subnav-arrow-prev"
+            onClick={() => scrollCategorySubnav(-1)}
+            aria-label="Categorias anteriores"
           >
-            Todos
+            ‹
           </button>
-
-          {displayCategories.map((category) => (
+          <div className="catalog-subnav" ref={categorySubnavRef}>
             <button
               type="button"
-              key={category}
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => setSelectedCategory(null)}
               className={`catalog-subnav-item ${
-                selectedCategory === category ? "is-active" : ""
+                selectedCategory === null ? "is-active" : ""
               }`}
             >
-              {category}
+              Todos
             </button>
-          ))}
+
+            {displayCategories.map((category) => (
+              <button
+                type="button"
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`catalog-subnav-item ${
+                  selectedCategory === category ? "is-active" : ""
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="catalog-subnav-arrow catalog-subnav-arrow-next"
+            onClick={() => scrollCategorySubnav(1)}
+            aria-label="Próximas categorias"
+          >
+            ›
+          </button>
         </div>
 
         {/* Conteúdo (flui normalmente com o restante da página, sem scroll próprio) */}
@@ -896,7 +951,7 @@ const MenuPage: React.FC = () => {
                     : `Nenhum resultado para "${searchTerm}"`}
                 </h3>
                 <div className="monster-product-grid flex flex-wrap gap-4 md:gap-6">
-                  {searchResults.map((product) => (
+                  {visibleProducts.map((product) => (
                     <ProductCard
                       key={product.id}
                       product={product}
@@ -957,25 +1012,33 @@ const MenuPage: React.FC = () => {
                   {selectedCategory}
                 </h3>
                 <div className="monster-product-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 md:gap-8">
-                  {[...(categorizedMenu[selectedCategory] || [])]
-                    .sort((a, b) => {
-                      const aOOS = isProductBackorder(a) ? 1 : 0;
-                      const bOOS = isProductBackorder(b) ? 1 : 0;
-                      return aOOS - bOOS;
-                    })
-                    .map((product) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        onAddToCart={addToCart}
-                        onOpenImage={openImageViewer}
-                        quantityInCart={
-                          cartItems.find((i) => i.id === product.id)
-                            ?.quantity || 0
-                        }
-                      />
-                    ))}
+                  {visibleProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onAddToCart={addToCart}
+                      onOpenImage={openImageViewer}
+                      quantityInCart={
+                        cartItems.find((i) => i.id === product.id)
+                          ?.quantity || 0
+                      }
+                    />
+                  ))}
                 </div>
+              </div>
+            )}
+
+            {hasMoreProducts && (
+              <div className="flex justify-center mt-8">
+                <button
+                  type="button"
+                  className="monster-load-more"
+                  onClick={() =>
+                    setVisibleCount((count) => count + PRODUCTS_PAGE_SIZE)
+                  }
+                >
+                  Ver mais
+                </button>
               </div>
             )}
           </div>

@@ -17,6 +17,9 @@ body {
   background: #ffffff;
   color: #1f2937;
   isolation: isolate;
+  min-width: 0;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 /* ===== Header (site-header) ===== */
@@ -411,6 +414,7 @@ body {
 
 .monster-content {
   background: transparent;
+  min-width: 0;
 }
 
 .monster-section-title {
@@ -424,16 +428,48 @@ body {
 }
 
 /* ===== Barra de categorias ===== */
-.catalog-subnav {
+.catalog-subnav-wrap {
   position: relative;
   z-index: 29;
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  background: linear-gradient(120deg, #2e1065 0%, #6d28d9 100%);
+  border-bottom: 1px solid rgba(167, 139, 250, 0.24);
+}
+
+.catalog-subnav {
   display: flex;
   align-items: center;
   gap: 1.6rem;
   overflow-x: auto;
+  scroll-behavior: smooth;
   padding: 0.7rem 1.25rem;
-  background: linear-gradient(120deg, #2e1065 0%, #6d28d9 100%);
-  border-bottom: 1px solid rgba(167, 139, 250, 0.24);
+  min-width: 0;
+  flex: 1 1 auto;
+  scrollbar-width: none;
+}
+
+.catalog-subnav::-webkit-scrollbar {
+  display: none;
+}
+
+.catalog-subnav-arrow {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  color: rgba(237, 233, 254, 0.85);
+  font-size: 1.2rem;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.06);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.catalog-subnav-arrow:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
 }
 
 .catalog-subnav-item {
@@ -476,8 +512,8 @@ body {
   position: relative;
   display: block;
   width: 100%;
-  aspect-ratio: 1920 / 480;
-  max-height: 340px;
+  aspect-ratio: 1774 / 887;
+  max-height: 400px;
   overflow: hidden;
 }
 
@@ -579,6 +615,24 @@ body {
 .monster-product-grid {
   align-items: stretch;
   justify-content: center;
+}
+
+.monster-load-more {
+  padding: 0.85rem 2.4rem;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  box-shadow: 0 10px 24px rgba(2, 19, 47, 0.25);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.monster-load-more:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(2, 19, 47, 0.32);
 }
 
 .section-divider-banner {
