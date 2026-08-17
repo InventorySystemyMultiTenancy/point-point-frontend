@@ -104,6 +104,21 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
 }) => {
   const [showObservationSaved, setShowObservationSaved] = useState(false);
   const observationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [editingQtyId, setEditingQtyId] = useState<string | null>(null);
+  const [editingQtyValue, setEditingQtyValue] = useState("");
+
+  const startEditingQty = (item: CartItem) => {
+    setEditingQtyId(item.id);
+    setEditingQtyValue(String(item.quantity));
+  };
+
+  const commitEditingQty = (item: CartItem) => {
+    const q = parseInt(editingQtyValue, 10);
+    if (!isNaN(q) && q > 0) {
+      updateQuantity(item.id, q);
+    }
+    setEditingQtyId(null);
+  };
 
   const containerClass = isMobile
     ? "monster-cart fixed inset-x-0 bottom-0 z-[200] bg-white rounded-t-3xl shadow-[0_-10px_60px_rgba(0,0,0,0.4)] flex flex-col max-h-[90vh] transition-transform duration-300 ease-out transform translate-y-0 border-t border-stone-200"
@@ -201,10 +216,10 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
                 className="monster-cart-item flex bg-white p-3 rounded-lg shadow-sm border border-stone-200 items-center justify-between"
               >
                 <div className="flex-1 pr-3">
-                  <p className="font-bold text-stone-100 text-base md:text-lg leading-tight mb-1">
+                  <p className="font-bold text-stone-800 text-base md:text-lg leading-tight mb-1">
                     {item.name}
                   </p>
-                  <p className="text-sm md:text-base font-semibold text-blue-300">
+                  <p className="text-sm md:text-base font-semibold text-blue-600">
                     R$ {formatMoney(item.price)}
                   </p>
                   {isCartItemBackorder(item) && (
@@ -224,7 +239,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
                       const step = item.quantidadeVenda ?? 1;
                       updateQuantity(item.id, item.quantity - step);
                     }}
-                    className="w-9 md:w-10 h-full flex items-center justify-center text-stone-100 font-bold text-xl hover:bg-blue-600 hover:text-white transition-colors active:bg-blue-700"
+                    className="w-9 md:w-10 h-full flex items-center justify-center text-stone-800 font-bold text-xl hover:bg-blue-600 hover:text-white transition-colors active:bg-blue-700"
                   >
                     -
                   </button>
@@ -240,10 +255,35 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
                       }}
                       className="w-12 md:w-14 h-full text-base md:text-lg font-bold text-center bg-black text-white border-x border-blue-500/20"
                     />
+                  ) : editingQtyId === item.id ? (
+                    <input
+                      type="number"
+                      min={1}
+                      max={9999}
+                      autoFocus
+                      value={editingQtyValue}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setEditingQtyValue(e.target.value)}
+                      onBlur={() => commitEditingQty(item)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          commitEditingQty(item);
+                        } else if (e.key === "Escape") {
+                          setEditingQtyId(null);
+                        }
+                      }}
+                      className="w-12 md:w-14 h-full text-base md:text-lg font-bold text-center bg-black text-white border-x border-blue-500/20 focus:outline-none"
+                    />
                   ) : (
-                    <span className="w-9 md:w-10 h-full flex items-center justify-center text-base md:text-lg font-bold bg-black border-x border-blue-500/20">
+                    <button
+                      type="button"
+                      onClick={() => startEditingQty(item)}
+                      title="Clique para digitar a quantidade"
+                      className="w-9 md:w-10 h-full flex items-center justify-center text-base md:text-lg font-bold bg-black text-white border-x border-blue-500/20"
+                    >
                       {item.quantity}
-                    </span>
+                    </button>
                   )}
                   <button
                     onClick={() => {
@@ -268,7 +308,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
           <div className="mb-4">
             <label
               htmlFor="observation"
-              className="block text-base font-bold text-stone-100 mb-2"
+              className="block text-base font-bold text-stone-800 mb-2"
             >
               📝 Alguma observação?
             </label>
@@ -288,8 +328,8 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
           </div>
 
           <div className="flex justify-between items-center mb-4">
-            <span className="text-stone-300 font-bold text-lg">Total</span>
-            <span className="text-2xl md:text-3xl font-bold text-blue-300">
+            <span className="text-stone-800 font-bold text-lg">Total</span>
+            <span className="text-2xl md:text-3xl font-bold text-blue-600">
               R$ {cartTotal.toFixed(2)}
             </span>
           </div>
