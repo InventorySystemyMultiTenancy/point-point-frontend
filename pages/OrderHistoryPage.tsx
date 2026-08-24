@@ -359,6 +359,9 @@ const OrderHistoryPage: React.FC = () => {
   const allPayableSelected =
     payableFilteredOrders.length > 0 &&
     payableFilteredOrders.every((order) => selectedOrderIds.has(order.id));
+  const selectedOrdersTotal = orders
+    .filter((order) => selectedOrderIds.has(order.id))
+    .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
 
   const toggleOrderSelection = (orderId: string) => {
     setSelectedOrderIds((prev) => {
@@ -674,6 +677,12 @@ const OrderHistoryPage: React.FC = () => {
                   ? "Marcando..."
                   : `Marcar selecionados como pago (${selectedOrderIds.size})`}
               </button>
+              {selectedOrderIds.size > 0 && (
+                <span className="ml-auto px-4 py-2 rounded-lg bg-blue-50 text-blue-800 text-sm font-bold border border-blue-200">
+                  Total selecionado ({selectedOrderIds.size}):{" "}
+                  {formatMoney(selectedOrdersTotal)}
+                </span>
+              )}
             </div>
           )}
           <div className="space-y-6">
