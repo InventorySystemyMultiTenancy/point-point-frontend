@@ -291,6 +291,20 @@ const isSewingService = (
   return value === "sewing" || label.includes("costura");
 };
 
+// Servicos que permitem cadastrar o valor por produto (ex.: por pelucia) e somam o
+// total automaticamente: costura, fechamento e enchimento + fechamento (combinado).
+const usesPerProductServiceCost = (
+  value: string,
+  types: OutsourcedServiceType[] = [],
+) => {
+  const label = getTypeLabel(value, types).toLowerCase();
+  return (
+    isSewingService(value, types) ||
+    value === "closing" ||
+    label.includes("fechamento")
+  );
+};
+
 const isFabricCuttingService = (
   value: string,
   types: OutsourcedServiceType[] = [],
@@ -1102,21 +1116,25 @@ const AdminOutsourcedServicesPage: React.FC = () => {
       started_at: toIsoOrUndefined(serviceForm.started_at),
       notes: serviceForm.notes.trim() || undefined,
     };
-    const sewingService = isSewingService(serviceForm.service_type, types);
+    const perProductCostService = usesPerProductServiceCost(
+      serviceForm.service_type,
+      types,
+    );
     const cuttingService = isFabricCuttingService(serviceForm.service_type, types);
-    const serviceCostItems = sewingService && !isEmployeeView ? parseCostRows() : [];
+    const serviceCostItems =
+      perProductCostService && !isEmployeeView ? parseCostRows() : [];
     if (!cuttingService || serviceForm.input_quantity !== "") {
       payload.input_quantity = Number(serviceForm.input_quantity);
     }
     if (!isEmployeeView && serviceForm.fabric_paid_amount !== "") {
       payload.fabric_paid_amount = Number(serviceForm.fabric_paid_amount);
     }
-    if (!isEmployeeView && sewingService) {
+    if (!isEmployeeView && perProductCostService) {
       if (
         serviceCostItems.length !== expectedReturnItems.length ||
         serviceCostItems.some((item) => Number.isNaN(item.amount))
       ) {
-        alert("Informe o valor cobrado para cada produto de costura.");
+        alert("Informe o valor cobrado para cada produto.");
         return;
       }
       payload.service_cost_items = serviceCostItems;
@@ -1292,9 +1310,12 @@ const AdminOutsourcedServicesPage: React.FC = () => {
 
   const serviceInputUnit = getInputUnit(serviceForm.service_type, types);
   const expectedReturnTotal = totalItemsQuantity(serviceForm.expected_return_items);
-  const isSewingForm = isSewingService(serviceForm.service_type, types);
+  const isPerProductCostForm = usesPerProductServiceCost(
+    serviceForm.service_type,
+    types,
+  );
   const isFabricCuttingForm = isFabricCuttingService(serviceForm.service_type, types);
-  const sewingCostTotal = totalCostItems(serviceForm.service_cost_items);
+  const perProductCostTotal = totalCostItems(serviceForm.service_cost_items);
   const fabricCuttingPreview = isFabricCuttingForm
     ? buildFabricCuttingPreview(serviceForm.expected_return_items, products)
     : null;
@@ -2220,10 +2241,10 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                     type="number"
                     min="0"
                     step="0.01"
-                    disabled={isSewingForm}
+                    disabled={isPerProductCostForm}
                     value={
-                      isSewingForm
-                        ? sewingCostTotal.toFixed(2)
+                      isPerProductCostForm
+                        ? perProductCostTotal.toFixed(2)
                         : serviceForm.service_cost_amount
                     }
                     onChange={(value) =>
@@ -2271,14 +2292,14 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                   <FabricCuttingSummaryBox summary={fabricCuttingPreview} />
                 </div>
               )}
-              {!isEmployeeView && isSewingForm && (
+              {!isEmployeeView && isPerProductCostForm && (
                 <div className="space-y-3 rounded-lg border border-stone-200 p-4 sm:col-span-2">
                   <div>
                     <h3 className="text-sm font-bold uppercase text-stone-700">
-                      Valor da costura por produto
+                      Valor do servico por produto
                     </h3>
                     <p className="text-xs text-stone-500">
-                      Total cobrado pelo terceirizado: {money(sewingCostTotal)}
+                      Total cobrado pelo terceirizado: {money(perProductCostTotal)}
                     </p>
                   </div>
                   {serviceForm.expected_return_items.map((item, index) => {
@@ -2456,7 +2477,7 @@ const AdminOutsourcedServicesPage: React.FC = () => {
                             : money(selectedService.remaining_amount)
                         }
                       />
-                      {isSewingService(selectedService.service_type, types) && (
+                      {usesPerProductServiceCost(selectedService.service_type, types) && (
                         <Info
                           label="Custo por produto"
                           value={formatCostItems(
