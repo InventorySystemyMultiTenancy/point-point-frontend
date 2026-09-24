@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import type { Order, OrderItem } from "../types";
+import { authenticatedFetch } from "../services/apiService";
 import { formatMoney, toMoneyNumber } from "../utils/money";
 import { getOrderDeliveryProgress, getRemainingQuantity } from "../utils/orderDelivery";
 
@@ -27,7 +28,7 @@ const getDisplayOrderTotal = (order: Order) => {
 };
 
 const getPreparationStatus = (order: Order) => {
-  if (order.entregueCliente) return "Pronto para retirada";
+  if (order.entregueCliente) return "Entregue";
   const { delivered, total } = getOrderDeliveryProgress(order);
   if (delivered > 0 && delivered < total) {
     return `Entrega parcial (${delivered}/${total})`;
@@ -51,6 +52,48 @@ const CustomerOrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(
+    null,
+  );
+
+  const handleConfirmReceipt = async (order: Order) => {
+    setConfirmingOrderId(order.id);
+    try {
+      const resp = await authenticatedFetch(
+        `${BACKEND_URL}/api/orders/${order.id}/confirm-receipt`,
+        { method: "POST" },
+      );
+      const data = await resp.json().catch(() => ({}));
+      if (resp.status === 401 || /token/i.test(data.error || "")) {
+        throw new Error(
+          "Sua sessão expirou. Entre novamente para confirmar o recebimento.",
+        );
+      }
+      if (!resp.ok) {
+        throw new Error(data.error || "Erro ao confirmar recebimento");
+      }
+      setOrders((prev) =>
+        prev.map((item) =>
+          item.id === order.id
+            ? {
+                ...item,
+                recebimentoConfirmado: true,
+                recebimentoConfirmadoAt:
+                  data.order?.recebimentoConfirmadoAt || new Date().toISOString(),
+              }
+            : item,
+        ),
+      );
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erro ao confirmar recebimento");
+    } finally {
+      setConfirmingOrderId(null);
+    }
+  };
+
+  const ordersAwaitingConfirmation = orders.filter(
+    (order) => order.entregueCliente && !order.recebimentoConfirmado,
+  );
 
   useEffect(() => {
     if (!currentUser) {
@@ -91,12 +134,61 @@ const CustomerOrdersPage: React.FC = () => {
       ) : orders.length === 0 ? (
         <p>Você ainda não fez nenhum pedido.</p>
       ) : (
+        <>
+        {ordersAwaitingConfirmation.length > 0 && (
+          <div className="mb-4 rounded-xl border border-green-300 bg-green-50 p-4 text-green-900">
+            <p className="font-bold">
+              📦 {ordersAwaitingConfirmation.length === 1
+                ? "1 pedido foi entregue a você"
+                : `${ordersAwaitingConfirmation.length} pedidos foram entregues a você`}
+            </p>
+            <p className="text-sm">
+              Confira os itens e confirme o recebimento no pedido abaixo.
+            </p>
+          </div>
+        )}
         <ul className="space-y-4">
           {orders.map((order) => (
             <li
               key={order.id}
               className="bg-white rounded-xl shadow p-4 border border-stone-200"
             >
+              {order.entregueCliente && (
+                <div
+                  className={`mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 ${
+                    order.recebimentoConfirmado
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                      : "border-green-300 bg-green-50 text-green-900"
+                  }`}
+                >
+                  {order.recebimentoConfirmado ? (
+                    <span className="text-sm font-bold">
+                      ✔ Recebimento confirmado
+                      {order.recebimentoConfirmadoAt &&
+                        ` em ${new Date(order.recebimentoConfirmadoAt).toLocaleString("pt-BR")}`}
+                    </span>
+                  ) : (
+                    <>
+                      <span className="text-sm font-bold">
+                        📦 Este pedido já foi entregue a você
+                        {order.completedAt &&
+                          ` em ${new Date(order.completedAt).toLocaleString("pt-BR")}`}
+                        .
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleConfirmReceipt(order)}
+                        disabled={confirmingOrderId === order.id}
+                        className="rounded-lg bg-green-600 px-3 py-2 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-60"
+                      >
+                        {confirmingOrderId === order.id
+                          ? "Confirmando..."
+                          : "Confirmar recebimento"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
               <div className="flex justify-between items-center mb-2">
                 <span className="font-bold text-lg">Pedido #{order.id}</span>
                 <span className="text-sm text-stone-500">
@@ -169,6 +261,7 @@ const CustomerOrdersPage: React.FC = () => {
             </li>
           ))}
         </ul>
+        </>
       )}
     </div>
   );

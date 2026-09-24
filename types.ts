@@ -113,6 +113,10 @@ export interface Order {
   fee?: number;
   paymentStatus?: "pending" | "paid" | "authorized" | "canceled";
   entregueCliente?: boolean; // Indica se o pedido foi TOTALMENTE entregue ao cliente
+  completedAt?: string | null; // Data em que o pedido foi totalmente entregue
+  paidAt?: string | null; // Data em que o pedido foi marcado como pago
+  recebimentoConfirmado?: boolean; // Cliente confirmou o recebimento da entrega
+  recebimentoConfirmadoAt?: string | null;
   deliveredItems?: OrderDeliveredItem[]; // Quantidade ja entregue, por produto
   remainingItems?: OrderDeliveredItem[]; // Quantidade restante a entregar, por produto
   deliveries?: OrderDelivery[];

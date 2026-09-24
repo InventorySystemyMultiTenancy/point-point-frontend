@@ -45,7 +45,11 @@ const OrderHistoryPage: React.FC = () => {
   const [endDate, setEndDate] = useState("");
   const [clientFilter, setClientFilter] = useState("");
   const [showUndeliveredOnly, setShowUndeliveredOnly] = useState(false);
-  const [showUnpaidOnly, setShowUnpaidOnly] = useState(false);
+  const [activeTab, setActiveTab] = useState<"pending" | "paid">("pending");
+  const [unmarkingPaidOrderId, setUnmarkingPaidOrderId] = useState<
+    string | null
+  >(null);
+  const [headerOffset, setHeaderOffset] = useState(0);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>(
     DEFAULT_DELIVERY_METHODS,
@@ -78,6 +82,9 @@ const OrderHistoryPage: React.FC = () => {
 
   const isPayable = (order: Order) =>
     order.paymentType === "presencial" && order.paymentStatus === "pending";
+
+  const isPaid = (order: Order) =>
+    ["paid", "authorized"].includes(order.paymentStatus ?? "pending");
 
   const formatMoney = (value: number) =>
     Number(value || 0).toLocaleString("pt-BR", {
@@ -332,11 +339,18 @@ const OrderHistoryPage: React.FC = () => {
     fetchDeliveryOptions();
   }, []);
 
-  const filteredOrders = orders.filter((order) => {
-    const isUndelivered = !order.entregueCliente;
-    const isUnpaid = !["paid", "authorized"].includes(
-      order.paymentStatus ?? "pending",
-    );
+  // Acompanha a altura do header fixo para a barra de selecionados grudar logo abaixo dele
+  useEffect(() => {
+    const header = document.querySelector<HTMLElement>(".site-header");
+    if (!header) return;
+    const update = () => setHeaderOffset(header.offsetHeight);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
+
+  const ordersMatchingFilters = orders.filter((order) => {
     const clientName = (order.userName || "").toLowerCase();
     const clientSearch = clientFilter.trim().toLowerCase();
 
@@ -344,16 +358,65 @@ const OrderHistoryPage: React.FC = () => {
       return false;
     }
 
-    if (showUndeliveredOnly && !isUndelivered) {
-      return false;
-    }
-
-    if (showUnpaidOnly && !isUnpaid) {
+    if (showUndeliveredOnly && order.entregueCliente) {
       return false;
     }
 
     return true;
   });
+  const paidOrdersCount = ordersMatchingFilters.filter(isPaid).length;
+  const pendingOrdersCount = ordersMatchingFilters.length - paidOrdersCount;
+  const filteredOrders = ordersMatchingFilters.filter((order) =>
+    activeTab === "paid" ? isPaid(order) : !isPaid(order),
+  );
+
+  const handleMarkUnpaid = async (order: Order, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (unmarkingPaidOrderId === order.id) return;
+
+    const confirm = await Swal.fire({
+      title: `Voltar pedido #${order.id.slice(-4)} para pendente?`,
+      text: "O pedido deixará de constar como pago e voltará para a aba de pendentes.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Sim, desfazer pago",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#d97706",
+      cancelButtonColor: "#64748b",
+      reverseButtons: true,
+    });
+    if (!confirm.isConfirmed) return;
+
+    setUnmarkingPaidOrderId(order.id);
+    try {
+      const resp = await authenticatedFetch(
+        `${BACKEND_URL}/api/orders/${order.id}/mark-unpaid`,
+        { method: "PUT" },
+      );
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(data.error || "Erro ao desfazer pagamento");
+      }
+      await reloadHistory();
+      await Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: "Pedido voltou para pendente",
+        showConfirmButton: false,
+        timer: 2200,
+        timerProgressBar: true,
+      });
+    } catch (err) {
+      await Swal.fire({
+        icon: "error",
+        title: "Não foi possível desfazer o pago",
+        text: err instanceof Error ? err.message : "Tente novamente.",
+      });
+    } finally {
+      setUnmarkingPaidOrderId(null);
+    }
+  };
 
   const payableFilteredOrders = filteredOrders.filter(isPayable);
   const allPayableSelected =
@@ -604,15 +667,6 @@ const OrderHistoryPage: React.FC = () => {
           />
           Não entregues
         </label>
-        <label className="flex items-center gap-2 text-sm font-medium text-stone-700 pb-2">
-          <input
-            type="checkbox"
-            checked={showUnpaidOnly}
-            onChange={(e) => setShowUnpaidOnly(e.target.checked)}
-            className="h-4 w-4 rounded border-stone-300 text-blue-600 focus:ring-blue-500"
-          />
-          Não pagos
-        </label>
         <button
           onClick={fetchOrders}
           className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow-md"
@@ -625,7 +679,6 @@ const OrderHistoryPage: React.FC = () => {
             setEndDate("");
             setClientFilter("");
             setShowUndeliveredOnly(false);
-            setShowUnpaidOnly(false);
           }}
           className="bg-stone-300 text-stone-700 font-bold py-2 px-4 rounded-lg hover:bg-stone-400 transition-colors shadow-md"
         >
@@ -638,6 +691,35 @@ const OrderHistoryPage: React.FC = () => {
         >
           PDF do Cliente
         </button>
+      </div>
+      <div className="mb-4 flex gap-2 border-b border-stone-300">
+        {(
+          [
+            { key: "pending", label: "Pendentes", count: pendingOrdersCount },
+            { key: "paid", label: "Pagos", count: paidOrdersCount },
+          ] as const
+        ).map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => {
+              setActiveTab(tab.key);
+              setSelectedOrderIds(new Set());
+            }}
+            className={`-mb-px px-5 py-2 text-sm font-bold border-b-4 transition ${
+              activeTab === tab.key
+                ? tab.key === "paid"
+                  ? "border-green-600 text-green-700"
+                  : "border-blue-600 text-blue-800"
+                : "border-transparent text-stone-500 hover:text-stone-700"
+            }`}
+          >
+            {tab.label}{" "}
+            <span className="ml-1 rounded-full bg-stone-200 px-2 py-0.5 text-xs text-stone-700">
+              {tab.count}
+            </span>
+          </button>
+        ))}
       </div>
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
@@ -657,7 +739,10 @@ const OrderHistoryPage: React.FC = () => {
       ) : (
         <>
           {payableFilteredOrders.length > 0 && (
-            <div className="mb-4 flex flex-wrap items-center gap-3 bg-white rounded-xl shadow-sm p-3 border border-stone-200">
+            <div
+              className="sticky z-40 mb-4 flex flex-wrap items-center gap-3 bg-white rounded-xl shadow-md p-3 border border-stone-200"
+              style={{ top: headerOffset + 8 }}
+            >
               <button
                 type="button"
                 onClick={toggleSelectAll}
@@ -840,15 +925,60 @@ const OrderHistoryPage: React.FC = () => {
                       </button>
                     </>
                   )}
+                {isPaid(order) && (
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="text-green-700 font-bold"
+                      title={
+                        order.paidAt
+                          ? `Pago em ${new Date(order.paidAt).toLocaleString("pt-BR")}`
+                          : undefined
+                      }
+                    >
+                      PAGO
+                    </span>
+                    {order.paymentType === "presencial" &&
+                      order.paymentStatus === "paid" && (
+                        <button
+                          className="px-2 py-1 rounded bg-amber-100 text-amber-800 text-xs font-bold hover:bg-amber-200 transition disabled:opacity-60"
+                          onClick={(e) => handleMarkUnpaid(order, e)}
+                          disabled={unmarkingPaidOrderId === order.id}
+                          title="Desfazer pago e voltar para pendente"
+                        >
+                          {unmarkingPaidOrderId === order.id
+                            ? "Desfazendo..."
+                            : "↩ Desfazer pago"}
+                        </button>
+                      )}
+                  </div>
+                )}
                 {/* Botão entregar ao cliente */}
                 {order.entregueCliente ? (
-                  <button
-                    className="px-3 py-1 rounded text-xs font-bold bg-green-500 text-white"
-                    disabled
-                    title="Já entregue ao cliente"
-                  >
-                    Entregue ao Cliente ✔
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      className="px-3 py-1 rounded text-xs font-bold bg-green-500 text-white"
+                      disabled
+                      title="Já entregue ao cliente"
+                    >
+                      Entregue ao Cliente ✔
+                    </button>
+                    {order.recebimentoConfirmado ? (
+                      <span
+                        className="px-2 py-1 rounded bg-emerald-100 text-emerald-800 text-xs font-bold"
+                        title={
+                          order.recebimentoConfirmadoAt
+                            ? `Confirmado em ${new Date(order.recebimentoConfirmadoAt).toLocaleString("pt-BR")}`
+                            : undefined
+                        }
+                      >
+                        Cliente confirmou recebimento ✔
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 rounded bg-stone-100 text-stone-600 text-xs font-bold">
+                        Aguardando confirmação do cliente
+                      </span>
+                    )}
+                  </div>
                 ) : (
                   <div className="flex flex-wrap items-center gap-2">
                     {hasPartialDelivery(order) && (
